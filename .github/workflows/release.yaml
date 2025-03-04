@@ -10,7 +10,7 @@ permissions:
   
 jobs:
   create-release:
-    runs-on: lynx-ubuntu-22.04-avd-large
+    runs-on: lynx-family-darwin-cert
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       release_type: ${{ steps.release_type.outputs.RELEASE_TYPE }}
@@ -55,7 +55,7 @@ jobs:
 
   build-and-upload:
     needs: create-release
-    runs-on: lynx-darwin-14-medium
+    runs-on: lynx-family-darwin-cert
     strategy:
       matrix:
         arch: [arm64, x64]

@@ -16,7 +16,7 @@ import * as utils from '../utils';
 import * as handler from './handler';
 import { getDebugDriver, restartLDTServer } from './toolkit';
 import { LDT_DIR } from '../utils';
-import { kScopeName, kCliPackageName } from '@lynx-dev/lynx-devtool-utils';
+import { kScopeName, kCliPackageName } from '@lynx-js/lynx-devtool-utils';
 const detect = require('detect-port');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 

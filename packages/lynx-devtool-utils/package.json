@@ -1,5 +1,5 @@
 {
-  "name": "@lynx-dev/lynx-devtool-utils",
+  "name": "@lynx-js/lynx-devtool-utils",
   "version": "0.0.1-beta.3",
   "types": "./dist/types/index.d.ts",
   "main": "./dist/lib/index.js",

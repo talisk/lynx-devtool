@@ -7,7 +7,7 @@ import { getSelectClient } from './storeUtils';
 import { getGitInfo, getLDTVersion } from '@/api/api';
 import { getStore } from './flooks';
 import useUser from '@/store/user';
-import { StatisticsCustomEventData } from '@lynx-dev/lynx-devtool-utils';
+import { StatisticsCustomEventData } from '@lynx-js/lynx-devtool-utils';
 
 export interface IStatistics {
   init(data: { bid: string; release: string }): void;

@@ -18,7 +18,7 @@ import {
   IClientDescriptor,
   ICustomDataWrapper,
   IRemoteDebugDriverEvent2Payload
-} from '@lynx-dev/lynx-devtool-web-components';
+} from '@lynx-js/lynx-devtool-web-components';
 import { notification, message } from 'antd';
 import { t } from 'i18next';
 import create, { getStore } from '../utils/flooks';

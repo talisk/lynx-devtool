@@ -1,5 +1,5 @@
-import { getConfigItem, setConfigItem, LDT_DIR, getCurrentChannel, defaultLogger } from '@lynx-dev/lynx-devtool-cli';
-import { kScopeName, kCliPackageName } from '@lynx-dev/lynx-devtool-utils';
+import { getConfigItem, setConfigItem, LDT_DIR, getCurrentChannel, defaultLogger } from '@lynx-js/lynx-devtool-cli';
+import { kScopeName, kCliPackageName } from '@lynx-js/lynx-devtool-utils';
 import axios from 'axios';
 import { BrowserWindow, Menu, app, dialog, shell } from 'electron';
 import ProgressBar from 'electron-progressbar';

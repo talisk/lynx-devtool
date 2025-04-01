@@ -5,7 +5,7 @@
 import { canUseDebugRouter } from '@/services/device';
 import useConnection from '@/store/connection';
 import { IDevice, IGroupDevice } from '@/types/device';
-import { ERemoteDebugDriverExternalEvent, ISocketMessage, SocketEvents } from '@lynx-dev/lynx-devtool-web-components';
+import { ERemoteDebugDriverExternalEvent, ISocketMessage, SocketEvents } from '@lynx-js/lynx-devtool-web-components';
 import { t } from 'i18next';
 import SocketIO from 'socket.io-client';
 import debugDriver from './debugDriver';

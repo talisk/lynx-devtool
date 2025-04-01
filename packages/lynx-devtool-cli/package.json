@@ -1,5 +1,5 @@
 {
-  "name": "@lynx-dev/lynx-devtool-cli",
+  "name": "@lynx-js/lynx-devtool-cli",
   "version": "0.0.1-beta.3",
   "description": "Lynx DevTool toolkit",
   "license": "Apache-2.0",
@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "@lynx-js/debug-router-connector": "0.0.2",
-    "@lynx-dev/lynx-devtool-utils": "workspace:*",
+    "@lynx-js/lynx-devtool-utils": "workspace:*",
     "asar": "^3.2.0",
     "async": "3.2.4",
     "axios": "^1.8.1",

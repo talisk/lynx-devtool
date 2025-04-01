@@ -1,5 +1,5 @@
 {
-  "name": "@lynx-dev/lynx-devtool-web-components",
+  "name": "@lynx-js/lynx-devtool-web-components",
   "version": "0.0.1-beta.3",
   "jsnext:source": "./src/index.ts",
   "types": "./dist/types/index.d.ts",

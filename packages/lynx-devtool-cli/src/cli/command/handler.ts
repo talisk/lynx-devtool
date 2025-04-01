@@ -14,7 +14,7 @@ import { app } from 'electron';
 import path from 'path';
 import { LDT_DIR } from '../utils';
 import { getCurrentChannel } from '../updator/updator';
-import { kCliPackageName, kScopeName } from '@lynx-dev/lynx-devtool-utils';
+import { kCliPackageName, kScopeName } from '@lynx-js/lynx-devtool-utils';
 
 export const uploadFilePath = utils.getUploadFilePath();
 const separator = '___';

@@ -2,7 +2,7 @@
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import { DiagnoseDetailData, DiagnoseItemType } from '@lynx-dev/lynx-devtool-utils';
+import { DiagnoseDetailData, DiagnoseItemType } from '@lynx-js/lynx-devtool-utils';
 
 export type DiagnoseReport = {
   [key in DiagnoseItemType]?: DiagnoseDetailData[];

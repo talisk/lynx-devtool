@@ -26,7 +26,7 @@ import {
   DevtoolsFrameImpl,
   createCustomData,
   devtoolActionHandler,
-} from '@lynx-dev/lynx-devtool-web-components';
+} from '@lynx-js/lynx-devtool-web-components';
 import { Button, notification, Tabs, Tag, Tooltip } from 'antd';
 import { useLocation, useNavigate } from '@modern-js/runtime/router';
 import { useEffect, useMemo, useRef, useState } from 'react';

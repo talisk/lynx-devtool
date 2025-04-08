@@ -1277,7 +1277,7 @@ importers:
 
   packages/lynx-devtool-cli:
     specifiers:
-      '@lynx-js/debug-router-connector': 0.0.2
+      '@lynx-js/debug-router-connector': 0.0.3
       '@lynx-js/lynx-devtool-utils': workspace:*
       '@types/async': 3.2.22
       '@types/compression': ^1.7.2
@@ -1319,7 +1319,7 @@ importers:
       ws: 8.13.0
       yargs: 17.7.2
     dependencies:
-      '@lynx-js/debug-router-connector': 0.0.2
+      '@lynx-js/debug-router-connector': 0.0.3
       '@lynx-js/lynx-devtool-utils': link:../lynx-devtool-utils
       asar: 3.2.0
       async: 3.2.4
@@ -5132,8 +5132,8 @@ packages:
       react: 17.0.2
     dev: false
 
-  /@lynx-js/debug-router-connector/0.0.2:
-    resolution: {integrity: sha512-IwVoEpobNEVnedPt0zKE7G0jt1GbiDTSdKwlZVF2TA/GvrrTjd9F43RtQiq06N3pHjeNzrT36FH8JFnEY6QE4g==}
+  /@lynx-js/debug-router-connector/0.0.3:
+    resolution: {integrity: sha512-/9Lqby4EMD40kgZd1E2y+bItJTeVuwHSW5OlEVewVBiHutca1d2a82xEq88sbJyIocj2CaIMpsVLT40Li9uMnA==}
     dependencies:
       '@aws-sdk/client-s3': 3.669.0
       '@devicefarmer/adbkit': 3.2.4

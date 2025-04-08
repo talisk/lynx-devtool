@@ -15,7 +15,7 @@ import {
   SocketEvents,
   bootstrapRemoteDriver,
   getRemoteDebugDriver
-} from '@lynx-dev/lynx-devtool-web-components';
+} from '@lynx-js/lynx-devtool-web-components';
 import { getCurrentIntranetIp } from '.';
 import LDT_CONST, { isOfflineMode } from './const';
 import { queryService } from './query';

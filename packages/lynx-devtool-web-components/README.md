@@ -1,1 +1,1 @@
-# @lynx-dev/lynx-devtool-web-components
+# @lynx-js/lynx-devtool-web-components

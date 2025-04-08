@@ -1,1 +1,1 @@
-# @lynx-dev/lynx-devtool-utils
+# @lynx-js/lynx-devtool-utils

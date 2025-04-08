@@ -1,4 +1,4 @@
-import { toolkitExecutor, getDebugDriver, sendUsbMessageToWeb, CliOptions } from '@lynx-dev/lynx-devtool-cli';
+import { toolkitExecutor, getDebugDriver, sendUsbMessageToWeb, CliOptions } from '@lynx-js/lynx-devtool-cli';
 
 export interface LDTServerOptions extends CliOptions {
   forceNew?: boolean;

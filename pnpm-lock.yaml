@@ -13,8 +13,8 @@ importers:
       '@babel/preset-env': ^7.26.9
       '@babel/preset-react': ^7.26.3
       '@electron/remote': ^2.1.2
-      '@lynx-dev/lynx-devtool-cli': workspace:*
-      '@lynx-dev/lynx-devtool-utils': workspace:*
+      '@lynx-js/lynx-devtool-cli': workspace:*
+      '@lynx-js/lynx-devtool-utils': workspace:*
       '@lynx-js/remote-debug-driver': 0.0.2
       '@monaco-editor/react': 4.5.0
       '@paciolan/remote-module-loader': 3.0.3
@@ -61,8 +61,8 @@ importers:
       ws: ^8.18.1
     dependencies:
       '@electron/remote': 2.1.2_electron@22.0.1
-      '@lynx-dev/lynx-devtool-cli': link:packages/lynx-devtool-cli
-      '@lynx-dev/lynx-devtool-utils': link:packages/lynx-devtool-utils
+      '@lynx-js/lynx-devtool-cli': link:packages/lynx-devtool-cli
+      '@lynx-js/lynx-devtool-utils': link:packages/lynx-devtool-utils
       '@lynx-js/remote-debug-driver': 0.0.2
       '@monaco-editor/react': 4.5.0_vv7ury54fa7l632rrbu4y22kee
       '@paciolan/remote-module-loader': 3.0.3
@@ -1277,8 +1277,8 @@ importers:
 
   packages/lynx-devtool-cli:
     specifiers:
-      '@lynx-dev/lynx-devtool-utils': workspace:*
       '@lynx-js/debug-router-connector': 0.0.2
+      '@lynx-js/lynx-devtool-utils': workspace:*
       '@types/async': 3.2.22
       '@types/compression': ^1.7.2
       '@types/cors': ^2.8.13
@@ -1319,8 +1319,8 @@ importers:
       ws: 8.13.0
       yargs: 17.7.2
     dependencies:
-      '@lynx-dev/lynx-devtool-utils': link:../lynx-devtool-utils
       '@lynx-js/debug-router-connector': 0.0.2
+      '@lynx-js/lynx-devtool-utils': link:../lynx-devtool-utils
       asar: 3.2.0
       async: 3.2.4
       axios: 1.8.1
@@ -1378,8 +1378,8 @@ importers:
     specifiers:
       '@ant-design/icons': ^4.8.0
       '@jest/globals': 29.5.0
-      '@lynx-dev/lynx-devtool-utils': workspace:*
-      '@lynx-dev/lynx-devtool-web-components': workspace:*
+      '@lynx-js/lynx-devtool-utils': workspace:*
+      '@lynx-js/lynx-devtool-web-components': workspace:*
       '@modern-js/app-tools': 2.63.2
       '@modern-js/runtime': 2.63.2
       '@modern-js/tsconfig': 2.63.2
@@ -1429,8 +1429,8 @@ importers:
       xml-js: 1.6.11
     dependencies:
       '@ant-design/icons': 4.8.3_sfoxds7t5ydpegc3knd667wn6m
-      '@lynx-dev/lynx-devtool-utils': link:../lynx-devtool-utils
-      '@lynx-dev/lynx-devtool-web-components': link:../lynx-devtool-web-components
+      '@lynx-js/lynx-devtool-utils': link:../lynx-devtool-utils
+      '@lynx-js/lynx-devtool-web-components': link:../lynx-devtool-web-components
       '@modern-js/runtime': 2.63.2_ttg2hfvyzxilime2gvjkkaz6v4
       '@monaco-editor/react': 4.5.0_vv7ury54fa7l632rrbu4y22kee
       ahooks: 3.7.6_react@17.0.2

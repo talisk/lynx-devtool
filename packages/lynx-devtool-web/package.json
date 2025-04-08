@@ -1,5 +1,5 @@
 {
-  "name": "@lynx-dev/lynx-devtool-web",
+  "name": "@lynx-js/lynx-devtool-web",
   "version": "0.0.1-beta.4",
   "scripts": {
     "reset": "npx rimraf ./**/node_modules",
@@ -22,8 +22,8 @@
     "dist/*"
   ],
   "dependencies": {
-    "@lynx-dev/lynx-devtool-web-components": "workspace:*",
-    "@lynx-dev/lynx-devtool-utils": "workspace:*",
+    "@lynx-js/lynx-devtool-web-components": "workspace:*",
+    "@lynx-js/lynx-devtool-utils": "workspace:*",
     "@ant-design/icons": "^4.8.0",
     "antd": "^4.24.14",
     "@modern-js/runtime": "2.63.2",

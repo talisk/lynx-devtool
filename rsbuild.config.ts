@@ -36,7 +36,7 @@ export default defineConfig({
       externals: {
         'electron': 'electron',
         '@electron/remote': '@electron/remote',
-        '@lynx-dev/lynx-devtool-cli': '@lynx-dev/lynx-devtool-cli',
+        '@lynx-js/lynx-devtool-cli': '@lynx-js/lynx-devtool-cli',
         'electron-log': 'electron-log',
         'node-machine-id': 'node-machine-id'
       },

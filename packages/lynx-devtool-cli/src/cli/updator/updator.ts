@@ -12,7 +12,7 @@ import {
   kCliPackageName,
   kScopeName,
   kWebPackageName,
-} from "@lynx-dev/lynx-devtool-utils";
+} from "@lynx-js/lynx-devtool-utils";
 import { app } from "electron";
 import asar from "asar";
 import { electron } from "node:process";
@@ -81,7 +81,7 @@ export async function setupResource(
 
     // build the target path
 
-    // ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli
+    // ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli
     const ldtPath = path.resolve(
       LDT_DIR,
       currentChannel,
@@ -125,7 +125,7 @@ export async function setupResource(
 
       // copy bin directory
       // from <devtool>/packages/lynx-devtool-cli/bin
-      // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/bin
+      // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/bin
       if (fs.existsSync(path.resolve(debugSourcePath, "bin"))) {
         copyDir(
           path.resolve(debugSourcePath, "bin"),
@@ -135,7 +135,7 @@ export async function setupResource(
 
       // copy dist directory
       // from <devtool>/packages/lynx-devtool-cli/dist
-      // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/dist
+      // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/dist
       if (fs.existsSync(path.resolve(debugSourcePath, "dist"))) {
         copyDir(
           path.resolve(debugSourcePath, "dist"),
@@ -144,11 +144,11 @@ export async function setupResource(
       }
 
       // from <devtool>/packages/lynx-devtool-cli/package.json
-      // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/package.json
+      // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/package.json
       copyFileSync(packageJsonPath, path.resolve(ldtPath, "package.json"));
 
       // from <devtool>/dist/lynx-devtool-web
-      // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/dist/static/ldt_home/dist
+      // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/dist/static/ldt_home/dist
       const webSourcePath = path.resolve(
         process.cwd(),
         "dist/lynx-devtool-web"
@@ -183,7 +183,7 @@ export async function setupResource(
 
       const innerPackageJson = asar.extractFile(
         asarPath,
-        "node_modules/@lynx-dev/lynx-devtool-cli/package.json"
+        "node_modules/@lynx-js/lynx-devtool-cli/package.json"
       );
       const innerPackageJsonObj = JSON.parse(innerPackageJson.toString());
       const innerVersion = innerPackageJsonObj.version;
@@ -211,7 +211,7 @@ export async function setupResource(
 
           // copy CLI resources
 
-          // ~/.lynx-devtool/.temp/node_modules/@lynx-dev/lynx-devtool-cli
+          // ~/.lynx-devtool/.temp/node_modules/@lynx-js/lynx-devtool-cli
           const tmpCliSourcePath = path.join(
             tempDir,
             "node_modules",
@@ -219,42 +219,42 @@ export async function setupResource(
             kCliPackageName
           );
 
-          // ~/.lynx-devtool/.temp/node_modules/@lynx-dev/lynx-devtool-cli/package.json
+          // ~/.lynx-devtool/.temp/node_modules/@lynx-js/lynx-devtool-cli/package.json
           const tmpPackageJsonPath = path.join(
             tmpCliSourcePath,
             "package.json"
           );
 
           // copy bin directory
-          // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/bin
+          // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/bin
           copyDir(
             path.join(tmpCliSourcePath, "bin"),
             path.resolve(ldtPath, "bin")
           );
 
           // copy dist directory
-          // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/dist
+          // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/dist
           copyDir(
             path.join(tmpCliSourcePath, "dist"),
             path.resolve(ldtPath, "dist")
           );
 
-          // from  ~/.lynx-devtool/.temp/node_modules/@lynx-dev/lynx-devtool-cli/package.json
-          // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/package.json
+          // from  ~/.lynx-devtool/.temp/node_modules/@lynx-js/lynx-devtool-cli/package.json
+          // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/package.json
           copyFileSync(
             tmpPackageJsonPath,
             path.resolve(ldtPath, "package.json")
           );
 
           // copy web resources
-          // ~/.lynx-devtool/.temp/node_modules/@lynx-dev/lynx-devtool-web/dist
+          // ~/.lynx-devtool/.temp/node_modules/@lynx-js/lynx-devtool-web/dist
           const tempWebDistPath = path.join(
             tempDir,
             "dist",
             kWebPackageName
           );
 
-          // to ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/dist/static/ldt_home/dist
+          // to ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/dist/static/ldt_home/dist
           copyDir(
             tempWebDistPath,
             path.resolve(ldtPath, "dist/static/ldt_home/dist")
@@ -274,7 +274,7 @@ export async function setupResource(
       fs.mkdirSync(homeCnDir, { recursive: true });
     }
 
-    // ~/.lynx-devtool/3x/@lynx-dev/lynx-devtool-cli/dist/static/ldt_home/RES_READY_FLAG
+    // ~/.lynx-devtool/3x/@lynx-js/lynx-devtool-cli/dist/static/ldt_home/RES_READY_FLAG
     fs.writeFileSync(
       path.resolve(homeCnDir, RES_READY_FLAG),
       `${isPackagedApp ? "prod" : "dev"}`

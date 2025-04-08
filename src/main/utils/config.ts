@@ -1,4 +1,4 @@
-import { ILDTConfig, OnChangeListener } from '@lynx-dev/lynx-devtool-utils';
+import { ILDTConfig, OnChangeListener } from '@lynx-js/lynx-devtool-utils';
 import { LDT_CONFIG_FILE } from './const';
 import fs from 'fs';
 

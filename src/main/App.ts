@@ -9,6 +9,7 @@ import menu from './utils/menu';
 import ldtServer from './utils/server';
 import path from 'path';
 import fs from 'fs';
+import { ViewMode } from 'packages/lynx-devtool-utils/src/baseDebugger';
 
 class App {
   win: BrowserWindow;
@@ -109,7 +110,7 @@ class App {
     const url = new URL(params.ldtUrl);
     const type = url.searchParams.get('type');
     const pageMode = url.searchParams.get('pageMode');
-    params.viewMode = 'lynx';
+    params.viewMode = ViewMode.LYNX;
 
     if (pageMode) {
       try {
@@ -119,7 +120,7 @@ class App {
       }
     }
     if (!params.viewMode) {
-      params.viewMode = 'lynx';
+      params.viewMode = ViewMode.LYNX;
     }
     console.log('start', type, pageMode, params.viewMode, mode);
 

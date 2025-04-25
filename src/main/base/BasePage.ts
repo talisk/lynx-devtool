@@ -1,13 +1,11 @@
 import { BrowserWindow } from 'electron';
+import { PageMode, ViewMode } from '@lynx-js/lynx-devtool-utils/src/baseDebugger';
 
 export interface IPageParams {
   ldtUrl: string; // lynx-devtool-web address
   schema?: URL; // deep-link
-  // MOBILE = 0,
-  // SIMULATOR = 1,
-  // SIMULATOR_LYNX = 2
-  pageMode?: 0 | 1 | 2; // Real device or simulator
-  viewMode?: 'lynx' | 'web'; // lynx or web
+  pageMode?: PageMode; // Real device or simulator
+  viewMode?: ViewMode; // lynx or web
   forceRefresh?: boolean;
 }
 

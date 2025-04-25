@@ -14,7 +14,9 @@
     "rootDir": "./",
     "baseUrl": "./",
     "paths": {
-      "@/*": ["res/icons/src/*"]
+      "@/*": ["src/*"],
+      "@/renderer/*": ["src/renderer/*"],
+      "@/main/*": ["src/main/*"]
     },
     "forceConsistentCasingInFileNames": true,
     "noImplicitReturns": true,
@@ -28,6 +30,6 @@
     "outDir": "./dist",
     "skipLibCheck": true
   },
-  "include": ["res/icons/src"],
+  "include": ["src", "preload.js"],
   "exclude": ["node_modules", "dist"]
 }

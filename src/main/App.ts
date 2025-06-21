@@ -1,10 +1,9 @@
-// Copyright 2025 The Lynx Authors. All rights reserved.
+// Copyright 2024 The Lynx Authors. All rights reserved.
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
 import { getConfigItem, setConfigItem, LDT_DIR, getCurrentChannel, defaultLogger } from '@lynx-js/lynx-devtool-cli';
 import { kScopeName, kCliPackageName } from '@lynx-js/lynx-devtool-utils';
-import axios from 'axios';
 import { BrowserWindow, Menu, app, dialog, shell } from 'electron';
 import ProgressBar from 'electron-progressbar';
 import BasePage, { IPageParams } from './base/BasePage';

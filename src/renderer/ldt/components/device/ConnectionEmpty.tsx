@@ -1,8 +1,8 @@
-// Copyright 2025 The Lynx Authors. All rights reserved.
+// Copyright 2024 The Lynx Authors. All rights reserved.
 // Licensed under the Apache License Version 2.0 that can be found in the
 // LICENSE file in the root directory of this source tree.
 
-import { Button, Card, Empty, Spin } from 'antd';
+import { Button, Empty, Spin } from 'antd';
 import { ExclamationCircleOutlined, LoadingOutlined, InboxOutlined } from '@ant-design/icons';
 import './ConnectionEmpty.scss';
 import useConnection from '@/renderer/hooks/connection';

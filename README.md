@@ -6,7 +6,11 @@
   </a>
 </p>
 
-[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.txt) [![Build and Release](https://github.com/lynx-family/lynx-devtool/actions/workflows/release.yaml/badge.svg)](https://github.com/lynx-family/lynx-devtool/actions/workflows/release.yaml) [![Build devtools packages](https://github.com/lynx-family/lynx-devtool/actions/workflows/ci.yaml/badge.svg)](https://github.com/lynx-family/lynx-devtool/actions/workflows/ci.yaml)
+![GitHub Release](https://img.shields.io/github/v/release/lynx-family/lynx-devtool)
+![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/lynx-family/lynx-devtool/total)
+[![Build and Release](https://github.com/lynx-family/lynx-devtool/actions/workflows/release.yaml/badge.svg)](https://github.com/lynx-family/lynx-devtool/actions/workflows/release.yaml)
+[![Build devtools packages](https://github.com/lynx-family/lynx-devtool/actions/workflows/ci.yaml/badge.svg)](https://github.com/lynx-family/lynx-devtool/actions/workflows/ci.yaml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://www.apache.org/licenses/LICENSE-2.0.txt)
 
 An Electron-based developer tool for Lynx, providing mobile debugging features.
 

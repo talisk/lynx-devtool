@@ -38,7 +38,7 @@ const ConnectionStatus = () => {
             Local debug service cannot connect, please check if the terminal service is still running!
           </p>
         ),
-                  cancelText: 'Terminal service is running, continue trying to connect',
+        cancelText: 'Terminal service is running, continue trying to connect',
         cancelButtonProps: {
           type: 'default',
         },

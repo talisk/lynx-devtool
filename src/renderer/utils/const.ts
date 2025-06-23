@@ -12,7 +12,6 @@ const EVENT_CUSTOMIZED = 'Customized';
 const EVENT_PING = 'Ping';
 const EVENT_PONG = 'Pong';
 const MEMORY_EVENT_UPLOADIMAGEINFO = 'Memory.uploadImageInfo';
-const ONLINE_URL = 'http://devtool.bytedance.net';
 const SYNC_UNATTACHED = 'sync_unattached';
 const KEY_USE_VPN_IP = 'useVpnIp';
 
@@ -39,7 +38,6 @@ const LDT_CONST = {
   MSG_GetGlobalSwitch,
   MSG_SELECT_SESSION,
   MEMORY_EVENT_UPLOADIMAGEINFO,
-  ONLINE_URL,
   SYNC_UNATTACHED,
   MSG_SET_CARD_FILTER,
   KEY_USE_VPN_IP

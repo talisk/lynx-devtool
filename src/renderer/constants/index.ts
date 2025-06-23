@@ -6,6 +6,5 @@ export const WEBVIEW = 'webview';
 export const WEBVIEW_POPUP = 'webview_popup';
 export const LYNX = 'lynxview';
 export const LYNX_POPUP = 'lynxview_popup';
-export const DEFAULT_PROTOCOL = 'sslocal';
 
 export const KEY_CURRENT_PLUGIN_ID = 'ldt-current-plugin-id';

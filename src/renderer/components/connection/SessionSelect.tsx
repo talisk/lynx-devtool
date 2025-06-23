@@ -3,18 +3,32 @@
 // LICENSE file in the root directory of this source tree.
 
 /* eslint-disable max-lines-per-function */
-import useConnection from '@/renderer/hooks/connection';
-import { viewMode } from '@/renderer/utils';
-import { DownOutlined, CopyOutlined, PictureOutlined, SearchOutlined } from '@ant-design/icons';
-import { Dropdown, Input, Popover, Tag, message } from 'antd';
-import copy from 'copy-text-to-clipboard';
-import { useEffect, useRef } from 'react';
-import './SessionSelect.scss';
-import SessionSelectHeader from './SessionSelectHeader';
+import useConnection from "@/renderer/hooks/connection";
+import { viewMode } from "@/renderer/utils";
+import {
+  DownOutlined,
+  CopyOutlined,
+  PictureOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
+import { Dropdown, Input, Popover, Tag, message, Menu, Button } from "antd";
+import copy from "copy-text-to-clipboard";
+import { useEffect, useRef } from "react";
+import "./SessionSelect.scss";
+import SessionSelectHeader from "./SessionSelectHeader";
 
 const SessionSelect = () => {
-  const { deviceInfoMap, selectedDevice, cardFilter, setCardFilter, setSelectedSession } = useConnection();
-  if (viewMode !== 'mobile' || !selectedDevice.clientId) {
+  const {
+    deviceInfoMap,
+    selectedDevice,
+    cardFilter,
+    setCardFilter,
+    setSelectedSession,
+  } = useConnection();
+  if (
+    (viewMode !== "mobile" && viewMode !== "lynx") ||
+    !selectedDevice.clientId
+  ) {
     return null;
   }
   const deviceInfo = deviceInfoMap[selectedDevice.clientId];
@@ -26,7 +40,7 @@ const SessionSelect = () => {
   const getDeviceText = () => {
     const { sessions, selectedSession } = deviceInfo;
     if (!sessions || sessions.length === 0) {
-      return 'Please open a card';
+      return "Please open a card";
     }
     return selectedSession?.url;
   };
@@ -131,12 +145,17 @@ const SessionSelect = () => {
   };
 
   return (
-    <Dropdown trigger={['hover']} dropdownRender={() => <SessionItem />}>
-      <div className="session-select-button">
+    <Dropdown
+      destroyPopupOnHide={true}
+      trigger={["hover"]}
+      overlayStyle={{ width: 300 }}
+      dropdownRender={() => <Menu><SessionItem /></Menu>}
+    >
+      <Button className="session-select-button">
         <PictureOutlined />
         <div className="session-select-button-text">{getDeviceText()}</div>
         <DownOutlined />
-      </div>
+      </Button>
     </Dropdown>
   );
 };

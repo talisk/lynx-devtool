@@ -68,7 +68,7 @@ jobs:
 
   build-and-upload:
     needs: create-release
-    runs-on: lynx-family-darwin-cert
+    runs-on: lynx-darwin-14-medium
     strategy:
       matrix:
         arch: [arm64, x64]

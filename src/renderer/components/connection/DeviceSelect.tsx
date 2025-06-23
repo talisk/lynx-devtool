@@ -9,10 +9,9 @@ import useConnection from '@/renderer/hooks/connection';
 import { viewMode } from '@/renderer/utils';
 import debugDriver from '@/renderer/utils/debugDriver';
 import { setSimulatorViewMode } from '@/renderer/utils/ldtApi';
-import { sendStatisticsEvent } from '@/renderer/utils/statisticsUtils';
 import { IDevice } from '@lynx-js/devtool-plugin-core/renderer';
-import { DesktopOutlined, MobileOutlined, QrcodeOutlined } from '@ant-design/icons';
-import { Dropdown } from 'antd';
+import { DesktopOutlined, MobileOutlined } from '@ant-design/icons';
+import { Dropdown, Button } from 'antd';
 import { MenuProps } from 'antd';
 import { useEffect, useMemo } from 'react';
 import './DeviceSelect.scss';
@@ -160,7 +159,7 @@ export default function DeviceSelect() {
   }
 
   return (
-    <div className="device-select">
+    <Button className="device-select">
       <Dropdown
         trigger={['click']}
         menu={{
@@ -171,6 +170,6 @@ export default function DeviceSelect() {
       >
         <div className="device-platform">{getDeviceName()}</div>
       </Dropdown>
-    </div>
+    </Button>
   );
 }

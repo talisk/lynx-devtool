@@ -88,7 +88,7 @@ const PageSession = () => {
         </Col>
         <Col span={12}>
           <div className={"device-info-item"}>
-            <span className={"left-panel-title"}>Lepus Breakpoint</span>
+            <span className={"left-panel-title"}>Main Thread Breakpoint</span>
             <Switch
               className={"right-panel-input"}
               size="small"
@@ -129,20 +129,6 @@ const PageSession = () => {
             </Tooltip>
           </div>
         </Col>
-        {/* <Col span={12}>
-          <div className={'device-info-item'}>
-            <span className={'left-panel-title'}>{t('multi_card_mode')}</span>
-            <Switch
-              className={'right-panel-input'}
-              size="small"
-              checked={multiCardMode}
-              onChange={(checked) => {
-                checked && setKeepCardOpen(false);
-                setMultiCardMode(checked);
-              }}
-            />
-          </div>
-        </Col> */}
       </Row>
     </div>
   );

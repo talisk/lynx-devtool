@@ -12,11 +12,10 @@ import {
   IRemoteDebugDriverEvent2Payload
 } from '@lynx-js/remote-debug-driver';
 import { message } from 'antd';
-import xdbDriver from '../ldt/utils/xdbDriver';
 import { viewMode } from '../utils';
 import LDT_CONST from '../utils/const';
 import debugDriver from '../utils/debugDriver';
-import create, { getStore } from '../utils/flooks';
+import create from '../utils/flooks';
 import { queryService } from '../utils/query';
 import { sendStatisticsEvent } from '../utils/statisticsUtils';
 
@@ -88,10 +87,6 @@ const connectionStore = (store: any) => ({
       driver.on(ERemoteDebugDriverExternalEvent.Close, handleClose);
       driver.on(ERemoteDebugDriverExternalEvent.PingPongDelay, reportPingPongDelay);
       driver.on(ERemoteDebugDriverExternalEvent.All, handleMessage);
-
-      // if (!isReconnect) {
-      //   xdbDriver.connect();
-      // }
     }
   },
 

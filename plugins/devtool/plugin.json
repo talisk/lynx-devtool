@@ -1,7 +1,7 @@
 {
   "id": "devtool",
   "name": "Debugger",
-  "description": "Simulator debugging tools, including logs, packet capture, performance monitoring, element inspection, JS debugging and other functions",
+  "description": "Lynx debugging tools, including console, element inspection, JS debugging, etc.",
   "isInternal": true,
   "mode": "radio",
   "icon": "IconElementStroked",

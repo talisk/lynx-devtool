@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 /* eslint-disable max-lines-per-function */
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import globalContext from './utils/globalContext';
 import useLynxRecorder, { LynxRecorderDeviceInfo, LynxRecorderStoreType } from './store/lynxrecorder';
 import { Button, Image, notification, Table, message, Flex } from 'antd';
@@ -22,6 +22,7 @@ const tableHeight = document.body.clientHeight - 250;
 const LynxRecorder: React.FC = () => {
   const { selectedDevice } = globalContext.useConnection();
   const { debugDriver } = globalContext;
+  const prevClientIdRef = useRef<number | undefined>();
   const {
     lynxrecorderList,
     removeLynxRecorder,
@@ -169,6 +170,14 @@ const LynxRecorder: React.FC = () => {
     const appName = selectedDevice?.info?.App;
     const deviceModel = selectedDevice?.info?.deviceModel;
     const osType = selectedDevice?.info?.osType;
+    
+    console.log('[LynxRecorder] Adding data with device info:', {
+      sessionId,
+      appName,
+      deviceModel,
+      osType,
+      clientId: selectedDevice?.clientId
+    });
     const PIC_URL_PREFIX = 'data:image/jpeg;base64,';
     const qr_url = `file://lynxrecorder?url=${fileRes?.url}`;
     const { screenshotMap: m } = getStore(useLynxRecorder);
@@ -262,6 +271,25 @@ const LynxRecorder: React.FC = () => {
     };
   }, []);
 
+  // clean devices when device switched
+  useEffect(() => {
+    const currentClientId = selectedDevice?.clientId;
+    console.log('[LynxRecorder] Device check:', {
+      prevClientId: prevClientIdRef.current,
+      currentClientId
+    });
+    
+    // always clear list when device switched (not initialization)
+    if (prevClientIdRef.current !== undefined && 
+        prevClientIdRef.current !== currentClientId) {
+      console.log('[LynxRecorder] Device switched, clearing list');
+      removeAllLynxRecorder();
+    }
+    
+    // update prevClientId
+    prevClientIdRef.current = currentClientId;
+  }, [selectedDevice?.clientId, removeAllLynxRecorder]);
+
   const renderTopBar = () => {
     const deviceInfo: LynxRecorderDeviceInfo = useMemo(() => {
       return (
@@ -345,7 +373,9 @@ const LynxRecorder: React.FC = () => {
       {
         title: 'App',
         dataIndex: 'appName',
-        key: 'appName'
+        key: 'appName',
+        // show current device App info instead of record info, ensure info is always correct
+        render: () => selectedDevice?.info?.App || 'Unknown'
       },
       {
         title: 'Status',

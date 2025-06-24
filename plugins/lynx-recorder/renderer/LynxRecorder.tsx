@@ -17,8 +17,6 @@ import { checkValid } from './utils/aux';
 import { ERemoteDebugDriverExternalEvent } from '@lynx-js/remote-debug-driver';
 import { getStore } from './utils/flooks';
 
-const tableHeight = document.body.clientHeight - 250;
-
 const LynxRecorder: React.FC = () => {
   const { selectedDevice } = globalContext.useConnection();
   const { debugDriver } = globalContext;
@@ -478,13 +476,12 @@ const LynxRecorder: React.FC = () => {
     ];
     return (
       <Table
-        className="LynxRecorder-content"
+        className="lynxrecorder-content"
         bordered
         dataSource={lynxrecorderList}
         columns={columns}
         scroll={{
-          scrollToFirstRowOnChange: true,
-          y: tableHeight
+          scrollToFirstRowOnChange: true
         }}
       />
     );

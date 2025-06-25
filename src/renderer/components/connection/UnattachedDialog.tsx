@@ -23,9 +23,9 @@ const UnattachedDialog = () => {
   return (
     <Modal
       centered={true}
-      title="You have already opened another Lynx DevTool, do you want to continue using the current Lynx DevTool?"
+      title="You have already opened another Lynx DevTool, do you want to continue using the current Lynx DevTool and disconnect other connections?"
       open={driverUnttached}
-      okText="Continue using and disconnect other Lynx DevTool connections"
+      okText="Sure"
       onOk={handleOk}
       closable={false}
       maskClosable={false}

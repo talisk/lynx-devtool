@@ -1,0 +1,12 @@
+{
+  "id": "lynx-ai-assistant",
+  "name": "AI Assistant",
+  "description": "AI-powered debugging assistant with MCP support for intelligent issue analysis",
+  "isInternal": true,
+  "mode": "radio",
+  "icon": "IconRobotStroked",
+  "target": "all",
+  "priority": 10,
+  "hasView": true,
+  "visible": true
+} 

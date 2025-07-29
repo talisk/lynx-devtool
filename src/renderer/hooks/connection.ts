@@ -391,7 +391,7 @@ const connectionStore = (store: any) => ({
     }
   },
 
-  async setStopAtEntry(value: boolean) {
+  async setStopAtEntryLegacy(value: boolean) {
     const { selectedDevice, deviceInfoMap } = store() as ConnectionStoreType;
     const { clientId } = selectedDevice;
     if (clientId === undefined) {
@@ -414,7 +414,7 @@ const connectionStore = (store: any) => ({
       console.error(error.toString());
     }
   },
-  asysetStopAtEntry(value: boolean) {
+  setStopAtEntry(value: boolean) {
     switchUtils.setStopAtEntry('DEFAULT', value);
     const { setStopAtEntryLegacy } = store();
     setStopAtEntryLegacy(value);

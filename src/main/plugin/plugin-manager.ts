@@ -11,6 +11,7 @@ import {
   PLUGIN_EVENT_CUSTOM_EVENT_RESPONSE,
   PLUGIN_EVENT_ENV_LOG,
   PLUGIN_EVENT_GET_ALL_PLUGINS,
+  PLUGIN_EVENT_GET_PLATFORM_PLUGINS,
   PLUGIN_EVENT_MODAL_SHOW,
   PLUGIN_EVENT_PLUGIN_CHANGED,
   PLUGIN_EVENT_PLUGIN_CREATED,
@@ -27,10 +28,34 @@ import { LDT_DIR } from '../utils/const';
 import { EnvLogManager } from '@lynx-js/lynx-devtool-cli';
 import { EnvLogClient } from '@lynx-js/lynx-devtool-cli/src/types/envLog';
 import fs from 'fs';
+import ldtServer from '../utils/server';
 
 const {meta} = require('virtualModules');
 
 const INTERNAL_MAIN_PLUGINS = meta;
+
+type PlatformPluginMeta = {
+  _id: string;
+  name: string;
+  type: string;
+  location: string;
+  description: string;
+  url: string;
+  path: string;
+  disable: boolean;
+  visible: boolean;
+  isValid: string;
+  /**
+   * Plugin grouping field
+   * Plugins with the same group will be merged into one entry, with name as the navigation bar name
+   * Used to satisfy cases where multiple plugins want to share one entry (such as Lynx's TestBench, Trace, etc.)
+   * groupId must be globally unique
+   * groupName will be used as the main entry name for the plugin group
+   */
+  groupId?: string;
+  groupName?: string;
+};
+
 type PluginMeta = {
   id: string;
   name: string;
@@ -56,6 +81,7 @@ const PLUGIN_MANAGER_GLOBAL_NAME = 'PLUGIN_MANAGER_GLOBAL_NAME';
 
 export default class PluginManager {
   plugins: PluginMeta[];
+  platformPlugins: PluginMeta[];
   installOptions: any;
   private win: BrowserWindow | null = null;
   private context: MainContext & { window: BrowserWindow | null };
@@ -105,7 +131,13 @@ export default class PluginManager {
       this.show({ pluginId });
     });
     ipcMain.handle(PLUGIN_EVENT_GET_ALL_PLUGINS, () => {
+      // console.log('talisk### PLUGIN_EVENT_GET_ALL_PLUGINS', this.context.plugin);
       return this.context.plugin;
+    });
+    ipcMain.handle(PLUGIN_EVENT_GET_PLATFORM_PLUGINS, () => {
+      // console.log('talisk### PLUGIN_EVENT_GET_PLATFORM_PLUGINS', this.context.plugin);
+      console.log('talisk### PLUGIN_EVENT_GET_PLATFORM_PLUGINS', this.platformPlugins);
+      return this.platformPlugins;
     });
     ipcMain.handle(PLUGIN_EVENT_CUSTOM_EVENT_RESPONSE, (_, { id, data }) => {
       const { resolve, timer } = this.customEventResponseMap.get(id) ?? {};
@@ -181,11 +213,50 @@ export default class PluginManager {
         }
       })
       .filter((plugin) => plugin !== null);
-    this.plugins = [...internalPlugins, ...externalPlugins].filter((plugin) => plugin.visible);
+
+      const platformPlugins = externalPluginsMeta
+      .map((plugin) => {
+        try {
+          const pluginPath = plugin.path;
+          const isPlatformPlugin = this.isPlatformPlugin(plugin);
+
+          if (isPlatformPlugin) {
+              const platformPluginPath = path.join(pluginPath, plugin.platformPlugin.entry);
+              return {
+                _id: plugin.name,
+                name: plugin.name,
+                type: 'lynx',
+                location: 'panel',
+                description: plugin.description,
+                url: `http://${ldtServer.getHost()}/plugins/${plugin.platformPlugin.entry}`,
+                path: platformPluginPath,
+                disable: plugin.disable ?? false,
+                visible: plugin.visible ?? true,
+                isValid: 'true',
+                ...plugin.platformPlugin
+              }
+            }
+
+        } catch (e) {
+          console.error('collect plugin error: ', e);
+          return null;
+        }
+      })
+      .filter((plugin) => plugin !== null);
+      console.log('talisk### platformPlugins', platformPlugins);
+
+      this.platformPlugins = platformPlugins;
+
+      console.log('talisk1 internalPlugins', internalPlugins);
+      console.log('talisk2 externalPlugins', externalPlugins);
+      // console.log('talisk3 platformPlugins', platformPlugins);
+
+    this.plugins = [...internalPlugins, ...externalPlugins, ...platformPlugins].filter((plugin) => plugin.visible);
   }
   install(options) {
     this.installOptions = options;
     this.win = options.browserWindow;
+    console.log('talisk### aaa this.plugins', this.plugins);
     this.context = {
       plugin: {
         plugins: this.plugins.map((meta) => {
@@ -320,5 +391,9 @@ export default class PluginManager {
       return false;
     }
     return true;
+  }
+
+  isPlatformPlugin(plugin) {
+    return plugin.platformPlugin !== undefined;
   }
 }

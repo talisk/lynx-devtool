@@ -106,6 +106,7 @@ export const DevTool: React.FC<IDevToolProps> = (props: IDevToolProps) => {
         // Initialize data, dynamic plugin configuration
         case 'iframe_init':
           console.log('iframe init', event);
+          console.log('talisk### inject_data', plugins);
           sendGenericMessageToIframe('inject_data', {
             info: info?.info ?? {},
             plugins: plugins ?? []

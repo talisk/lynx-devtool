@@ -19,7 +19,7 @@ An Electron-based developer tool for Lynx, providing mobile debugging features.
 ## Overview
 
 <div align="center">
-    <img src="https://lf-lynx.tiktok-cdns.com/obj/lynx-artifacts-oss-sg/lynx-website/assets/doc/debugging-panel-console.png" />
+  <img width="1214" height="847" alt="20250819-130340" src="https://github.com/user-attachments/assets/2ffe54a1-9878-48c9-9e78-ddfcc3fb0140" />
 </div>
 
 ## Project Structure

@@ -6,12 +6,16 @@ import AndroidSvg from '@/renderer/assets/icons/android.svg';
 import IosSvg from '@/renderer/assets/icons/ios.svg';
 import MacSvg from '@/renderer/assets/icons/mac.svg';
 import WinSvg from '@/renderer/assets/icons/windows.svg';
+import HarmonySvg from '@/renderer/assets/icons/harmony.svg';
 
 import './IconPlatform.scss';
 
 const IconPlatform = (props: any) => {
   const { osType, className, ...restProps } = props;
   const mergeClassName = `ldt-icon-${osType} ${className}`;
+  if (osType === 'Harmony') {
+    return <HarmonySvg className={mergeClassName} {...restProps} />;
+  }
   if (osType === 'iOS') {
     return <IosSvg className={mergeClassName} {...restProps} />;
   }

@@ -1,6 +1,6 @@
 {
   "id": "devtool",
-  "name": "Debugger",
+  "name": "Pannels",
   "description": "Lynx debugging tools, including console, element inspection, JS debugging, etc.",
   "isInternal": true,
   "mode": "radio",

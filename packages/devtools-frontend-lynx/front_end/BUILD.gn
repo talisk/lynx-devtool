@@ -162,6 +162,7 @@ copy_to_gen("embedder-scripts-gen") {
     "Tests.js",
     "devtools_compatibility.js",
     "single-panel-controller.js",
+    "url-theme-controller.js",
   ]
 }
 

@@ -50,11 +50,8 @@
 
   // If no panel parameter is specified, use default mode
   if (!panelParam) {
-    console.log('[Single Panel Controller] No panel parameter specified, using default full panel mode');
     return;
   }
-
-  console.log(`[Single Panel Controller] Initialize single panel mode: ${panelParam}`);
 
   // Wait for DevTools to initialize
   function waitForDevToolsReady() {
@@ -97,7 +94,6 @@
 
   // Simplified single panel UI configuration
   function hideSinglePanelUI() {
-    console.log(`[Instance ${window.location.href}] Configuring single panel mode: ${panelParam}`);
 
     // 1. Hide the header of the main TabbedPane (top tab bar)
     // If compile-time filtering is used, this step is mainly to hide the remaining UI decorations
@@ -109,7 +105,6 @@
         header.style.height = '0px';
         header.style.overflow = 'hidden';
         header.style.minHeight = '0px';
-        console.log('[Single Panel Controller] Hide main panel tab bar');
       }
     });
 
@@ -119,7 +114,6 @@
     drawerElements.forEach(element => {
       if (element.classList.contains('drawer-tabbed-pane')) {
         element.style.display = 'none';
-        console.log('[Single Panel Controller] Hide drawer panel');
       }
     });
 
@@ -131,7 +125,6 @@
       const drawerPanes = widget.querySelectorAll('.drawer-tabbed-pane');
       drawerPanes.forEach(pane => {
         pane.style.display = 'none';
-        console.log('[Single Panel Controller] Hide drawer in split-widget');
       });
 
       // Adjust the split-widget layout, so that the main panel occupies the entire space
@@ -152,7 +145,6 @@
       const parent = tabHeader.closest('.tabbed-pane');
       if (parent && parent.classList.contains('tabbed-pane-shadow')) {
         tabHeader.style.display = 'none';
-        console.log('[Single Panel Controller] Hide additional tab headers');
       }
     });
 
@@ -175,7 +167,6 @@
         );
 
         if (isTargetPanel) {
-          console.log('isTargetPanel');
           // Make the target panel container occupy the entire space
           container.style.height = '100vh';
           container.style.width = '100vw';
@@ -201,7 +192,6 @@
 
       if (!shouldShow) {
         panel.style.display = 'none';
-        console.log(`[Single Panel Controller] Hide the non-target panel: ${className}`);
       } else {
         panel.style.display = 'flex';
         panel.style.flexDirection = 'column';
@@ -209,7 +199,6 @@
         panel.style.width = '100%';
         panel.style.visibility = 'visible';
         panel.style.opacity = '1';
-        console.log(`[Single Panel Controller] Display the target panel: ${className}, aria-label: ${ariaLabel}`);
       }
     });
 
@@ -219,7 +208,6 @@
       const parent = toolbar.closest('.tabbed-pane-header');
       if (parent) {
         toolbar.style.display = 'none';
-        console.log('[Single Panel Controller] Hide the top toolbar');
       }
     });
 
@@ -229,7 +217,6 @@
       devtoolsMain.style.display = 'block';
       devtoolsMain.style.height = '100vh';
       devtoolsMain.style.width = '100vw';
-      console.log('[Single Panel Controller] Ensure the main DevTools container is visible');
     }
 
     // 9. Handle the parent container that may be hidden
@@ -243,11 +230,9 @@
         container.style.display = 'flex';
         container.style.visibility = 'visible';
         container.style.opacity = '1';
-        console.log('[Single Panel Controller] Ensure the container containing the target panel is visible');
       }
     });
 
-    console.log(`[Single Panel Controller] Single panel mode configuration completed: ${panelParam}`);
   }
 
   // Create a MutationObserver to listen for DOM changes
@@ -315,7 +300,6 @@
 
     // Start observing
     observer.observe(devtoolsContainer, observerConfig);
-    console.log(`[Instance ${window.location.href}] DOM Observer started, listening for DevTools changes`);
 
     return observer;
   }
@@ -346,7 +330,6 @@
       setTimeout(debouncedHideSinglePanelUI, 100);
     };
 
-    console.log(`[Instance ${window.location.href}] Route Observer started, listening for route changes`);
   }
 
   // Listen for focus changes and user interactions
@@ -373,13 +356,10 @@
       }
     });
 
-    console.log(`[Instance ${window.location.href}] Interaction Observer started, listening for user interactions`);
   }
 
   // Initialize the single panel controller
   function initSinglePanelController() {
-    console.log(`[Single Panel Controller] Start initialization, target panel: ${panelParam}`);
-
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', async () => {
         await waitForDevToolsReady();

@@ -133,30 +133,74 @@ export function lstIdentity(req: any, res: any) {
 
 export async function checkAdb(req: any, res: any) {
   try {
-    const { stdout } = await execa('which', ['adb']);
-    const adbPath = stdout?.trim();
+    console.log('[ADB Check] Starting ADB detection...');
+    let adbPath = 'adb';
+
+    // On Windows, try to find ADB in common Android SDK locations
+    if (process.platform === 'win32') {
+      console.log('[ADB Check] Running on Windows, searching for ADB in common locations...');
+      const commonPaths = [
+        path.join(require('os').homedir(), 'AppData', 'Local', 'Android', 'Sdk', 'platform-tools', 'adb.exe'),
+        'C:\\Android\\Sdk\\platform-tools\\adb.exe',
+        'C:\\Users\\' + require('os').userInfo().username + '\\AppData\\Local\\Android\\Sdk\\platform-tools\\adb.exe'
+      ];
+
+      for (const testPath of commonPaths) {
+        console.log(`[ADB Check] Testing path: ${testPath}`);
+        try {
+          await fs.access(testPath);
+          adbPath = testPath;
+          console.log(`[ADB Check] Found ADB at: ${adbPath}`);
+          break;
+        } catch {
+          console.log(`[ADB Check] Path not found: ${testPath}`);
+        }
+      }
+    } else {
+      // On Unix-like systems, try to find ADB using which
+      console.log('[ADB Check] Running on Unix-like system, using which command...');
+      try {
+        const { stdout } = await execa('which', ['adb']);
+        adbPath = stdout?.trim() || 'adb';
+        console.log(`[ADB Check] Found ADB using which: ${adbPath}`);
+      } catch {
+        console.log('[ADB Check] which command failed, using fallback: adb');
+        adbPath = 'adb';
+      }
+    }
+
+    console.log(`[ADB Check] Final ADB path: ${adbPath}`);
+    console.log('[ADB Check] Executing adb devices command...');
+
     const adbDevicePromise = execa(adbPath, ['devices']);
     const timeOutPromise = new Promise((resolve: any) => {
       setTimeout(() => {
+        console.log('[ADB Check] Command timed out after 2 seconds');
         resolve('failed');
       }, 2000);
     });
+
     const result = await Promise.race([adbDevicePromise, timeOutPromise]);
+
     if (result === 'failed') {
+      console.log('[ADB Check] Failed - timeout');
       res?.send({
         code: -1,
         message: 'failed'
       });
     } else {
+      console.log('[ADB Check] Success, devices output:', (result as any).stdout);
       res?.send({
         code: 0,
-        message: 'success'
+        message: 'success',
+        devices: (result as any).stdout
       });
     }
   } catch (error: any) {
+    console.error('[ADB Check] Error:', error);
     res?.send({
       code: -1,
-      message: error
+      message: error.toString()
     });
   }
 }

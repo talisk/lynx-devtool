@@ -32,14 +32,18 @@ const generateImports = (plugins, type) => {
     .map((p, i) => {
       const lines = [];
       if (p.path) {
-        lines.push(`import P${i} from '${p.path}';`);
+        // Convert Windows backslashes to forward slashes for module imports
+        const normalizedPath = p.path.replace(/\\/g, '/');
+        lines.push(`import P${i} from '${normalizedPath}';`);
       }
       if (type === 'renderer') {
         if (p.entryPath) {
-          lines.push(`import E${i} from '${p.entryPath}';`);
+          const normalizedEntryPath = p.entryPath.replace(/\\/g, '/');
+          lines.push(`import E${i} from '${normalizedEntryPath}';`);
         }
         if (p.iconPath) {
-          lines.push(`\nimport I${i} from '${p.iconPath}';`);
+          const normalizedIconPath = p.iconPath.replace(/\\/g, '/');
+          lines.push(`\nimport I${i} from '${normalizedIconPath}';`);
         }
       }
       return lines.join('\n');

@@ -5,20 +5,21 @@
   "description": "Lynx DevTool",
   "main": "dist/index.js",
   "scripts": {
-    "build": "rsbuild build --config rsbuild.main.config.ts && cp preload.js dist/",
+    "build": "rsbuild build --config rsbuild.main.config.ts && node -e \"const fs=require('fs'); const path=require('path'); fs.copyFileSync('preload.js', path.join('dist', 'preload.js'))\"",
     "dev": "pnpm run build:all && concurrently \"wait-on dist/index.js && electron .\"",
-    "modern:renderer": "BUILD_ELECTRON_RENDERER=true LDT_BUILD_TYPE=offline MODERN_ENV=offline modern build --config modern.renderer.config.ts",
+    "modern:renderer": "cross-env BUILD_ELECTRON_RENDERER=true LDT_BUILD_TYPE=offline MODERN_ENV=offline modern build --config modern.renderer.config.ts",
     "rsbuild:main": "rsbuild build --config rsbuild.config.ts",
     "build:all": "pnpm --filter @lynx-js/* run build && pnpm run build && pnpm run modern:renderer",
-    "clean": "rm -rf dist && pnpm -r exec rm -rf dist && rm -rf packages/devtools-frontend-lynx/out packages/devtools-frontend-lynx/output",
+    "clean": "node -e \"const fs=require('fs'); ['dist', 'packages/devtools-frontend-lynx/out', 'packages/devtools-frontend-lynx/output'].forEach(p => fs.existsSync(p) && fs.rmSync(p, {recursive: true, force: true}))\" && pnpm -r exec node -e \"const fs=require('fs'); fs.existsSync('dist') && fs.rmSync('dist', {recursive: true, force: true})\"",
     "build:devtools-frontend-lynx": "pnpm run fetch:depot_tools && export PATH=$(pwd)/packages/devtools-frontend-lynx/buildtools/depot_tools:$PATH && pnpm run sync:devtools-gn && pnpm run build:devtools && pnpm run sync:devtools-dist",
-    "fetch:depot_tools": "cd packages/devtools-frontend-lynx && scripts/fetch-depot-tools.sh",
+    "fetch:depot_tools": "node scripts/fetch-depot-tools.js",
     "sync:devtools-gn": "gclient sync --gclientfile=.gclient --deps=all",
-    "build:devtools": "cd packages/devtools-frontend-lynx && scripts/build-lynx-devtools.sh",
-    "build:lynx-trace": "bash scripts/build-lynx-trace-output.sh",
-    "sync:devtools-dist": "scripts/sync-devtools-output.sh",
+    "build:devtools": "node scripts/build-lynx-devtools.js",
+    "build:lynx-trace": "node scripts/build-lynx-trace-check-platform.js",
+    "sync:devtools-dist": "node scripts/sync-devtools-output.js",
     "production:mac-arm64": "pnpm run clean && pnpm run build:all && cross-env NODE_ENV=production electron-builder --arm64",
-    "production:mac-x64": "pnpm run clean && pnpm run build:all && cross-env NODE_ENV=production electron-builder --x64"
+    "production:mac-x64": "pnpm run clean && pnpm run build:all && cross-env NODE_ENV=production electron-builder --x64",
+    "production:win": "pnpm run clean && pnpm run build:all && powershell -ExecutionPolicy Bypass -File scripts\\build-win.ps1"
   },
   "author": "lynx",
   "license": "Apache-2.0",
@@ -110,12 +111,15 @@
     ],
     "extraResources": [
       {
-        "from": "src/res/icons",
+        "from": "res/icons",
         "to": "icons",
         "filter": [
           "**/*"
         ]
       }
+    ],
+    "asarUnpack": [
+      "node_modules/sharp/**/*"
     ],
     "appId": "com.lynx.devtool",
     "productName": "LynxDevTool",
@@ -131,7 +135,16 @@
       "icon": "res/icons/lynx-devtool.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Lynx-DevTool-${version}-${arch}.${ext}",
+      "icon": "res/icons/lynx-devtool_256x256.png"
     },
     "linux": {
       "target": "AppImage"

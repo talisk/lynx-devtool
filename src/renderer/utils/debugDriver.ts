@@ -277,50 +277,99 @@ class DebugDriver implements IDebugDriver {
   };
 
   private _bootstrapRemoteDriver(url?: string, room?: string): Promise<IRemoteDebugServer4Driver> {
+    console.log(`[Debug Driver] Starting bootstrap with URL: ${url}, room: ${room}`);
+
     if (this.debugDriverInstance) {
+      console.log('[Debug Driver] Stopping existing driver instance');
       this.debugDriverInstance.stop();
       this.debugDriverInstance = null;
     }
 
     this.cancelId++;
     const id = this.cancelId;
+    console.log(`[Debug Driver] Assigned connection ID: ${id}`);
+
     // try to create a debug server connection Promise
     let wsUrl = url;
 
     let timer: any = null;
     const createDriver = new Promise<IRemoteDebugServer4Driver>(async (resolve, reject) => {
-      const ip = await getCurrentIntranetIp();
-      if (wsUrl?.includes(ip)) {
-        const arr = wsUrl.substring(5, wsUrl.indexOf('/mdevices/page/android')).split(':');
-        if (arr.length === 2) {
-          wsUrl = `ws://127.0.0.1:${arr[1]}/mdevices/page/android`;
+      try {
+        console.log('[Debug Driver] Getting current intranet IP...');
+        const ip = await getCurrentIntranetIp();
+        console.log(`[Debug Driver] Current intranet IP: ${ip}`);
+
+        // Check if we should convert URL to localhost
+        let shouldConvertToLocalhost = false;
+
+        if (ip && wsUrl?.includes(ip)) {
+          console.log(`[Debug Driver] URL contains detected intranet IP (${ip}), converting to localhost...`);
+          shouldConvertToLocalhost = true;
+        } else if (!ip && wsUrl?.match(/ws:\/\/10\.\d+\.\d+\.\d+:/)) {
+          console.log('[Debug Driver] IP detection failed but URL looks like local network, converting to localhost...');
+          shouldConvertToLocalhost = true;
+        } else if (!ip && wsUrl?.match(/ws:\/\/192\.168\.\d+\.\d+:/)) {
+          console.log('[Debug Driver] IP detection failed but URL looks like local network, converting to localhost...');
+          shouldConvertToLocalhost = true;
         }
-      }
-      if (!wsUrl) {
-        throw new Error('Cannot create remote debug driver without wsUrl');
-      }
-      createRemoteDebugDriver(wsUrl, room).then((debugDriver) => {
-        if (timer) {
-          clearTimeout(timer);
-        }
-        if (id === this.cancelId) {
-          this.debugDriverInstance = debugDriver;
-          resolve(debugDriver);
+
+        if (shouldConvertToLocalhost && wsUrl) {
+          const arr = wsUrl.substring(5, wsUrl.indexOf('/mdevices/page/android')).split(':');
+          if (arr.length === 2) {
+            const newUrl = `ws://127.0.0.1:${arr[1]}/mdevices/page/android`;
+            console.log(`[Debug Driver] Converted URL: ${wsUrl} -> ${newUrl}`);
+            wsUrl = newUrl;
+          }
         } else {
-          debugDriver.stop();
-          reject(new Error('connection closed because a new connection is initialized.'));
+          console.log('[Debug Driver] No URL conversion needed, using original URL');
         }
-      });
+
+        if (!wsUrl) {
+          console.error('[Debug Driver] No WebSocket URL provided');
+          throw new Error('Cannot create remote debug driver without wsUrl');
+        }
+
+        console.log(`[Debug Driver] Creating remote debug driver with URL: ${wsUrl}, room: ${room}`);
+
+        createRemoteDebugDriver(wsUrl, room).then((debugDriver) => {
+          console.log('[Debug Driver] Remote debug driver created successfully');
+          if (timer) {
+            console.log('[Debug Driver] Clearing connection timeout');
+            clearTimeout(timer);
+          }
+          if (id === this.cancelId) {
+            console.log(`[Debug Driver] Connection ID ${id} matches current ID, resolving`);
+            this.debugDriverInstance = debugDriver;
+            resolve(debugDriver);
+          } else {
+            console.log(`[Debug Driver] Connection ID ${id} doesn't match current ID ${this.cancelId}, stopping driver`);
+            debugDriver.stop();
+            reject(new Error('connection closed because a new connection is initialized.'));
+          }
+        }).catch((error) => {
+          console.error('[Debug Driver] Failed to create remote debug driver:', error);
+          reject(error);
+        });
+      } catch (error) {
+        console.error('[Debug Driver] Error in createDriver Promise:', error);
+        reject(error);
+      }
     });
+
     // timeout Promise
     const timeout = new Promise<IRemoteDebugServer4Driver>((_, reject) => {
       timer = setTimeout(() => {
-        console.error(`Failed to create connection with ${wsUrl}${room ? `&room=${room}` : ''}`);
+        console.error(`[Debug Driver] Connection timeout after 10 seconds. URL: ${wsUrl}${room ? `&room=${room}` : ''}`);
+        console.error('[Debug Driver] Please check:');
+        console.error('  1. Is the debug router service running?');
+        console.error('  2. Is the WebSocket URL accessible?');
+        console.error('  3. Are there any firewall issues?');
         reject(new Error('connection timeout (10 seconds).'));
       }, 10000);
     });
 
     // create successfully or timeout will end async call
+    console.log('[Debug Driver] Starting connection race between create and timeout');
     this.debugDriverInitPromise = Promise.race([createDriver, timeout]);
     return this.debugDriverInitPromise;
   }

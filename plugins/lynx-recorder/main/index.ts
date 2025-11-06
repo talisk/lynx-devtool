@@ -35,7 +35,13 @@ const bridge = (context: MainContext) => ({
   },
   uploadFileToLocal: (fileBuffer: Array<Buffer>, fileName: string) => {
     try {
-      const filePath = path.resolve(context.constants.LDT_DIR, 'files/lynxrecorder', fileName);
+      const uploadDir = path.resolve(context.constants.LDT_DIR, 'files/lynxrecorder');
+      // Ensure directory exists before writing file
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      const filePath = path.join(uploadDir, fileName);
       fs.createFileSync(filePath);
       fs.writeFileSync(filePath, Buffer.concat(fileBuffer));
       return Promise.resolve({
@@ -45,6 +51,7 @@ const bridge = (context: MainContext) => ({
         message: 'download success!'
       });
     } catch (error) {
+      console.error('[LynxRecorder] upload file to local failed:', error);
       return Promise.reject(error.message);
     }
   },

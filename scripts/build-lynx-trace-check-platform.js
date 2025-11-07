@@ -10,13 +10,13 @@ if (process.platform === 'win32') {
   process.exit(0);
 }
 
-// On non-Windows platforms, run the actual build script
+// On non-Windows platforms, run the bash build script
 const { execSync } = require('child_process');
 const path = require('path');
 
 try {
-  const buildScript = path.join(__dirname, 'build-lynx-trace-output.js');
-  execSync(`node "${buildScript}"`, { stdio: 'inherit' });
+  const buildScript = path.join(__dirname, 'build-lynx-trace-output.sh');
+  execSync(`bash "${buildScript}"`, { stdio: 'inherit' });
 } catch (error) {
   process.exit(error.status || 1);
 }

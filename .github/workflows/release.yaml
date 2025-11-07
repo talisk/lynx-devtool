@@ -76,6 +76,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: ln Python
+        run: ln -s `which python3` /usr/local/bin/python
 
       # Node and pnpm setup steps
       - name: Setup Node.js
@@ -106,9 +111,6 @@ jobs:
 
       - name: Fetch depot_tools
         run: pnpm run fetch:depot_tools
-
-      - name: ln Python
-        run: ln -s `which python3` /usr/local/bin/python
 
       - name: Sync devtools-gn
         run: |
@@ -204,6 +206,8 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
 
       # Node and pnpm setup steps
       - name: Setup Node.js

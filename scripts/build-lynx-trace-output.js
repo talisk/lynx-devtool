@@ -320,9 +320,19 @@ function main() {
         console.log('Creating tar.gz archive...');
 
         try {
-            // Run tar from parent directory to avoid "file changed as we read it" error
-            runCommand(`tar -czf ${outputDir}/lynx-trace.tar.gz -C ${outputDir} .`);
-            console.log('Created lynx-trace.tar.gz successfully');
+            // Create tar.gz in parent directory (lynx-trace root) to avoid "file changed as we read it" error
+            // This happens when tar tries to archive the directory while writing the .tar.gz file into it
+            const tarPath = path.join('lynx-trace.tar.gz');
+            runCommand(`tar -czf ${tarPath} -C ${outputDir} .`);
+            
+            // Move the tar.gz into output directory
+            const finalTarPath = path.join(outputDir, 'lynx-trace.tar.gz');
+            if (fs.existsSync(tarPath)) {
+                fs.renameSync(tarPath, finalTarPath);
+                console.log('Created lynx-trace.tar.gz successfully');
+            } else {
+                throw new Error('tar.gz file was not created');
+            }
         } catch (error) {
             console.warn('tar command failed, trying alternative archive method...');
             // Could implement alternative archiving method here if needed

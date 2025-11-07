@@ -213,7 +213,9 @@ function main() {
                 }
 
                 console.log('Running install-build-deps...');
-                runCommand(`"${installBuildDepsPath}" --no-dev-tools --ui`, {
+                // Use --no-ui to skip UI node_modules installation
+                // We'll install UI dependencies separately with npm install --force
+                runCommand(`"${installBuildDepsPath}" --no-dev-tools --no-ui`, {
                     stdio: ['inherit', 'inherit', 'pipe'] // Redirect stderr to pipe to suppress some warnings
                 });
                 console.log('install-build-deps completed');

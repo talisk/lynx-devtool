@@ -213,10 +213,8 @@ function main() {
                 }
 
                 console.log('Running install-build-deps...');
-                // Use --no-ui to skip UI node_modules installation
-                // We'll install UI dependencies separately with npm install --force
-                runCommand(`"${installBuildDepsPath}" --no-dev-tools --no-ui`, {
-                    stdio: ['inherit', 'inherit', 'pipe'] // Redirect stderr to pipe to suppress some warnings
+                runCommand(`"${installBuildDepsPath}" --no-dev-tools --ui`, {
+                    stdio: 'inherit' // Show all output for debugging
                 });
                 console.log('install-build-deps completed');
             } catch (error) {
@@ -320,22 +318,23 @@ function main() {
         console.log('Creating tar.gz archive...');
 
         try {
-            // Create tar.gz in parent directory (lynx-trace root) to avoid "file changed as we read it" error
-            // This happens when tar tries to archive the directory while writing the .tar.gz file into it
-            const tarPath = path.join('lynx-trace.tar.gz');
-            runCommand(`tar -czf ${tarPath} -C ${outputDir} .`);
-            
-            // Move the tar.gz into output directory
+            // Create tar.gz in a temp location outside output directory
+            // to avoid "file changed as we read it" error
+            const tempTarPath = path.join('..', 'lynx-trace-temp.tar.gz');
             const finalTarPath = path.join(outputDir, 'lynx-trace.tar.gz');
-            if (fs.existsSync(tarPath)) {
-                fs.renameSync(tarPath, finalTarPath);
+            
+            // Create archive from output directory contents
+            runCommand(`tar -czf ${tempTarPath} -C ${outputDir} .`);
+            
+            // Move to final location
+            if (fs.existsSync(tempTarPath)) {
+                fs.renameSync(tempTarPath, finalTarPath);
                 console.log('Created lynx-trace.tar.gz successfully');
             } else {
                 throw new Error('tar.gz file was not created');
             }
         } catch (error) {
-            console.warn('tar command failed, trying alternative archive method...');
-            // Could implement alternative archiving method here if needed
+            console.warn('tar command failed:', error.message);
             throw error;
         }
 

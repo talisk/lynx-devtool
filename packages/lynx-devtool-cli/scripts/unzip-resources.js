@@ -126,6 +126,9 @@ function main() {
         const lynxTraceTar = path.join(resourcesDir, 'lynx-trace.tar.gz');
         if (fs.existsSync(lynxTraceTar)) {
             extractTarGz(lynxTraceTar, 'dist/static/trace');
+            if (process.platform === 'win32') {
+                console.log('✓ Using prebuilt lynx-trace artifact on Windows');
+            }
         } else {
             console.warn('lynx-trace.tar.gz not found, skipping trace setup');
         }

@@ -2,8 +2,9 @@ name: Build and Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
       
 permissions:
   contents: write
@@ -248,6 +249,30 @@ jobs:
 
       - name: Skip lynx-trace build on Windows
         run: pnpm run build:lynx-trace
+
+      - name: Download lynx-trace prebuilt artifact
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: KananSu/lynx-trace
+          latest: true
+          fileName: "perfetto-ui-release-*.tar.gz"
+          out-file-path: temp-lynx-trace
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy lynx-trace to resources
+        shell: pwsh
+        run: |
+          Write-Host "Copying prebuilt lynx-trace artifact..." -ForegroundColor Cyan
+          $sourceFile = Get-ChildItem -Path "temp-lynx-trace" -Filter "perfetto-ui-release-*.tar.gz" | Select-Object -First 1
+          $destPath = "packages\lynx-devtool-cli\resources\lynx-trace.tar.gz"
+          
+          if ($sourceFile) {
+            Copy-Item $sourceFile.FullName $destPath -Force
+            Write-Host "✓ lynx-trace artifact copied: $($sourceFile.Name) -> lynx-trace.tar.gz" -ForegroundColor Green
+          } else {
+            Write-Warning "lynx-trace artifact not found, trace feature will be unavailable"
+            Get-ChildItem -Path "temp-lynx-trace" -ErrorAction SilentlyContinue
+          }
 
       - name: Build all packages
         run: pnpm run build:all

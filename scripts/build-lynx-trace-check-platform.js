@@ -3,7 +3,7 @@
 // Check if running on Windows
 if (process.platform === 'win32') {
   console.log('');
-  console.log('⚠️  lynx-trace build is not supported on Windows platform.');
+  console.log('lynx-trace build is not supported on Windows platform.');
   console.log('   Please use macOS or Linux to build lynx-trace.');
   console.log('   Skipping lynx-trace build...');
   console.log('');

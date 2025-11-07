@@ -315,20 +315,17 @@ function main() {
         }
 
         // Create tar.gz archive
-        process.chdir(outputDir);
         console.log('Creating tar.gz archive...');
 
         try {
-            runCommand('tar -czf lynx-trace.tar.gz --exclude=lynx-trace.tar.gz .');
+            // Run tar from parent directory to avoid "file changed as we read it" error
+            runCommand(`tar -czf ${outputDir}/lynx-trace.tar.gz -C ${outputDir} .`);
             console.log('Created lynx-trace.tar.gz successfully');
         } catch (error) {
             console.warn('tar command failed, trying alternative archive method...');
             // Could implement alternative archiving method here if needed
             throw error;
         }
-
-        // Go back to project root
-        process.chdir(projectRoot);
 
         // Sync the built file to resources
         const aPath = 'packages/lynx-trace/output';

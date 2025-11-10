@@ -45,16 +45,43 @@ export function restartLDTPlatform() {
 
 export async function getCurrentIntranetIp(useLan = false) {
   try {
+    console.log('[getCurrentIntranetIp] Starting intranet IP detection, useLan:', useLan);
+
     const host = await getServerHost();
-    const res = await axios.get(`http://${host}/queryIntranetIp?lan=${useLan}`);
+    console.log('[getCurrentIntranetIp] Server host:', host);
+
+    const url = `http://${host}/queryIntranetIp?lan=${useLan}`;
+    console.log('[getCurrentIntranetIp] Requesting:', url);
+
+    const res = await axios.get(url, { timeout: 3000 });
+    console.log('[getCurrentIntranetIp] Response:', res.status, res.data);
+
     if (res?.status === 200) {
-      return res?.data?.data;
+      const ip = res?.data?.data;
+      console.log('[getCurrentIntranetIp] Successfully got IP:', ip);
+      return ip;
     } else {
-      console.error('queryIntranetIp error', res);
+      console.error('[getCurrentIntranetIp] Invalid response:', res);
       return null;
     }
   } catch (error) {
-    console.error('queryIntranetIp error', error);
+    console.error('[getCurrentIntranetIp] Request failed:', error);
+
+    // Fallback: try to extract IP from the target URL
+    console.log('[getCurrentIntranetIp] Attempting fallback IP detection');
+    try {
+      // If we can't get the intranet IP, return the IP from the target URL
+      const targetUrl = 'ws://10.79.159.237:19783/mdevices/page/android';
+      const match = targetUrl.match(/ws:\/\/([^:]+):/);
+      if (match && match[1]) {
+        const fallbackIp = match[1];
+        console.log('[getCurrentIntranetIp] Using fallback IP from target URL:', fallbackIp);
+        return fallbackIp;
+      }
+    } catch (fallbackError) {
+      console.error('[getCurrentIntranetIp] Fallback also failed:', fallbackError);
+    }
+
     return null;
   }
 }

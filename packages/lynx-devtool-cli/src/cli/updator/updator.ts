@@ -181,9 +181,11 @@ export async function setupResource(
       const resourcesPath = (process as any).resourcesPath;
       const asarPath = path.resolve(resourcesPath, "app.asar");
 
+      // Use path.join to ensure correct path separators on Windows
+      const packageJsonPathInAsar = path.join("node_modules", "@lynx-js", "lynx-devtool-cli", "package.json");
       const innerPackageJson = asar.extractFile(
         asarPath,
-        "node_modules/@lynx-js/lynx-devtool-cli/package.json"
+        packageJsonPathInAsar
       );
       const innerPackageJsonObj = JSON.parse(innerPackageJson.toString());
       const innerVersion = innerPackageJsonObj.version;

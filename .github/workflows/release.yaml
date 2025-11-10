@@ -7,6 +7,7 @@ on:
       
 permissions:
   contents: write
+  pull_requests: write
   
 jobs:
   create-release:
@@ -66,7 +67,7 @@ jobs:
             - Only used for DevTool developers to verify branch code
             - May contain unstable or incomplete features' || github.ref }}
 
-  build-and-upload:
+  build-and-upload-macos:
     needs: create-release
     runs-on: lynx-darwin-14-medium
     strategy:
@@ -75,6 +76,11 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: ln Python
+        run: ln -s `which python3` /usr/local/bin/python
 
       # Node and pnpm setup steps
       - name: Setup Node.js
@@ -105,9 +111,6 @@ jobs:
 
       - name: Fetch depot_tools
         run: pnpm run fetch:depot_tools
-
-      - name: ln Python
-        run: ln -s `which python3` /usr/local/bin/python
 
       - name: Sync devtools-gn
         run: |
@@ -196,3 +199,138 @@ jobs:
           asset_path: ${{ steps.find_dmg.outputs.dmg_path }}
           asset_name: ${{ steps.find_dmg.outputs.dmg_filename }}
           asset_content_type: application/x-apple-diskimage
+
+  build-and-upload-windows:
+    needs: create-release
+    runs-on: lynx-windows-2022-large
+    
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      # Node and pnpm setup steps
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.20.2
+          
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.33.6
+          
+      - name: Get pnpm store directory
+        shell: pwsh
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $env:GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+            
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Fetch depot_tools
+        run: pnpm run fetch:depot_tools
+
+      - name: Sync devtools-gn
+        shell: pwsh
+        run: |
+          $env:PATH = "$(Get-Location)\packages\devtools-frontend-lynx\buildtools\depot_tools;$env:PATH"
+          pnpm run sync:devtools-gn
+
+      - name: Build devtools-gn
+        run: pnpm run build:devtools
+
+      - name: Sync devtools-dist
+        run: pnpm run sync:devtools-dist
+
+      - name: Skip lynx-trace build on Windows
+        run: pnpm run build:lynx-trace
+
+      - name: Download lynx-trace prebuilt artifact
+        uses: robinraju/release-downloader@v1
+        with:
+          repository: KananSu/lynx-trace
+          latest: true
+          fileName: "perfetto-ui-release-*.tar.gz"
+          out-file-path: temp-lynx-trace
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Copy lynx-trace to resources
+        shell: pwsh
+        run: |
+          Write-Host "Copying prebuilt lynx-trace artifact..." -ForegroundColor Cyan
+          $sourceFile = Get-ChildItem -Path "temp-lynx-trace" -Filter "perfetto-ui-release-*.tar.gz" | Select-Object -First 1
+          $destPath = "packages\lynx-devtool-cli\resources\lynx-trace.tar.gz"
+          
+          if ($sourceFile) {
+            Copy-Item $sourceFile.FullName $destPath -Force
+            Write-Host "✓ lynx-trace artifact copied: $($sourceFile.Name) -> lynx-trace.tar.gz" -ForegroundColor Green
+          } else {
+            Write-Warning "lynx-trace artifact not found, trace feature will be unavailable"
+            Get-ChildItem -Path "temp-lynx-trace" -ErrorAction SilentlyContinue
+          }
+
+      - name: Build all packages
+        run: pnpm run build:all
+
+      # Upload frontend (only once)
+      - name: Find and Upload Frontend
+        shell: pwsh
+        run: |
+          $archivePath = Get-ChildItem -Path ".\packages\devtools-frontend-lynx\output" -Filter "devtool.frontend.lynx_1.0.*.tar.gz" | Select-Object -First 1 -ExpandProperty FullName
+          if (-not $archivePath) {
+            Write-Error "Error: Frontend archive not found"
+            exit 1
+          }
+          Write-Host "Found archive at: $archivePath"
+          
+          curl.exe `
+            -X POST `
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
+            -H "Content-Type: application/gzip" `
+            --data-binary "@$archivePath" `
+            "${{ needs.create-release.outputs.upload_url }}?name=devtool.frontend.lynx-${{ needs.create-release.outputs.asset_suffix }}.tar.gz"
+
+      # Build Windows green package (ZIP - no installer)
+      - name: Build Windows version
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          Write-Host "Starting Windows build..." -ForegroundColor Cyan
+          powershell -ExecutionPolicy Bypass -File scripts\build-win.ps1
+          
+      - name: Find Windows ZIP file
+        id: find_zip
+        shell: pwsh
+        run: |
+          $zip = Get-ChildItem -Path ".\dist" -Filter "Lynx-DevTool-*-x64.zip" | Select-Object -First 1
+          
+          if ($zip) {
+            Write-Host "Found ZIP package: $($zip.Name)" -ForegroundColor Green
+            Write-Host "Size: $([math]::Round($zip.Length/1MB, 2)) MB" -ForegroundColor Green
+            echo "zip_path=$($zip.FullName)" >> $env:GITHUB_OUTPUT
+            echo "zip_filename=$($zip.Name)" >> $env:GITHUB_OUTPUT
+          } else {
+            Write-Error "No ZIP file found in dist directory"
+            Get-ChildItem -Path ".\dist" | Format-Table Name
+            exit 1
+          }
+
+      - name: Upload Windows ZIP Package  
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ${{ steps.find_zip.outputs.zip_path }}
+          asset_name: ${{ steps.find_zip.outputs.zip_filename }}
+          asset_content_type: application/zip

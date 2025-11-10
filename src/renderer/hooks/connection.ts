@@ -47,10 +47,15 @@ const connectionStore = (store: any) => ({
 
   // connect to DebugRouter
   async openConnection(wsPath = lastWsPath, roomId = lastRoomId, isReconnect = false) {
+    console.log(`[Connection] openConnection called with wsPath: ${wsPath}, roomId: ${roomId}, isReconnect: ${isReconnect}`);
+
     const { connectionState, updateDevices, updateSessions, reconnect, reportPingPongDelay, handleMessage } =
       store() as ConnectionStoreType;
 
+    console.log(`[Connection] Current connection state: ${connectionState}`);
+
     if (connectionState === EConnectionState.Connected && lastRoomId === roomId && lastWsPath === wsPath) {
+      console.log('[Connection] Already connected to the same endpoint, skipping');
       return;
     }
 
@@ -59,21 +64,24 @@ const connectionStore = (store: any) => ({
     lastRoomId = roomId;
 
     // clear reconnect timer
-    reconnectTimer && clearTimeout(reconnectTimer);
-    reconnectTimer = null;
+    if (reconnectTimer) {
+      console.log('[Connection] Clearing existing reconnect timer');
+      clearTimeout(reconnectTimer);
+      reconnectTimer = null;
+    }
 
-    console.log(`start connect ${wsPath}`);
+    console.log(`[Connection] Starting connection to ${wsPath}`);
     const start = Date.now();
 
     store({ connectionState: EConnectionState.Connecting });
-    const driver = await debugDriver.connect(wsPath, roomId).catch((e) => {
-      console.log(`debugrouter connect error ${wsPath}`, e);
-      reconnect(wsPath, roomId);
-    });
-    if (driver) {
-      console.log(`finish connect ${wsPath}, cost: ${Date.now() - start}ms`);
+
+    try {
+      const driver = await debugDriver.connect(wsPath, roomId);
+      console.log(`[Connection] Successfully connected to ${wsPath}, cost: ${Date.now() - start}ms`);
       store({ connectionState: EConnectionState.Connected });
+
       const handleClose = () => {
+        console.log(`[Connection] Connection closed for ${driver.getSocketServer()}`);
         driver?.off(ERemoteDebugDriverExternalEvent.ClientList, updateDevices);
         driver?.off(ERemoteDebugDriverExternalEvent.SessionList, updateSessions);
         driver?.off(ERemoteDebugDriverExternalEvent.Close, handleClose);
@@ -81,13 +89,18 @@ const connectionStore = (store: any) => ({
         driver?.off(ERemoteDebugDriverExternalEvent.All, handleMessage);
         updateDevices([]);
         reconnect(wsPath, roomId);
-        console.log(`debugrouter disconnect ${driver.getSocketServer()}`);
       };
+
+      console.log('[Connection] Registering event handlers');
       driver.on(ERemoteDebugDriverExternalEvent.ClientList, updateDevices);
       driver.on(ERemoteDebugDriverExternalEvent.SessionList, updateSessions);
       driver.on(ERemoteDebugDriverExternalEvent.Close, handleClose);
       driver.on(ERemoteDebugDriverExternalEvent.PingPongDelay, reportPingPongDelay);
       driver.on(ERemoteDebugDriverExternalEvent.All, handleMessage);
+
+    } catch (e) {
+      console.error(`[Connection] Failed to connect to ${wsPath}:`, e);
+      reconnect(wsPath, roomId);
     }
   },
 

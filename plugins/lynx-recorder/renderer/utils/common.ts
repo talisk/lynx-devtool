@@ -5,9 +5,17 @@
 import { IDevice } from '@lynx-js/devtool-plugin-core/renderer';
 
 export function getFileName(selectedDevice: IDevice) {
-  let fileName = `${selectedDevice?.info?.App}(${selectedDevice?.info?.deviceModel})___${new Date().toISOString()}`;
-  // trim
-  fileName = `${fileName.replace(/\s*/g, '')}`;
+  // Use sanitized filename that works on all platforms (Windows, macOS, Linux)
+  // Replace Windows forbidden characters: < > : " / \ | ? *
+  // Also replace parentheses with underscores for better compatibility
+  const appName = (selectedDevice?.info?.App || 'Unknown').replace(/[<>:"/\\|?*()]/g, '_');
+  const deviceModel = (selectedDevice?.info?.deviceModel || 'Unknown').replace(/[<>:"/\\|?*()]/g, '_');
+  // Replace colons and dots in ISO timestamp to make it Windows-compatible
+  const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\./g, '_');
+  
+  let fileName = `${appName}_${deviceModel}___${timestamp}`;
+  // trim whitespace
+  fileName = fileName.replace(/\s+/g, '_');
   return fileName;
 }
 

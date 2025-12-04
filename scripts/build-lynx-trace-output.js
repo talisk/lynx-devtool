@@ -107,9 +107,6 @@ function findFiles(dir, pattern) {
 
 // Main function
 function main() {
-    // Variable to track Windows Store python backup
-    let windowsStorePythonBackup = null;
-
     try {
         console.log('Building lynx-trace output...');
 
@@ -139,39 +136,6 @@ function main() {
 
         // Set environment variable
         process.env.PUPPETEER_SKIP_DOWNLOAD = '1';
-
-        // On Windows, ensure the correct Python is in PATH (before Windows Store Python)
-        if (process.platform === 'win32') {
-            const pyenvPythonDir = 'C:\\Users\\talis\\.pyenv\\pyenv-win\\versions\\3.9.13';
-            process.env.PATH = `${pyenvPythonDir};${process.env.PATH}`;
-            console.log('Added pyenv Python to PATH for GN build system');
-
-            // Temporarily rename Windows Store python3.exe to force use of pyenv Python
-            const windowsStorePython = path.join('C:', 'Users', 'talis', 'AppData', 'Local', 'Microsoft', 'WindowsApps', 'python3.exe');
-            windowsStorePythonBackup = windowsStorePython + '.bak';
-            console.log(`Looking for Windows Store python at: ${windowsStorePython}`);
-            console.log(`Path exists: ${fs.existsSync(windowsStorePython)}`);
-            try {
-                if (fs.existsSync(windowsStorePython)) {
-                    console.log(`Disabling Windows Store python3.exe: ${windowsStorePython}`);
-                    fs.renameSync(windowsStorePython, windowsStorePythonBackup);
-                    console.log('✓ Temporarily disabled Windows Store python3.exe');
-
-                    // Verify which python3.exe is now used
-                    try {
-                        const { execSync } = require('child_process');
-                        const currentPython = execSync('where python3.exe', { encoding: 'utf8' }).trim();
-                        console.log(`Now using python3.exe from: ${currentPython}`);
-                    } catch (e) {
-                        console.log('No python3.exe found in PATH after disabling Windows Store version');
-                    }
-                } else {
-                    console.log('Windows Store python3.exe not found, no need to disable');
-                }
-            } catch (error) {
-                console.warn('Could not disable Windows Store python3.exe:', error.message);
-            }
-        }
 
         console.log('Installing build dependencies, please wait. The first installation may take 5~10 minutes...');
 
@@ -243,10 +207,8 @@ function main() {
         // Install build dependencies
         if (fs.existsSync(installBuildDepsPath)) {
             try {
-                // Make the script executable on Unix-like systems
-                if (process.platform !== 'win32') {
-                    fs.chmodSync(installBuildDepsPath, '755');
-                }
+                // Make the script executable
+                fs.chmodSync(installBuildDepsPath, '755');
 
                 console.log('Running install-build-deps...');
                 runCommand(`"${installBuildDepsPath}" --no-dev-tools --ui`, {
@@ -264,7 +226,7 @@ function main() {
 
         console.log('Install build dependencies successfully!');
 
-        // Run GN generation for UI build (required on Windows)
+        // Run GN generation for UI build
         console.log('Running GN generation...');
         try {
             runCommand('python tools/gn gen out/ui --args="is_debug=false perfetto_build_with_android=false"');
@@ -301,49 +263,6 @@ function main() {
 
             process.env.NODE_OPTIONS = `--max_old_space_size=8192 ${originalNodeOptions || ''}`;
 
-            // On Windows, ensure python3 is available for the build process
-            if (process.platform === 'win32') {
-                // Find python3 executable
-                let python3Path = null;
-
-                // Check for python3.exe in various locations
-                const python3Candidates = [
-                    'python3.exe',
-                    'python3',
-                    'python.exe',
-                    'python'
-                ];
-
-                for (const candidate of python3Candidates) {
-                    try {
-                        const output = execSync(`where ${candidate}`, { encoding: 'utf8' }).trim();
-                        const paths = output.split('\n');
-
-                        // Test each path to see if it actually works
-                        for (const testPath of paths) {
-                            try {
-                                execSync(`"${testPath}" --version`, { stdio: 'pipe' });
-                                python3Path = testPath;
-                                break;
-                            } catch (e) {
-                                // This path doesn't work, try next
-                            }
-                        }
-
-                        if (python3Path) break;
-                    } catch (error) {
-                        // Command not found, try next candidate
-                    }
-                }
-
-                if (python3Path) {
-                    console.log(`Found working python at: ${python3Path}`);
-                    console.log('✓ Using pyenv Python directly (Windows Store python disabled)');
-                } else {
-                    console.warn('No working Python installation found, build may fail');
-                }
-            }
-
             try {
                 runCommand(`node "${buildJsPath}" --no-depscheck --minify-js all`);
             } finally {
@@ -363,16 +282,8 @@ function main() {
             // Try to run the shell script as fallback
             const buildScriptPath = path.join('ui', 'build');
             if (fs.existsSync(buildScriptPath)) {
-                if (process.platform === 'win32') {
-                    try {
-                        runCommand(`bash "${buildScriptPath}" --no-depscheck --minify-js all`);
-                    } catch (error) {
-                        throw new Error('Both build.js and shell script execution failed');
-                    }
-                } else {
-                    fs.chmodSync(buildScriptPath, '755');
-                    runCommand(`"${buildScriptPath}" --no-depscheck --minify-js all`);
-                }
+                fs.chmodSync(buildScriptPath, '755');
+                runCommand(`"${buildScriptPath}" --no-depscheck --minify-js all`);
             } else {
                 throw new Error('Build script not found at ui/build.js or ui/build');
             }
@@ -434,35 +345,8 @@ function main() {
 
         console.log('Build lynx-trace output successfully!');
 
-        // Restore Windows Store python3.exe if we renamed it
-        if (process.platform === 'win32' && windowsStorePythonBackup) {
-            try {
-                const windowsStorePython = path.join('C:', 'Users', 'talis', 'AppData', 'Local', 'Microsoft', 'WindowsApps', 'python3.exe');
-                if (fs.existsSync(windowsStorePythonBackup)) {
-                    fs.renameSync(windowsStorePythonBackup, windowsStorePython);
-                    console.log('✓ Restored Windows Store python3.exe');
-                }
-            } catch (error) {
-                console.warn('Could not restore Windows Store python3.exe:', error.message);
-            }
-        }
-
     } catch (error) {
         console.error('build-lynx-trace-output failed:', error.message);
-
-        // Restore Windows Store python3.exe if we renamed it
-        if (process.platform === 'win32' && windowsStorePythonBackup) {
-            try {
-                const windowsStorePython = path.join('C:', 'Users', 'talis', 'AppData', 'Local', 'Microsoft', 'WindowsApps', 'python3.exe');
-                if (fs.existsSync(windowsStorePythonBackup)) {
-                    fs.renameSync(windowsStorePythonBackup, windowsStorePython);
-                    console.log('✓ Restored Windows Store python3.exe after error');
-                }
-            } catch (restoreError) {
-                console.warn('Could not restore Windows Store python3.exe after error:', restoreError.message);
-            }
-        }
-
         process.exit(1);
     }
 }

@@ -7,7 +7,6 @@ on:
       
 permissions:
   contents: write
-  pull_requests: write
   
 jobs:
   create-release:
@@ -206,8 +205,6 @@ jobs:
     
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: recursive
 
       # Node and pnpm setup steps
       - name: Setup Node.js
@@ -239,6 +236,12 @@ jobs:
       - name: Fetch depot_tools
         run: pnpm run fetch:depot_tools
 
+      - name: Setup Python 3.9 (Windows)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          architecture: 'x64'
+
       - name: Sync devtools-gn
         shell: pwsh
         run: |
@@ -257,9 +260,9 @@ jobs:
       - name: Download lynx-trace prebuilt artifact
         uses: robinraju/release-downloader@v1
         with:
-          repository: KananSu/lynx-trace
+          repository: lynx-family/lynx-trace
           latest: true
-          fileName: "perfetto-ui-release-*.tar.gz"
+          fileName: "perfetto-ui-*.tar.gz"
           out-file-path: temp-lynx-trace
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -306,7 +309,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           Write-Host "Starting Windows build..." -ForegroundColor Cyan
-          powershell -ExecutionPolicy Bypass -File scripts\build-win.ps1
+          pwsh -ExecutionPolicy Bypass -File scripts\build-win.ps1
           
       - name: Find Windows ZIP file
         id: find_zip

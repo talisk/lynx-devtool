@@ -66,8 +66,97 @@ jobs:
             - Only used for DevTool developers to verify branch code
             - May contain unstable or incomplete features' || github.ref }}
 
-  build-and-upload-macos:
+  build-frontend:
     needs: create-release
+    runs-on: lynx-ubuntu-22.04-medium
+    outputs:
+      frontend_artifact_name: ${{ steps.artifact_info.outputs.artifact_name }}
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18.20.2
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 7.33.6
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Ensure python (user bin)
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/bin"
+          PY3=$(which python3)
+          ln -sf "$PY3" "$HOME/.local/bin/python"
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          python --version
+
+      - name: Fetch depot_tools
+        run: pnpm run fetch:depot_tools
+
+      - name: Sync devtools-gn
+        run: |
+          export PATH=$(pwd)/packages/devtools-frontend-lynx/buildtools/depot_tools:$PATH
+          pnpm run sync:devtools-gn
+
+      - name: Build devtools-gn
+        run: pnpm run build:devtools
+
+      - name: Sync devtools-dist
+        run: pnpm run sync:devtools-dist
+
+      - name: Find and Upload Frontend to Release
+        id: upload_frontend
+        run: |
+          ARCHIVE_PATH=$(find ./packages/devtools-frontend-lynx/output -name "devtool.frontend.lynx_1.0.*.tar.gz" | head -n 1)
+          if [ -z "$ARCHIVE_PATH" ]; then
+            echo "Error: Frontend archive not found"
+            exit 1
+          fi
+          ARCHIVE_NAME=$(basename "$ARCHIVE_PATH")
+          echo "Found archive at: ${ARCHIVE_PATH}"
+          echo "archive_path=${ARCHIVE_PATH}" >> $GITHUB_OUTPUT
+          echo "archive_name=${ARCHIVE_NAME}" >> $GITHUB_OUTPUT
+
+          curl \
+            -X POST \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Content-Type: application/gzip" \
+            --data-binary @"${ARCHIVE_PATH}" \
+            "${{ needs.create-release.outputs.upload_url }}?name=devtool.frontend.lynx-${{ needs.create-release.outputs.asset_suffix }}.tar.gz"
+
+      - name: Upload Frontend as Artifact
+        uses: actions/upload-artifact@v3
+        id: artifact_info
+        with:
+          name: devtools-frontend-lynx
+          path: ${{ steps.upload_frontend.outputs.archive_path }}
+          retention-days: 1
+
+  build-and-upload-macos:
+    needs: [create-release, build-frontend]
     runs-on: lynx-darwin-14-medium
     strategy:
       matrix:
@@ -108,43 +197,24 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Fetch depot_tools
-        run: pnpm run fetch:depot_tools
+      - name: Download DevTools Frontend
+        uses: actions/download-artifact@v3
+        with:
+          name: devtools-frontend-lynx
+          path: temp-frontend
 
-      - name: Sync devtools-gn
+      - name: Extract DevTools Frontend
         run: |
-          export PATH=$(pwd)/packages/devtools-frontend-lynx/buildtools/depot_tools:$PATH
-          pnpm run sync:devtools-gn
-
-      - name: Build devtools-gn
-        run: pnpm run build:devtools
-
-      - name: Sync devtools-dist
-        run: pnpm run sync:devtools-dist
+          mkdir -p packages/devtools-frontend-lynx/output
+          ARCHIVE_PATH=$(find temp-frontend -name "devtool.frontend.lynx_*.tar.gz" | head -n 1)
+          tar -xzf "$ARCHIVE_PATH" -C packages/devtools-frontend-lynx/output
+          echo "DevTools Frontend extracted successfully"
 
       - name: Build lynx-trace
         run: pnpm run build:lynx-trace
 
       - name: Build all packages
         run: pnpm run build:all
-
-      # Only upload frontend once (in arm64 job)
-      - name: Find and Upload Frontend
-        if: matrix.arch == 'arm64'
-        run: |
-          ARCHIVE_PATH=$(find ./packages/devtools-frontend-lynx/output -name "devtool.frontend.lynx_1.0.*.tar.gz" | head -n 1)
-          if [ -z "$ARCHIVE_PATH" ]; then
-            echo "Error: Frontend archive not found"
-            exit 1
-          fi
-          echo "Found archive at: ${ARCHIVE_PATH}"
-          
-          curl \
-            -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/gzip" \
-            --data-binary @"${ARCHIVE_PATH}" \
-            "${{ needs.create-release.outputs.upload_url }}?name=devtool.frontend.lynx-${{ needs.create-release.outputs.asset_suffix }}.tar.gz"
 
       - name: Install Apple Certificate
         if: matrix.arch == 'arm64' || matrix.arch == 'x64'
@@ -200,7 +270,7 @@ jobs:
           asset_content_type: application/x-apple-diskimage
 
   build-and-upload-windows:
-    needs: create-release
+    needs: [create-release, build-frontend]
     runs-on: lynx-windows-2022-large
     
     steps:
@@ -233,26 +303,19 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Fetch depot_tools
-        run: pnpm run fetch:depot_tools
-
-      - name: Setup Python 3.9 (Windows)
-        uses: actions/setup-python@v5
+      - name: Download DevTools Frontend
+        uses: actions/download-artifact@v3
         with:
-          python-version: '3.9'
-          architecture: 'x64'
+          name: devtools-frontend-lynx
+          path: temp-frontend
 
-      - name: Sync devtools-gn
+      - name: Extract DevTools Frontend
         shell: pwsh
         run: |
-          $env:PATH = "$(Get-Location)\packages\devtools-frontend-lynx\buildtools\depot_tools;$env:PATH"
-          pnpm run sync:devtools-gn
-
-      - name: Build devtools-gn
-        run: pnpm run build:devtools
-
-      - name: Sync devtools-dist
-        run: pnpm run sync:devtools-dist
+          New-Item -ItemType Directory -Force -Path "packages\devtools-frontend-lynx\output"
+          $archivePath = Get-ChildItem -Path "temp-frontend" -Filter "devtool.frontend.lynx_*.tar.gz" | Select-Object -First 1 -ExpandProperty FullName
+          tar -xzf "$archivePath" -C "packages\devtools-frontend-lynx\output"
+          Write-Host "DevTools Frontend extracted successfully"
 
       - name: Skip lynx-trace build on Windows
         run: pnpm run build:lynx-trace
@@ -283,24 +346,6 @@ jobs:
 
       - name: Build all packages
         run: pnpm run build:all
-
-      # Upload frontend (only once)
-      - name: Find and Upload Frontend
-        shell: pwsh
-        run: |
-          $archivePath = Get-ChildItem -Path ".\packages\devtools-frontend-lynx\output" -Filter "devtool.frontend.lynx_1.0.*.tar.gz" | Select-Object -First 1 -ExpandProperty FullName
-          if (-not $archivePath) {
-            Write-Error "Error: Frontend archive not found"
-            exit 1
-          }
-          Write-Host "Found archive at: $archivePath"
-          
-          curl.exe `
-            -X POST `
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" `
-            -H "Content-Type: application/gzip" `
-            --data-binary "@$archivePath" `
-            "${{ needs.create-release.outputs.upload_url }}?name=devtool.frontend.lynx-${{ needs.create-release.outputs.asset_suffix }}.tar.gz"
 
       # Build Windows green package (ZIP - no installer)
       - name: Build Windows version

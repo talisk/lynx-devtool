@@ -148,7 +148,7 @@ jobs:
             "${{ needs.create-release.outputs.upload_url }}?name=devtool.frontend.lynx-${{ needs.create-release.outputs.asset_suffix }}.tar.gz"
 
       - name: Upload Frontend as Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         id: artifact_info
         with:
           name: devtools-frontend-lynx
@@ -198,7 +198,7 @@ jobs:
         run: pnpm install
 
       - name: Download DevTools Frontend
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: devtools-frontend-lynx
           path: temp-frontend
@@ -304,7 +304,7 @@ jobs:
         run: pnpm install
 
       - name: Download DevTools Frontend
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: devtools-frontend-lynx
           path: temp-frontend

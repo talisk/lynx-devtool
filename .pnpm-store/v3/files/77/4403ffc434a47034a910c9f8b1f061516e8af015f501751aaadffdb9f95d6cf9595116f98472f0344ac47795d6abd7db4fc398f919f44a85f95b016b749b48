@@ -1,0 +1,5 @@
+import { encodeSocketMessage } from "../message";
+export function sendEvent(socket, message) {
+    socket.send(encodeSocketMessage(message));
+}
+//# sourceMappingURL=send-event.js.map

@@ -1,0 +1,89 @@
+import { SERVICE_WORKER_ENVIRONMENT_NAME } from "@modern-js/uni-builder";
+import { isProd, isSSR, isServiceWorker, isUseSSRBundle } from "@modern-js/utils";
+function getBuilderEnvironments(normalizedConfig, appContext, tempBuilderConfig) {
+  var _tempBuilderConfig_output;
+  var entries = {};
+  var _appContext_entrypoints = appContext.entrypoints, entrypoints = _appContext_entrypoints === void 0 ? [] : _appContext_entrypoints, checkedEntries = appContext.checkedEntries;
+  var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+  try {
+    for (var _iterator = entrypoints[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var _step_value = _step.value, entryName = _step_value.entryName, internalEntry = _step_value.internalEntry, entry = _step_value.entry;
+      if (checkedEntries && !checkedEntries.includes(entryName)) {
+        continue;
+      }
+      var finalEntry = internalEntry || entry;
+      if (entryName in entries) {
+        entries[entryName].push(finalEntry);
+      } else {
+        entries[entryName] = [
+          finalEntry
+        ];
+      }
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return != null) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+  var serverEntries = {};
+  for (var entry1 in entries) {
+    var v = entries[entry1];
+    serverEntries[entry1] = v.map(function(entry2) {
+      return entry2.replace("index.jsx", "index.server.jsx");
+    }).map(function(entry2) {
+      return entry2.replace("bootstrap.jsx", "bootstrap.server.jsx");
+    });
+  }
+  var environments = {
+    web: {
+      output: {
+        target: "web"
+      },
+      source: {
+        entry: entries
+      }
+    }
+  };
+  if ((_tempBuilderConfig_output = tempBuilderConfig.output) === null || _tempBuilderConfig_output === void 0 ? void 0 : _tempBuilderConfig_output.copy) {
+    environments.web.output.copy = tempBuilderConfig.output.copy;
+    delete tempBuilderConfig.output.copy;
+  }
+  var useNodeTarget = isProd() ? isUseSSRBundle(normalizedConfig) : isSSR(normalizedConfig);
+  if (useNodeTarget) {
+    environments.node = {
+      output: {
+        target: "node"
+      },
+      source: {
+        entry: serverEntries
+      }
+    };
+  }
+  var useWorkerTarget = isServiceWorker(normalizedConfig);
+  if (useWorkerTarget) {
+    environments[SERVICE_WORKER_ENVIRONMENT_NAME] = {
+      output: {
+        target: "web-worker"
+      },
+      source: {
+        entry: serverEntries
+      }
+    };
+  }
+  return {
+    environments,
+    builderConfig: tempBuilderConfig
+  };
+}
+export {
+  getBuilderEnvironments
+};

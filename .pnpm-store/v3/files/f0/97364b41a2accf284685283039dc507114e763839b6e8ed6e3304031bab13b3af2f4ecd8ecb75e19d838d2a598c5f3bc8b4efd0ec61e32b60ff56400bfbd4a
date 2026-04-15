@@ -1,0 +1,104 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var utils_exports = {};
+__export(utils_exports, {
+  transformHookParams: () => transformHookParams,
+  transformHookResult: () => transformHookResult,
+  transformHookRunner: () => transformHookRunner
+});
+module.exports = __toCommonJS(utils_exports);
+function transformHookRunner(hookRunnerName) {
+  switch (hookRunnerName) {
+    case "beforeConfig":
+      return "onBeforeConfig";
+    case "prepare":
+      return "onPrepare";
+    case "afterPrepare":
+      return "onAfterPrepare";
+    case "beforeGenerateRoutes":
+      return "onBeforeGenerateRoutes";
+    case "beforePrintInstructions":
+      return "onBeforePrintInstructions";
+    case "resolvedConfig":
+      return "modifyResolvedConfig";
+    case "commands":
+      return "addCommand";
+    case "watchFiles":
+      return "addWatchFiles";
+    case "fileChange":
+      return "onFileChanged";
+    case "beforeCreateCompiler":
+      return "onBeforeCreateCompiler";
+    case "afterCreateCompiler":
+      return "onAfterCreateCompiler";
+    case "beforeBuild":
+      return "onBeforeBuild";
+    case "afterBuild":
+      return "onAfterBuild";
+    case "beforeDev":
+      return "onBeforeDev";
+    case "afterDev":
+      return "onAfterDev";
+    case "beforeDeploy":
+      return "onBeforeDeploy";
+    case "afterDeploy":
+      return "onAfterDeploy";
+    case "beforeExit":
+      return "onBeforeExit";
+    case "beforeRestart":
+      return "onBeforeRestart";
+    case "htmlPartials":
+      return "modifyHtmlPartials";
+    default:
+      return hookRunnerName;
+  }
+}
+function transformHookParams(hookRunnerName, params) {
+  switch (hookRunnerName) {
+    case "resolvedConfig":
+      return {
+        resolved: params
+      };
+    case "htmlPartials":
+      return {
+        partials: {
+          top: params.partials.top.current,
+          head: params.partials.head.current,
+          body: params.partials.body.current
+        },
+        entrypoint: params.entrypoint
+      };
+    default:
+      return params;
+  }
+}
+function transformHookResult(hookRunnerName, result) {
+  switch (hookRunnerName) {
+    case "resolvedConfig":
+      return result.resolved;
+    default:
+      return result;
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  transformHookParams,
+  transformHookResult,
+  transformHookRunner
+});

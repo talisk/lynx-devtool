@@ -1,0 +1,82 @@
+import { _ as _class_call_check } from "@swc/helpers/_/_class_call_check";
+import { _ as _class_private_field_get } from "@swc/helpers/_/_class_private_field_get";
+import { _ as _class_private_field_init } from "@swc/helpers/_/_class_private_field_init";
+import { _ as _class_private_field_set } from "@swc/helpers/_/_class_private_field_set";
+import { _ as _class_private_method_get } from "@swc/helpers/_/_class_private_method_get";
+import { _ as _class_private_method_init } from "@swc/helpers/_/_class_private_method_init";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { serializeJson } from "@modern-js/runtime-utils/node";
+import { ROUTER_DATA_JSON_ID, SSR_DATA_JSON_ID } from "../../constants";
+import { attributesToString, serializeErrors } from "../utils";
+var _options = /* @__PURE__ */ new WeakMap(), _getSSRData = /* @__PURE__ */ new WeakSet(), _getSSRDataScripts = /* @__PURE__ */ new WeakSet();
+var SSRDataCollector = /* @__PURE__ */ function() {
+  "use strict";
+  function SSRDataCollector2(options) {
+    _class_call_check(this, SSRDataCollector2);
+    _class_private_method_init(this, _getSSRData);
+    _class_private_method_init(this, _getSSRDataScripts);
+    _class_private_field_init(this, _options, {
+      writable: true,
+      value: void 0
+    });
+    _class_private_field_set(this, _options, options);
+  }
+  var _proto = SSRDataCollector2.prototype;
+  _proto.effect = function effect() {
+    var _$_class_private_field_get = _class_private_field_get(this, _options), routerContext = _$_class_private_field_get.routerContext, chunkSet = _$_class_private_field_get.chunkSet;
+    var ssrData = _class_private_method_get(this, _getSSRData, getSSRData).call(this);
+    var routerData = routerContext ? {
+      loaderData: routerContext.loaderData,
+      errors: serializeErrors(routerContext.errors)
+    } : void 0;
+    var ssrDataScripts = _class_private_method_get(this, _getSSRDataScripts, getSSRDataScripts).call(this, ssrData, routerData);
+    chunkSet.ssrScripts = ssrDataScripts;
+  };
+  return SSRDataCollector2;
+}();
+function getSSRData() {
+  var _$_class_private_field_get = _class_private_field_get(this, _options), prefetchData = _$_class_private_field_get.prefetchData, chunkSet = _$_class_private_field_get.chunkSet, ssrConfig = _$_class_private_field_get.ssrConfig, ssrContext = _$_class_private_field_get.ssrContext;
+  var reporter = ssrContext.reporter, request = ssrContext.request;
+  var headers = (typeof ssrConfig === "undefined" ? "undefined" : _type_of(ssrConfig)) === "object" && ssrConfig.unsafeHeaders ? Object.fromEntries(Object.entries(request.headers).filter(function(param) {
+    var _param = _sliced_to_array(param, 2), key = _param[0], _ = _param[1];
+    var _ssrConfig_unsafeHeaders_map, _ssrConfig_unsafeHeaders;
+    return (_ssrConfig_unsafeHeaders = ssrConfig.unsafeHeaders) === null || _ssrConfig_unsafeHeaders === void 0 ? void 0 : (_ssrConfig_unsafeHeaders_map = _ssrConfig_unsafeHeaders.map(function(header) {
+      return header.toLowerCase();
+    })) === null || _ssrConfig_unsafeHeaders_map === void 0 ? void 0 : _ssrConfig_unsafeHeaders_map.includes(key.toLowerCase());
+  })) : void 0;
+  return {
+    data: prefetchData,
+    context: {
+      request: {
+        params: request.params,
+        query: request.query,
+        pathname: request.pathname,
+        host: request.host,
+        url: request.url,
+        headers
+      },
+      reporter: {
+        sessionId: reporter === null || reporter === void 0 ? void 0 : reporter.sessionId
+      }
+    },
+    mode: "string",
+    renderLevel: chunkSet.renderLevel
+  };
+}
+function getSSRDataScripts(ssrData, routerData) {
+  var _$_class_private_field_get = _class_private_field_get(this, _options), nonce = _$_class_private_field_get.nonce, _class_private_field_get_useJsonScript = _$_class_private_field_get.useJsonScript, useJsonScript = _class_private_field_get_useJsonScript === void 0 ? false : _class_private_field_get_useJsonScript;
+  var serializeSSRData = serializeJson(ssrData);
+  var attrsStr = attributesToString({
+    nonce
+  });
+  var ssrDataScripts = useJsonScript ? '<script type="application/json" id="'.concat(SSR_DATA_JSON_ID, '">').concat(serializeSSRData, "</script>") : "<script".concat(attrsStr, ">window._SSR_DATA = ").concat(serializeSSRData, "</script>");
+  if (routerData) {
+    var serializedRouterData = serializeJson(routerData);
+    ssrDataScripts += useJsonScript ? '\n<script type="application/json" id="'.concat(ROUTER_DATA_JSON_ID, '">').concat(serializedRouterData, "</script>") : "\n<script".concat(attrsStr, ">window._ROUTER_DATA = ").concat(serializedRouterData, "</script>");
+  }
+  return ssrDataScripts;
+}
+export {
+  SSRDataCollector
+};

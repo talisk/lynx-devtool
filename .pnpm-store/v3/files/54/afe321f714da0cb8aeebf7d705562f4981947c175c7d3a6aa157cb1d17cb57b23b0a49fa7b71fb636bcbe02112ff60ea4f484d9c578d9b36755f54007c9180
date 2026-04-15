@@ -1,0 +1,5 @@
+export declare function isStyleExt(path: string): boolean;
+export declare function isJsExt(path: string): boolean;
+export declare function isJsLoader(loader?: string): boolean;
+export declare function isTsExt(path: string): boolean;
+export declare function isTsLoader(loader?: string): boolean;

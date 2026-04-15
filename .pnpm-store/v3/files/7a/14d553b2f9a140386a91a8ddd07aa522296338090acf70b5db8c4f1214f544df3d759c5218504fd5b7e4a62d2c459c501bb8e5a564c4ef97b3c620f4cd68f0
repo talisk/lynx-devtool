@@ -1,0 +1,72 @@
+{
+  "name": "@rsbuild/plugin-rem",
+  "version": "1.0.2",
+  "repository": "https://github.com/rspack-contrib/rsbuild-plugin-rem",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "biome check .",
+    "lint:write": "biome check . --write",
+    "prepare": "simple-git-hooks && npm run build",
+    "test": "playwright test",
+    "bump": "npx bumpp"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx nano-staged"
+  },
+  "nano-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
+  },
+  "dependencies": {
+    "deepmerge": "^4.3.1",
+    "terser": "^5.36.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "^1.48.2",
+    "@rsbuild/core": "^1.0.18",
+    "@rsbuild/plugin-react": "^1.0.5",
+    "@types/node": "^20.17.1",
+    "@types/postcss-pxtorem": "^6.1.0",
+    "nano-staged": "^0.8.0",
+    "playwright": "^1.48.2",
+    "postcss": "^8.4.47",
+    "postcss-pxtorem": "^6.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "simple-git-hooks": "^2.11.1",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  },
+  "peerDependencies": {
+    "@rsbuild/core": "1.x"
+  },
+  "peerDependenciesMeta": {
+    "@rsbuild/core": {
+      "optional": true
+    }
+  },
+  "packageManager": "pnpm@9.12.3",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
+  }
+}

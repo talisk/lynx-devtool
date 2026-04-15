@@ -1,0 +1,80 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { initAppDir } from "@modern-js/plugin-v2/cli";
+import { run as CLIPluginRun } from "@modern-js/plugin-v2/run";
+import { minimist } from "@modern-js/utils";
+import { handleSetupResult } from "../compat/hooks";
+import { PACKAGE_JSON_CONFIG_NAME } from "../constants";
+import { getConfigFile } from "../utils/getConfigFile";
+import { isAutoLoadPlugins } from "../utils/isAutoLoadPlugins";
+import { loadInternalPlugins } from "../utils/loadPlugins";
+function run(_) {
+  return _run.apply(this, arguments);
+}
+function _run() {
+  _run = _async_to_generator(function(param) {
+    var cwd, initialLog, version, internalPlugins, packageJsonConfig, configFile, command, cliParams, SUPPORT_CONFIG_PARAM_COMMANDS, customConfigFile, appDirectory, finalConfigFile, autoLoadPlugins, plugins;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          cwd = param.cwd, initialLog = param.initialLog, version = param.version, internalPlugins = param.internalPlugins, packageJsonConfig = param.packageJsonConfig, configFile = param.configFile;
+          command = process.argv[2];
+          cliParams = minimist(process.argv.slice(2));
+          SUPPORT_CONFIG_PARAM_COMMANDS = [
+            "dev",
+            "build",
+            "deploy",
+            "start",
+            "serve",
+            "inspect",
+            "upgrade"
+          ];
+          if (SUPPORT_CONFIG_PARAM_COMMANDS.includes(command)) {
+            customConfigFile = cliParams.config || cliParams.c;
+          }
+          if (command === "new") {
+            customConfigFile = cliParams["config-file"];
+          }
+          return [
+            4,
+            initAppDir(cwd)
+          ];
+        case 1:
+          appDirectory = _state.sent();
+          finalConfigFile = customConfigFile || getConfigFile(configFile);
+          return [
+            4,
+            isAutoLoadPlugins(appDirectory, finalConfigFile)
+          ];
+        case 2:
+          autoLoadPlugins = _state.sent();
+          return [
+            4,
+            loadInternalPlugins(appDirectory, internalPlugins === null || internalPlugins === void 0 ? void 0 : internalPlugins.cli, internalPlugins === null || internalPlugins === void 0 ? void 0 : internalPlugins.autoLoad, autoLoadPlugins)
+          ];
+        case 3:
+          plugins = _state.sent();
+          return [
+            4,
+            CLIPluginRun({
+              cwd,
+              initialLog: initialLog || "Modern.js Framework v".concat(version),
+              configFile: finalConfigFile,
+              packageJsonConfig: packageJsonConfig || PACKAGE_JSON_CONFIG_NAME,
+              internalPlugins: plugins,
+              handleSetupResult
+            })
+          ];
+        case 4:
+          _state.sent();
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return _run.apply(this, arguments);
+}
+export {
+  run
+};

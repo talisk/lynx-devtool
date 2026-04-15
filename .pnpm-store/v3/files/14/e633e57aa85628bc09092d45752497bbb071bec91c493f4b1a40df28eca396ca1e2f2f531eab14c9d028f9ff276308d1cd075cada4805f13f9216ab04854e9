@@ -1,0 +1,188 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var merge_exports = {};
+__export(merge_exports, {
+  isLegacyUserConfig: () => isLegacyUserConfig,
+  mergeDefaultBaseConfig: () => mergeDefaultBaseConfig
+});
+module.exports = __toCommonJS(merge_exports);
+var import_utils = require("@modern-js/utils");
+var import_build = require("../constants/build");
+var import_utils2 = require("../utils");
+const mergeDefaultBaseConfig = async (pConfig, options) => {
+  var _pConfig_resolve, _pConfig_resolve1, _pConfig_resolve2, _pConfig_resolve3, _pConfig_style, _pConfig_style1, _pConfig_style2, _pConfig_style3;
+  const defaultConfig = (0, import_build.getDefaultBuildConfig)();
+  const { context, buildCmdOptions } = options;
+  const { applyOptionsChain, ensureAbsolutePath, slash } = await Promise.resolve().then(() => __toESM(require("@modern-js/utils")));
+  const { getDefaultIndexEntry, getStyleConfig } = await Promise.resolve().then(() => __toESM(require("../utils")));
+  const defaultAlias = {
+    "@": context.srcDirectory
+  };
+  const mergedAlias = applyOptionsChain(defaultAlias, pConfig.alias);
+  const mergedResolveAlias = applyOptionsChain({}, (_pConfig_resolve = pConfig.resolve) === null || _pConfig_resolve === void 0 ? void 0 : _pConfig_resolve.alias);
+  const alias = Object.keys(mergedAlias).reduce((prev, name) => {
+    const formattedValue = (value2) => {
+      if (typeof value2 === "string" && value2.startsWith(".")) {
+        return slash(ensureAbsolutePath(context.appDirectory, value2));
+      }
+      return value2;
+    };
+    const value = formattedValue(mergedAlias[name]);
+    prev[name] = value;
+    return prev;
+  }, {});
+  const styleConfig = await getStyleConfig(pConfig);
+  var _pConfig_buildType;
+  const buildType = (_pConfig_buildType = pConfig.buildType) !== null && _pConfig_buildType !== void 0 ? _pConfig_buildType : defaultConfig.buildType;
+  var _pConfig_sourceDir;
+  const sourceDir = (_pConfig_sourceDir = pConfig.sourceDir) !== null && _pConfig_sourceDir !== void 0 ? _pConfig_sourceDir : defaultConfig.sourceDir;
+  var _pConfig_metafile;
+  const metafile = (_pConfig_metafile = pConfig.metafile) !== null && _pConfig_metafile !== void 0 ? _pConfig_metafile : defaultConfig.metafile;
+  const asset = {
+    ...defaultConfig.asset,
+    ...pConfig.asset
+  };
+  const defaultIndexEntry = buildType === "bundle" ? await getDefaultIndexEntry(context) : [
+    sourceDir
+  ];
+  var _pConfig_input;
+  const input = await (0, import_utils2.normalizeInput)((_pConfig_input = pConfig.input) !== null && _pConfig_input !== void 0 ? _pConfig_input : defaultIndexEntry, context.appDirectory, Boolean(asset === null || asset === void 0 ? void 0 : asset.svgr));
+  var _pConfig_define;
+  const userDefine = (_pConfig_define = pConfig.define) !== null && _pConfig_define !== void 0 ? _pConfig_define : {};
+  const define = {
+    ...defaultConfig.define,
+    ...Object.keys(userDefine).reduce((memo, name) => {
+      memo[name] = JSON.stringify(userDefine[name]);
+      return memo;
+    }, {})
+  };
+  const { dts: cmdDts, tsconfig: cmdTsconfigPath } = buildCmdOptions;
+  const noDts = cmdDts === false || pConfig.dts === false;
+  const dts = noDts ? false : {
+    ...defaultConfig.dts,
+    ...pConfig.dts
+  };
+  var _ref;
+  const tsconfig = (_ref = cmdTsconfigPath !== null && cmdTsconfigPath !== void 0 ? cmdTsconfigPath : pConfig.tsconfig) !== null && _ref !== void 0 ? _ref : defaultConfig.tsconfig;
+  var _pConfig_externals;
+  let externals = (_pConfig_externals = pConfig.externals) !== null && _pConfig_externals !== void 0 ? _pConfig_externals : defaultConfig.externals;
+  var _pConfig_autoExternal;
+  const autoExternal = (_pConfig_autoExternal = pConfig.autoExternal) !== null && _pConfig_autoExternal !== void 0 ? _pConfig_autoExternal : defaultConfig.autoExternal;
+  if (autoExternal) {
+    const deps = await (0, import_utils2.getAllDeps)(context.appDirectory, (0, import_utils.isObject)(autoExternal) ? autoExternal : {
+      dependencies: true,
+      peerDependencies: true
+    });
+    externals = [
+      ...deps.map((dep) => new RegExp(`^${dep}($|\\/|\\\\)`)),
+      ...externals || []
+    ];
+  }
+  var _pConfig_platform;
+  const platform = (_pConfig_platform = pConfig.platform) !== null && _pConfig_platform !== void 0 ? _pConfig_platform : defaultConfig.platform;
+  const defaultMainFields = platform === "node" ? [
+    "module",
+    "main"
+  ] : [
+    "module",
+    "browser",
+    "main"
+  ];
+  var _pConfig_resolve_mainFields, _pConfig_resolve_jsExtensions, _pConfig_resolve_tsConfig;
+  const resolve = {
+    mainFields: (_pConfig_resolve_mainFields = (_pConfig_resolve1 = pConfig.resolve) === null || _pConfig_resolve1 === void 0 ? void 0 : _pConfig_resolve1.mainFields) !== null && _pConfig_resolve_mainFields !== void 0 ? _pConfig_resolve_mainFields : defaultMainFields,
+    jsExtensions: (_pConfig_resolve_jsExtensions = (_pConfig_resolve2 = pConfig.resolve) === null || _pConfig_resolve2 === void 0 ? void 0 : _pConfig_resolve2.jsExtensions) !== null && _pConfig_resolve_jsExtensions !== void 0 ? _pConfig_resolve_jsExtensions : defaultConfig.resolve.jsExtensions,
+    alias: mergedResolveAlias,
+    tsConfig: (_pConfig_resolve_tsConfig = (_pConfig_resolve3 = pConfig.resolve) === null || _pConfig_resolve3 === void 0 ? void 0 : _pConfig_resolve3.tsConfig) !== null && _pConfig_resolve_tsConfig !== void 0 ? _pConfig_resolve_tsConfig : tsconfig ? {
+      configFile: tsconfig
+    } : defaultConfig.resolve.tsConfig
+  };
+  var _pConfig_esbuildOptions;
+  const esbuildOptions = (_pConfig_esbuildOptions = pConfig.esbuildOptions) !== null && _pConfig_esbuildOptions !== void 0 ? _pConfig_esbuildOptions : defaultConfig.esbuildOptions;
+  var _pConfig_loader, _pConfig_shims, _pConfig_autoExtension, _pConfig_footer, _pConfig_banner, _pConfig_hooks, _pConfig_format, _pConfig_target, _pConfig_sourceMap, _pConfig_copy, _pConfig_outDir, _pConfig_jsx, _pConfig_splitting, _pConfig_minify, _pConfig_umdModuleName, _pConfig_sideEffects, _pConfig_style_inject, _pConfig_style_modules, _pConfig_style_autoModules, _pConfig_style_tailwindcss, _pConfig_externalHelpers, _pConfig_transformCache, _pConfig_transformImport, _pConfig_transformLodash, _pConfig_sourceType, _pConfig_disableSwcTransform;
+  return {
+    loader: (_pConfig_loader = pConfig.loader) !== null && _pConfig_loader !== void 0 ? _pConfig_loader : defaultConfig.loader,
+    shims: (_pConfig_shims = pConfig.shims) !== null && _pConfig_shims !== void 0 ? _pConfig_shims : defaultConfig.shims,
+    autoExtension: (_pConfig_autoExtension = pConfig.autoExtension) !== null && _pConfig_autoExtension !== void 0 ? _pConfig_autoExtension : defaultConfig.autoExtension,
+    footer: (_pConfig_footer = pConfig.footer) !== null && _pConfig_footer !== void 0 ? _pConfig_footer : defaultConfig.footer,
+    banner: (_pConfig_banner = pConfig.banner) !== null && _pConfig_banner !== void 0 ? _pConfig_banner : defaultConfig.banner,
+    resolve,
+    tsconfig,
+    hooks: (_pConfig_hooks = pConfig.hooks) !== null && _pConfig_hooks !== void 0 ? _pConfig_hooks : defaultConfig.hooks,
+    asset,
+    buildType,
+    format: (_pConfig_format = pConfig.format) !== null && _pConfig_format !== void 0 ? _pConfig_format : defaultConfig.format,
+    target: (_pConfig_target = pConfig.target) !== null && _pConfig_target !== void 0 ? _pConfig_target : defaultConfig.target,
+    sourceMap: (_pConfig_sourceMap = pConfig.sourceMap) !== null && _pConfig_sourceMap !== void 0 ? _pConfig_sourceMap : defaultConfig.sourceMap,
+    copy: (_pConfig_copy = pConfig.copy) !== null && _pConfig_copy !== void 0 ? _pConfig_copy : defaultConfig.copy,
+    outDir: (_pConfig_outDir = pConfig.outDir) !== null && _pConfig_outDir !== void 0 ? _pConfig_outDir : defaultConfig.outDir,
+    dts,
+    jsx: (_pConfig_jsx = pConfig.jsx) !== null && _pConfig_jsx !== void 0 ? _pConfig_jsx : defaultConfig.jsx,
+    input,
+    platform,
+    splitting: (_pConfig_splitting = pConfig.splitting) !== null && _pConfig_splitting !== void 0 ? _pConfig_splitting : defaultConfig.splitting,
+    minify: (_pConfig_minify = pConfig.minify) !== null && _pConfig_minify !== void 0 ? _pConfig_minify : defaultConfig.minify,
+    autoExternal,
+    umdGlobals: {
+      ...defaultConfig.umdGlobals,
+      ...pConfig.umdGlobals
+    },
+    umdModuleName: (_pConfig_umdModuleName = pConfig.umdModuleName) !== null && _pConfig_umdModuleName !== void 0 ? _pConfig_umdModuleName : defaultConfig.umdModuleName,
+    sideEffects: (_pConfig_sideEffects = pConfig.sideEffects) !== null && _pConfig_sideEffects !== void 0 ? _pConfig_sideEffects : defaultConfig.sideEffects,
+    externals,
+    sourceDir,
+    alias,
+    define,
+    metafile,
+    style: {
+      ...styleConfig,
+      inject: (_pConfig_style_inject = (_pConfig_style = pConfig.style) === null || _pConfig_style === void 0 ? void 0 : _pConfig_style.inject) !== null && _pConfig_style_inject !== void 0 ? _pConfig_style_inject : defaultConfig.style.inject,
+      modules: (_pConfig_style_modules = (_pConfig_style1 = pConfig.style) === null || _pConfig_style1 === void 0 ? void 0 : _pConfig_style1.modules) !== null && _pConfig_style_modules !== void 0 ? _pConfig_style_modules : defaultConfig.style.modules,
+      autoModules: (_pConfig_style_autoModules = (_pConfig_style2 = pConfig.style) === null || _pConfig_style2 === void 0 ? void 0 : _pConfig_style2.autoModules) !== null && _pConfig_style_autoModules !== void 0 ? _pConfig_style_autoModules : defaultConfig.style.autoModules,
+      tailwindcss: (_pConfig_style_tailwindcss = (_pConfig_style3 = pConfig.style) === null || _pConfig_style3 === void 0 ? void 0 : _pConfig_style3.tailwindcss) !== null && _pConfig_style_tailwindcss !== void 0 ? _pConfig_style_tailwindcss : defaultConfig.style.tailwindcss
+    },
+    redirect: {
+      ...defaultConfig.redirect,
+      ...pConfig.redirect
+    },
+    esbuildOptions,
+    externalHelpers: (_pConfig_externalHelpers = pConfig.externalHelpers) !== null && _pConfig_externalHelpers !== void 0 ? _pConfig_externalHelpers : defaultConfig.externalHelpers,
+    transformCache: (_pConfig_transformCache = pConfig.transformCache) !== null && _pConfig_transformCache !== void 0 ? _pConfig_transformCache : defaultConfig.transformCache,
+    transformImport: (_pConfig_transformImport = pConfig.transformImport) !== null && _pConfig_transformImport !== void 0 ? _pConfig_transformImport : defaultConfig.transformImport,
+    transformLodash: (_pConfig_transformLodash = pConfig.transformLodash) !== null && _pConfig_transformLodash !== void 0 ? _pConfig_transformLodash : defaultConfig.transformLodash,
+    sourceType: (_pConfig_sourceType = pConfig.sourceType) !== null && _pConfig_sourceType !== void 0 ? _pConfig_sourceType : defaultConfig.sourceType,
+    disableSwcTransform: (_pConfig_disableSwcTransform = pConfig.disableSwcTransform) !== null && _pConfig_disableSwcTransform !== void 0 ? _pConfig_disableSwcTransform : defaultConfig.disableSwcTransform
+  };
+};
+const isLegacyUserConfig = (config) => Boolean(config.legacy);
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  isLegacyUserConfig,
+  mergeDefaultBaseConfig
+});

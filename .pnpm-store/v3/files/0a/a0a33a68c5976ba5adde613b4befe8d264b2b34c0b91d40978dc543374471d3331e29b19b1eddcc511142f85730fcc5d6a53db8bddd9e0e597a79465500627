@@ -1,0 +1,228 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var customServer_exports = {};
+__export(customServer_exports, {
+  CustomServer: () => CustomServer,
+  getServerMidFromUnstableMid: () => getServerMidFromUnstableMid,
+  injectRoute: () => injectRoute
+});
+module.exports = __toCommonJS(customServer_exports);
+var import_time = require("@modern-js/runtime-utils/time");
+var import_constants = require("../../constants");
+var import_helper = require("../../helper");
+var import_utils = require("../../utils");
+var import_base = require("./base");
+var import_context = require("./context");
+const noop = () => {
+};
+const isHtmlResponse = (response) => {
+  const contentType = response.headers.get("content-type");
+  return contentType === null || contentType === void 0 ? void 0 : contentType.includes("text/html");
+};
+class CustomServer {
+  getHookMiddleware(entryName, routes) {
+    return async (c, next) => {
+      const routeInfo = routes.find((route) => route.entryName === entryName);
+      const monitors = c.get("monitors");
+      const baseHookCtx = (0, import_base.createBaseHookContext)(c);
+      const afterMatchCtx = (0, import_context.getAfterMatchCtx)(entryName, baseHookCtx);
+      const getCost = (0, import_time.time)();
+      await this.runner.afterMatch(afterMatchCtx, {
+        onLast: noop
+      });
+      const cost = getCost();
+      cost && (monitors === null || monitors === void 0 ? void 0 : monitors.timing(import_constants.ServerTimings.SERVER_HOOK_AFTER_MATCH, cost));
+      const { url, status } = afterMatchCtx.router;
+      if (url) {
+        return c.redirect(url, status);
+      }
+      const { current } = afterMatchCtx.router;
+      if (current !== entryName) {
+        const rewriteRoute = routes.find((route) => route.entryName === current);
+        if (rewriteRoute) {
+          c.set("matchPathname", rewriteRoute.urlPath);
+        }
+      }
+      if (c.finalized) {
+        return void 0;
+      }
+      await next();
+      if (c.finalized && (!c.res.body || !isHtmlResponse(c.res) || [
+        404,
+        500
+      ].includes(c.res.status))) {
+        return void 0;
+      }
+      if (c.res) {
+        c.status(c.res.status);
+      }
+      if (routeInfo.isStream) {
+        const afterStreamingRenderContext = (0, import_context.createAfterStreamingRenderContext)(baseHookCtx, routeInfo);
+        c.res = (0, import_utils.transformResponse)(c.res, (chunk) => {
+          const context = afterStreamingRenderContext(chunk);
+          return this.runner.afterStreamingRender(context, {
+            onLast: ({ chunk: chunk2 }) => chunk2
+          });
+        });
+      } else {
+        const afterRenderCtx = await (0, import_context.getAfterRenderCtx)(c, baseHookCtx, routeInfo);
+        const getCost2 = (0, import_time.time)();
+        await this.runner.afterRender(afterRenderCtx, {
+          onLast: noop
+        });
+        const cost2 = getCost2();
+        cost2 && (monitors === null || monitors === void 0 ? void 0 : monitors.timing(import_constants.ServerTimings.SERVER_HOOK_AFTER_RENDER, cost2));
+        if (afterRenderCtx.response.private_overrided) {
+          return void 0;
+        }
+        const newBody = afterRenderCtx.template.get();
+        c.res = c.body(newBody);
+      }
+    };
+  }
+  async getServerMiddleware(renderMiddlewares) {
+    const serverMiddleware = await this.serverMiddlewarePromise;
+    if (!serverMiddleware) {
+      return renderMiddlewares;
+    }
+    if (Array.isArray(serverMiddleware)) {
+      const unstableMiddlewares = getServerMidFromUnstableMid(serverMiddleware);
+      return [
+        ...renderMiddlewares || [],
+        ...unstableMiddlewares
+      ];
+    } else if (renderMiddlewares) {
+      return renderMiddlewares;
+    }
+    return async (c, next) => {
+      var _c_env_node_res, _c_env_node, _c_env;
+      const monitors = c.get("monitors");
+      const locals = {};
+      const resArgs = {
+        headers: new Headers()
+      };
+      const customMiddlewareCtx = (0, import_context.createCustomMiddlewaresCtx)(c, locals, resArgs);
+      const getCost = (0, import_time.time)();
+      await serverMiddleware(customMiddlewareCtx);
+      const cost = getCost();
+      cost && (monitors === null || monitors === void 0 ? void 0 : monitors.timing(import_constants.ServerTimings.SERVER_MIDDLEWARE, cost));
+      c.set("locals", locals);
+      if (isRedirect(resArgs.headers, resArgs.status)) {
+        return c.redirect(resArgs.headers.get("Location") || "", resArgs.status || 302);
+      }
+      if ((_c_env = c.env) === null || _c_env === void 0 ? void 0 : (_c_env_node = _c_env.node) === null || _c_env_node === void 0 ? void 0 : (_c_env_node_res = _c_env_node.res) === null || _c_env_node_res === void 0 ? void 0 : _c_env_node_res.headersSent) {
+        return void 0;
+      }
+      if (!c.finalized) {
+        return next();
+      }
+    };
+  }
+  constructor(runner, serverBase, pwd) {
+    this.runner = runner;
+    this.serverBase = serverBase;
+    const webExtension = [];
+    this.serverMiddlewarePromise = runner.prepareWebServer({
+      pwd,
+      config: {
+        middleware: webExtension
+      }
+    }, {
+      onLast: () => []
+    });
+  }
+}
+function getServerMidFromUnstableMid(serverMiddleware) {
+  return serverMiddleware.map((middleware) => {
+    return async (c, next) => {
+      const context = await createMiddlewareContextFromHono(c);
+      return middleware(context, next);
+    };
+  });
+}
+function isRedirect(headers, code) {
+  return [
+    301,
+    302,
+    307,
+    308
+  ].includes(code || 0) || headers.get("Location");
+}
+async function createMiddlewareContextFromHono(c) {
+  const loaderContext = (0, import_helper.getLoaderCtx)(c);
+  const rawRequest = c.req.raw;
+  const method = rawRequest.method.toUpperCase();
+  if (![
+    "GET",
+    "HEAD"
+  ].includes(method) && !rawRequest.body && c.env.node.req) {
+    const streamModulePath = "../../adapters/node/polyfills/stream.js";
+    const { createReadableStreamFromReadable } = await import(streamModulePath);
+    const init = {
+      body: createReadableStreamFromReadable(c.env.node.req),
+      headers: rawRequest.headers,
+      signal: rawRequest.signal,
+      method: rawRequest.method
+    };
+    init.duplex = "half";
+    c.req.raw = new Request(rawRequest.url, init);
+  }
+  return {
+    get request() {
+      return c.req.raw;
+    },
+    set request(request) {
+      c.req.raw = request;
+    },
+    get response() {
+      return c.res;
+    },
+    set response(newRes) {
+      c.res = newRes;
+    },
+    get route() {
+      return c.get("route");
+    },
+    get(key) {
+      return loaderContext.get(key);
+    },
+    set(key, value) {
+      return loaderContext.set(key, value);
+    },
+    status: c.status.bind(c),
+    header: c.header.bind(c),
+    body: c.body.bind(c),
+    html: c.html.bind(c),
+    redirect: c.redirect.bind(c)
+  };
+}
+function injectRoute(route) {
+  return async (c, next) => {
+    if (route && !c.get("route")) {
+      c.set("route", route);
+    }
+    await next();
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  CustomServer,
+  getServerMidFromUnstableMid,
+  injectRoute
+});

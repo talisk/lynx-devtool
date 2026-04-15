@@ -1,0 +1,152 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var string_exports = {};
+__export(string_exports, {
+  renderString: () => renderString
+});
+module.exports = __toCommonJS(string_exports);
+var import_node = require("@modern-js/runtime-utils/node");
+var import_time = require("@modern-js/runtime-utils/time");
+var import_request = require("@modern-js/runtime-utils/universal/request");
+var import_server = __toESM(require("react-dom/server"));
+var import_react_helmet = __toESM(require("react-helmet"));
+var import_constants = require("../../constants");
+var import_wrapper = require("../../react/wrapper");
+var import_constants2 = require("../constants");
+var import_helmet = require("../helmet");
+var import_shared = require("../shared");
+var import_tracer = require("../tracer");
+var import_utils = require("../utils");
+var import_loadable = require("./loadable");
+var import_prefetch = require("./prefetch");
+var import_ssrData = require("./ssrData");
+var import_styledComponent = require("./styledComponent");
+const renderString = async (request, serverRoot, options) => {
+  const headersData = (0, import_request.parseHeaders)(request);
+  return (0, import_node.run)(headersData, async () => {
+    var _runtimeContext_ssrContext;
+    const { resource, runtimeContext, config, onError, onTiming } = options;
+    const tracer = {
+      onError: (0, import_tracer.createOnError)(onError),
+      onTiming: (0, import_tracer.createOnTiming)(onTiming)
+    };
+    const routerContext = runtimeContext.routerContext;
+    const { htmlTemplate, entryName, loadableStats, routeManifest } = resource;
+    const ssrConfig = (0, import_utils.getSSRConfigByEntry)(entryName, config.ssr, config.ssrByEntries);
+    const chunkSet = {
+      renderLevel: import_constants.RenderLevel.CLIENT_RENDER,
+      ssrScripts: "",
+      jsChunk: "",
+      cssChunk: ""
+    };
+    let prefetchData = {};
+    try {
+      prefetchData = await (0, import_prefetch.prefetch)(serverRoot, request, options, ssrConfig, tracer);
+      chunkSet.renderLevel = import_constants.RenderLevel.SERVER_PREFETCH;
+    } catch (e) {
+      chunkSet.renderLevel = import_constants.RenderLevel.CLIENT_RENDER;
+      tracer.onError(import_tracer.SSRErrors.PRERENDER, e);
+    }
+    const collectors = [
+      new import_styledComponent.StyledCollector(chunkSet),
+      new import_loadable.LoadableCollector({
+        stats: loadableStats,
+        nonce: config.nonce,
+        routeManifest,
+        template: htmlTemplate,
+        entryName,
+        chunkSet,
+        config
+      }),
+      new import_ssrData.SSRDataCollector({
+        request,
+        prefetchData,
+        ssrConfig,
+        ssrContext: runtimeContext.ssrContext,
+        chunkSet,
+        routerContext,
+        nonce: config.nonce,
+        useJsonScript: config.useJsonScript
+      })
+    ];
+    const rootElement = (0, import_wrapper.wrapRuntimeContextProvider)(serverRoot, Object.assign(runtimeContext, {
+      ssr: true
+    }));
+    const html = await generateHtml(rootElement, htmlTemplate, chunkSet, collectors, ((_runtimeContext_ssrContext = runtimeContext.ssrContext) === null || _runtimeContext_ssrContext === void 0 ? void 0 : _runtimeContext_ssrContext.htmlModifiers) || [], tracer);
+    return html;
+  });
+};
+async function generateHtml(App, htmlTemplate, chunkSet, collectors, htmlModifiers, { onError, onTiming }) {
+  let html = "";
+  let helmetData;
+  const finalApp = collectors.reduce((pre, creator) => {
+    var _creator_collect;
+    return ((_creator_collect = creator.collect) === null || _creator_collect === void 0 ? void 0 : _creator_collect.call(creator, pre)) || pre;
+  }, App);
+  try {
+    const end = (0, import_time.time)();
+    if (chunkSet.renderLevel >= import_constants.RenderLevel.SERVER_PREFETCH) {
+      html = import_server.default.renderToString(finalApp);
+      chunkSet.renderLevel = import_constants.RenderLevel.SERVER_RENDER;
+    }
+    helmetData = import_react_helmet.default.renderStatic();
+    const cost = end();
+    onTiming(import_tracer.SSRTimings.RENDER_HTML, cost);
+  } catch (e) {
+    chunkSet.renderLevel = import_constants.RenderLevel.CLIENT_RENDER;
+    onError(import_tracer.SSRErrors.RENDER_HTML, e);
+  }
+  await Promise.all(collectors.map((component) => component.effect()));
+  const { ssrScripts, cssChunk, jsChunk } = chunkSet;
+  const finalHtml = await (0, import_shared.buildHtml)(htmlTemplate, [
+    createReplaceHtml(html),
+    createReplaceChunkJs(jsChunk),
+    createReplaceChunkCss(cssChunk),
+    createReplaceSSRDataScript(ssrScripts),
+    (0, import_helmet.createReplaceHelemt)(helmetData),
+    ...htmlModifiers
+  ]);
+  return finalHtml;
+}
+function createReplaceHtml(html) {
+  return (template) => (0, import_utils.safeReplace)(template, import_constants2.HTML_PLACEHOLDER, html);
+}
+function createReplaceSSRDataScript(data) {
+  return (template) => (0, import_utils.safeReplace)(template, import_constants2.SSR_DATA_PLACEHOLDER, data);
+}
+function createReplaceChunkJs(js) {
+  return (template) => (0, import_utils.safeReplace)(template, import_constants2.CHUNK_JS_PLACEHOLDER, js);
+}
+function createReplaceChunkCss(css) {
+  return (template) => (0, import_utils.safeReplace)(template, import_constants2.CHUNK_CSS_PLACEHOLDER, css);
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  renderString
+});

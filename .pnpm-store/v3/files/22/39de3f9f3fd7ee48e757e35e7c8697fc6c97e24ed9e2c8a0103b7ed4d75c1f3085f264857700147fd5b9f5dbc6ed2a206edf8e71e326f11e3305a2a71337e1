@@ -1,0 +1,48 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { generateBuilder } from "../generator";
+function createWebpackBuilderForModern(options) {
+  return _createWebpackBuilderForModern.apply(this, arguments);
+}
+function _createWebpackBuilderForModern() {
+  _createWebpackBuilderForModern = _async_to_generator(function(options) {
+    var builder, normalizedConfig, _normalizedConfig_tools, esbuildOptions, pluginEsbuild;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            generateBuilder(options, "webpack")
+          ];
+        case 1:
+          builder = _state.sent();
+          normalizedConfig = options.normalizedConfig;
+          if (!normalizedConfig.tools.esbuild)
+            return [
+              3,
+              3
+            ];
+          _normalizedConfig_tools = normalizedConfig.tools, esbuildOptions = _normalizedConfig_tools.esbuild;
+          return [
+            4,
+            import("@modern-js/rsbuild-plugin-esbuild")
+          ];
+        case 2:
+          pluginEsbuild = _state.sent().pluginEsbuild;
+          builder.addPlugins([
+            pluginEsbuild(esbuildOptions)
+          ]);
+          _state.label = 3;
+        case 3:
+          return [
+            2,
+            builder
+          ];
+      }
+    });
+  });
+  return _createWebpackBuilderForModern.apply(this, arguments);
+}
+export {
+  createWebpackBuilderForModern
+};

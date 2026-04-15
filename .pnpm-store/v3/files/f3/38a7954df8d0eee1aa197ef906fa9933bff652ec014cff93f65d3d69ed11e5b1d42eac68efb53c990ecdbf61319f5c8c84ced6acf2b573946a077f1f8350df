@@ -1,0 +1,133 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var runtime_exports = {};
+__export(runtime_exports, {
+  handleRequest: () => handleRequest,
+  isRedirectResponse: () => isRedirectResponse,
+  isResponse: () => isResponse
+});
+module.exports = __toCommonJS(runtime_exports);
+var import_browser = require("@modern-js/runtime-utils/browser");
+var import_node = require("@modern-js/runtime-utils/node");
+var import_remix_router = require("@modern-js/runtime-utils/remix-router");
+var import_server = require("@modern-js/runtime-utils/server");
+var import_time = require("@modern-js/runtime-utils/time");
+var import_lodash = require("@modern-js/utils/lodash");
+var import_constants = require("@modern-js/utils/universal/constants");
+var import_constants2 = require("../common/constants");
+var import_errors = require("./errors");
+var import_response = require("./response");
+const redirectStatusCodes = /* @__PURE__ */ new Set([
+  301,
+  302,
+  303,
+  307,
+  308
+]);
+function isRedirectResponse(status) {
+  return redirectStatusCodes.has(status);
+}
+function isResponse(value) {
+  return value != null && typeof value.status === "number" && typeof value.statusText === "string" && typeof value.headers === "object" && typeof value.body !== "undefined";
+}
+function convertModernRedirectResponse(headers, basename) {
+  const newHeaders = new Headers(headers);
+  let redirectUrl = headers.get("Location");
+  if (basename !== "/") {
+    redirectUrl = redirectUrl.replace(basename, "");
+  }
+  newHeaders.set("X-Modernjs-Redirect", redirectUrl);
+  newHeaders.delete("Location");
+  return new Response(null, {
+    status: 204,
+    headers: newHeaders
+  });
+}
+const handleRequest = async ({ request, serverRoutes, routes: routesConfig, context, onTiming }) => {
+  const url = new URL(request.url);
+  const routeId = url.searchParams.get(import_constants2.LOADER_ID_PARAM);
+  const entry = (0, import_server.matchEntry)(url.pathname, serverRoutes);
+  if (!routeId || !entry) {
+    return;
+  }
+  const basename = entry.urlPath;
+  const end = (0, import_time.time)();
+  const { reporter, loaderContext } = context;
+  const routes = (0, import_browser.transformNestedRoutes)(routesConfig, reporter);
+  const { queryRoute } = (0, import_remix_router.createStaticHandler)(routes, {
+    basename
+  });
+  const requestContext = (0, import_node.createRequestContext)(loaderContext);
+  requestContext.set(import_node.reporterCtx, reporter);
+  let response;
+  try {
+    response = await queryRoute(request, {
+      routeId,
+      requestContext
+    });
+    if (isResponse(response) && isRedirectResponse(response.status)) {
+      response = convertModernRedirectResponse(response.headers, basename);
+    } else if ((0, import_lodash.isPlainObject)(response) && import_remix_router.UNSAFE_DEFERRED_SYMBOL in response) {
+      const deferredData = response[import_remix_router.UNSAFE_DEFERRED_SYMBOL];
+      const body = (0, import_response.createDeferredReadableStream)(deferredData, request.signal);
+      const init = deferredData.init || {};
+      if (init.status && isRedirectResponse(init.status)) {
+        if (!init.headers) {
+          throw new Error("redirect response includes no headers");
+        }
+        response = convertModernRedirectResponse(new Headers(init.headers), basename);
+      } else {
+        const headers = new Headers(init.headers);
+        headers.set("Content-Type", `${import_constants2.CONTENT_TYPE_DEFERRED}; charset=UTF-8`);
+        init.headers = headers;
+        response = new Response(body, init);
+      }
+    } else {
+      response = isResponse(response) ? response : new Response(JSON.stringify(response), {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8"
+        }
+      });
+    }
+    const cost = end();
+    onTiming === null || onTiming === void 0 ? void 0 : onTiming(`${import_constants.LOADER_REPORTER_NAME}-navigation`, cost);
+  } catch (error) {
+    if (isResponse(error)) {
+      error.headers.set("X-Modernjs-Catch", "yes");
+      response = error;
+    } else if ((0, import_remix_router.isRouteErrorResponse)(error)) {
+      response = (0, import_errors.errorResponseToJson)(error);
+    } else {
+      const errorInstance = error instanceof Error || error instanceof DOMException ? error : new Error("Unexpected Server Error");
+      response = (0, import_remix_router.json)((0, import_errors.serializeError)(errorInstance), {
+        status: 500,
+        headers: {
+          "X-Modernjs-Error": "yes"
+        }
+      });
+    }
+  }
+  return response;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  handleRequest,
+  isRedirectResponse,
+  isResponse
+});

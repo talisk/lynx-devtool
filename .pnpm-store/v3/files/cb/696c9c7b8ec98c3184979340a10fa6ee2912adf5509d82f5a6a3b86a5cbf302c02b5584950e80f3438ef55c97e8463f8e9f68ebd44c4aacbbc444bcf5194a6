@@ -1,0 +1,46 @@
+import path from "path";
+import { ROUTE_SPEC_FILE, fs as fse, isDepExists } from "@modern-js/utils";
+const serverAppContenxtTemplate = (appContext) => {
+  const { appDirectory, sharedDirectory, apiDirectory, lambdaDirectory, metaName } = appContext;
+  return {
+    sharedDirectory: `path.join(__dirname, "${path.relative(appDirectory, sharedDirectory)}")`,
+    apiDirectory: `path.join(__dirname, "${path.relative(appDirectory, apiDirectory)}")`,
+    lambdaDirectory: `path.join(__dirname, "${path.relative(appDirectory, lambdaDirectory)}")`,
+    metaName
+  };
+};
+const genPluginImportsCode = (plugins) => {
+  return plugins.map(([name, options], index) => `
+      let plugin_${index} = require('${name}')
+      plugin_${index} = plugin_${index}.default || plugin_${index}
+      `).join(";\n");
+};
+const getPluginsCode = (plugins) => {
+  return `[${plugins.map(([, options], index) => `plugin_${index}(${options ? JSON.stringify(options) : ""})`).join(",")}]`;
+};
+const getProjectUsage = (appDirectory, distDirectory) => {
+  const routeJSON = path.join(distDirectory, ROUTE_SPEC_FILE);
+  const { routes } = fse.readJSONSync(routeJSON);
+  let useSSR = false;
+  let useAPI = false;
+  routes.forEach((route) => {
+    if (route.isSSR) {
+      useSSR = true;
+    }
+    if (route.isApi) {
+      useAPI = true;
+    }
+  });
+  const useWebServer = isDepExists(appDirectory, "@modern-js/plugin-server");
+  return {
+    useSSR,
+    useAPI,
+    useWebServer
+  };
+};
+export {
+  genPluginImportsCode,
+  getPluginsCode,
+  getProjectUsage,
+  serverAppContenxtTemplate
+};

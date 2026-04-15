@@ -1,0 +1,4 @@
+export interface IRemoteDebugDriverProxy {
+    generateRemoteDebugProxy?: (protocol: string, websocketUrl: string, roomId: string, float: string) => string;
+    generateDevtoolUrlProxy?: (websocketUrl: string, roomId: string) => string;
+}

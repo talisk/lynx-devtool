@@ -1,0 +1,7 @@
+import type { PluginAPI } from '@modern-js/core';
+import type { Command } from '@modern-js/utils';
+import type { ModuleTools } from './types';
+export declare const buildCommand: (program: Command, api: PluginAPI<ModuleTools>) => Promise<void>;
+export declare const devCommand: (program: Command, api: PluginAPI<ModuleTools>) => Promise<void>;
+export declare const newCommand: (program: Command) => Promise<void>;
+export declare const upgradeCommand: (program: Command) => Promise<void>;

@@ -1,0 +1,42 @@
+import { provider } from "std-env";
+import { createNetlifyPreset } from "./platforms/netlify";
+import { createNodePreset } from "./platforms/node";
+import { createVercelPreset } from "./platforms/vercel";
+import { getProjectUsage } from "./utils";
+const deployPresets = {
+  node: createNodePreset,
+  vercel: createVercelPreset,
+  netlify: createNetlifyPreset
+};
+async function getDeployPreset(appContext, modernConfig, deployTarget) {
+  const { appDirectory, distDirectory } = appContext;
+  const { useSSR, useAPI, useWebServer } = getProjectUsage(appDirectory, distDirectory);
+  const needModernServer = useSSR || useAPI || useWebServer;
+  const createPreset = deployPresets[deployTarget];
+  if (!createPreset) {
+    throw new Error(`Unknown deploy target: '${deployTarget}'. MODERNJS_DEPLOY should be 'node', 'vercel', or 'netlify'.`);
+  }
+  return createPreset(appContext, modernConfig, needModernServer);
+}
+var deploy_default = () => ({
+  name: "@modern-js/plugin-deploy",
+  setup: (api) => {
+    const deployTarget = process.env.MODERNJS_DEPLOY || provider || "node";
+    api.deploy(async () => {
+      const appContext = api.getAppContext();
+      const { metaName } = appContext;
+      if (metaName !== "modern-js" && !process.env.MODERNJS_DEPLOY) {
+        return;
+      }
+      const modernConfig = api.getNormalizedConfig();
+      const deployPreset = await getDeployPreset(appContext, modernConfig, deployTarget);
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.prepare) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.prepare());
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.writeOutput) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.writeOutput());
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.genEntry) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.genEntry());
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.end) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.end());
+    });
+  }
+});
+export {
+  deploy_default as default
+};

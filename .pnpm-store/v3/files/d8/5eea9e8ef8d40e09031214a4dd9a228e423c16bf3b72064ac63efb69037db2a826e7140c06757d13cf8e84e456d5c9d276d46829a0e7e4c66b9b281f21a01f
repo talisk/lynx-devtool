@@ -1,0 +1,11 @@
+import Client from "./client";
+import Forward from "./Forward";
+export default class TargetClient {
+    readonly client: Client;
+    readonly connKey: string;
+    constructor(client: Client, connKey: string);
+    forward(local: string, remote: string): Promise<boolean>;
+    listForwards(): Promise<Forward[]>;
+    removeForward(local: string, remote: string): Promise<boolean>;
+    private connection;
+}

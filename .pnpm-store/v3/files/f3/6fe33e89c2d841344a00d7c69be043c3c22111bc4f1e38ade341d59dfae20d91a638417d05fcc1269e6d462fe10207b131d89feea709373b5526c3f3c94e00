@@ -1,0 +1,10 @@
+function normalizePathname(pathname) {
+  var normalized = "/" + pathname.replace(/^\/+|\/+$/g, "");
+  if (normalized === "/") {
+    return normalized;
+  }
+  return normalized;
+}
+export {
+  normalizePathname
+};

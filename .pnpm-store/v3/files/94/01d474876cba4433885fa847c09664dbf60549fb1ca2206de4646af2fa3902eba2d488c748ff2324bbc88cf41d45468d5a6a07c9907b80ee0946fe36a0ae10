@@ -1,0 +1,52 @@
+import { loadServerPlugins as loadServerPluginInstances } from "@modern-js/prod-server";
+import { compatibleRequire, createDebugger, dynamicImport, getInternalPlugins, tryResolve } from "@modern-js/utils";
+const debug = createDebugger("load-plugins");
+async function getServerPlugins(api, metaName = "modern-js") {
+  const hooks = api.getHooks();
+  const { plugins } = await hooks._internalServerPlugins.call({
+    plugins: []
+  });
+  const filtedPlugins = plugins.filter((plugin) => plugin.name.includes(metaName));
+  api.updateAppContext({
+    serverPlugins: filtedPlugins
+  });
+  return filtedPlugins;
+}
+async function loadServerPlugins(api, appDirectory, metaName) {
+  const plugins = await getServerPlugins(api, metaName);
+  const instances = await loadServerPluginInstances(plugins, appDirectory);
+  return instances;
+}
+const resolveCliPlugin = async (p, appDirectory) => {
+  const pkg = typeof p === "string" ? p : p[0];
+  const pluginOptions = typeof p === "string" ? void 0 : p[1];
+  const path = tryResolve(pkg, appDirectory);
+  let module;
+  try {
+    module = await compatibleRequire(path);
+  } catch (e) {
+    ({ default: module } = await dynamicImport(path));
+  }
+  if (typeof module === "function") {
+    const result = module(pluginOptions);
+    return result;
+  }
+  return module;
+};
+const loadInternalPlugins = async (appDirectory, internalPlugins, autoLoad, autoLoadPlugins) => {
+  const plugins = [
+    ...autoLoadPlugins ? getInternalPlugins(appDirectory, internalPlugins) : [],
+    ...autoLoad ? getInternalPlugins(appDirectory, autoLoad) : []
+  ];
+  const loadedPlugins = await Promise.all(plugins.map((plugin) => {
+    const loadedPlugin = resolveCliPlugin(plugin, appDirectory);
+    debug(`resolve plugin %s: %s`, plugin, loadedPlugin);
+    return loadedPlugin;
+  }));
+  return loadedPlugins;
+};
+export {
+  getServerPlugins,
+  loadInternalPlugins,
+  loadServerPlugins
+};

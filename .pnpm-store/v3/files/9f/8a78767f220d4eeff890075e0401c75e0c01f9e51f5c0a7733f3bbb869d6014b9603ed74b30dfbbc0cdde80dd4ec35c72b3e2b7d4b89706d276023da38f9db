@@ -1,0 +1,124 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var build_exports = {};
+__export(build_exports, {
+  cssExtensions: () => cssExtensions,
+  getDefaultBuildConfig: () => getDefaultBuildConfig
+});
+module.exports = __toCommonJS(build_exports);
+const getDefaultBuildConfig = () => {
+  return Object.freeze({
+    alias: {},
+    asset: {
+      limit: 14336,
+      path: "assets",
+      publicPath: "",
+      svgr: false,
+      name: "[name].[hash].[ext]"
+    },
+    autoExternal: true,
+    banner: {},
+    buildType: "bundle",
+    copy: {},
+    define: {},
+    disableSwcTransform: false,
+    dts: Object.freeze({
+      only: false,
+      distPath: "./",
+      tsconfigPath: void 0,
+      abortOnError: true,
+      respectExternal: true,
+      enableTscBuild: false
+    }),
+    autoExtension: false,
+    esbuildOptions: (c) => c,
+    externalHelpers: false,
+    externals: [],
+    format: "cjs",
+    footer: {},
+    hooks: [],
+    input: [
+      "src/index.ts"
+    ],
+    jsx: "automatic",
+    loader: {},
+    metafile: false,
+    minify: false,
+    outDir: "./dist",
+    platform: "node",
+    redirect: {
+      alias: true,
+      asset: true,
+      style: true,
+      autoExtension: true
+    },
+    resolve: {
+      mainFields: [
+        "module",
+        "main"
+      ],
+      jsExtensions: [
+        ".jsx",
+        ".tsx",
+        ".js",
+        ".ts",
+        ".json"
+      ],
+      alias: {},
+      tsConfig: {
+        configFile: "tsconfig.json",
+        references: void 0
+      }
+    },
+    shims: false,
+    sideEffects: void 0,
+    sourceDir: "./src",
+    sourceMap: false,
+    sourceType: "module",
+    splitting: false,
+    style: {
+      autoModules: true,
+      inject: false,
+      less: {},
+      modules: {},
+      postcss: {},
+      sass: {},
+      tailwindcss: {}
+    },
+    target: "es6",
+    transformCache: true,
+    transformImport: [],
+    transformLodash: false,
+    tsconfig: "tsconfig.json",
+    umdGlobals: {},
+    umdModuleName: (name) => name
+  });
+};
+const cssExtensions = [
+  ".less",
+  ".css",
+  ".sass",
+  ".scss",
+  ".js"
+];
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  cssExtensions,
+  getDefaultBuildConfig
+});

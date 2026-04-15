@@ -1,0 +1,475 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _define_property } from "@swc/helpers/_/_define_property";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { cutNameByHyphen } from "@modern-js/utils/universal";
+import { TrieRouter } from "hono/router/trie-router";
+import { REPLACE_REG, X_MODERNJS_RENDER } from "../../constants";
+import { uniqueKeyByRoute } from "../../utils";
+import { ErrorDigest, createErrorHtml, getPathname, getRuntimeEnv, onError as onErrorFn, parseHeaders, parseQuery, sortRoutes, transformResponse } from "../../utils";
+import { dataHandler } from "./dataHandler";
+import { ssrRender } from "./ssrRender";
+var DYNAMIC_ROUTE_REG = /\/:./;
+function getRouter(routes) {
+  var dynamicRoutes = [];
+  var normalRoutes = [];
+  routes.forEach(function(route2) {
+    if (DYNAMIC_ROUTE_REG.test(route2.urlPath)) {
+      dynamicRoutes.push(route2);
+    } else {
+      normalRoutes.push(route2);
+    }
+  });
+  var finalRoutes = _to_consumable_array(normalRoutes.sort(sortRoutes)).concat(_to_consumable_array(dynamicRoutes.sort(sortRoutes)));
+  var router = new TrieRouter();
+  var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+  try {
+    for (var _iterator = finalRoutes[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+      var route = _step.value;
+      var originUrlPath = route.urlPath;
+      var urlPath = originUrlPath.endsWith("/") ? "".concat(originUrlPath, "*") : "".concat(originUrlPath, "/*");
+      router.add("*", urlPath, route);
+    }
+  } catch (err) {
+    _didIteratorError = true;
+    _iteratorError = err;
+  } finally {
+    try {
+      if (!_iteratorNormalCompletion && _iterator.return != null) {
+        _iterator.return();
+      }
+    } finally {
+      if (_didIteratorError) {
+        throw _iteratorError;
+      }
+    }
+  }
+  return router;
+}
+function matchRoute(router, pathname) {
+  var matched = router.match("*", pathname);
+  var result = matched[0][0];
+  return result || [];
+}
+function getHeadersWithoutCookie(headers) {
+  var _headers = _object_spread_props(_object_spread({}, headers), {
+    cookie: void 0
+  });
+  delete _headers.cookie;
+  return _headers;
+}
+function createRender(_) {
+  return _createRender.apply(this, arguments);
+}
+function _createRender() {
+  _createRender = _async_to_generator(function(param) {
+    var routes, pwd, metaName, staticGenerate, cacheConfig, forceCSR, config, onFallbackFn, router;
+    return _ts_generator(this, function(_state) {
+      routes = param.routes, pwd = param.pwd, metaName = param.metaName, staticGenerate = param.staticGenerate, cacheConfig = param.cacheConfig, forceCSR = param.forceCSR, config = param.config, onFallbackFn = param.onFallback;
+      router = getRouter(routes);
+      return [
+        2,
+        function() {
+          var _ref = _async_to_generator(function(req, param2) {
+            var logger, reporter, metrics, monitors, nodeReq, templates, serverManifest, locals, matchPathname, loaderContext, forMatchpathname, _matchRoute, routeInfo, params, framework, fallbackHeader, fallbackReason, onFallback, html, renderMode, headerData, onError, onTiming, onBoundError, renderOptions, response, _tmp;
+            return _ts_generator(this, function(_state2) {
+              switch (_state2.label) {
+                case 0:
+                  logger = param2.logger, reporter = param2.reporter, metrics = param2.metrics, monitors = param2.monitors, nodeReq = param2.nodeReq, templates = param2.templates, serverManifest = param2.serverManifest, locals = param2.locals, matchPathname = param2.matchPathname, loaderContext = param2.loaderContext;
+                  forMatchpathname = matchPathname !== null && matchPathname !== void 0 ? matchPathname : getPathname(req);
+                  _matchRoute = _sliced_to_array(matchRoute(router, forMatchpathname), 2), routeInfo = _matchRoute[0], params = _matchRoute[1];
+                  framework = metaName || "modern-js";
+                  fallbackHeader = "x-".concat(cutNameByHyphen(framework), "-ssr-fallback");
+                  fallbackReason = null;
+                  onFallback = function() {
+                    var _ref2 = _async_to_generator(function(reason, error) {
+                      return _ts_generator(this, function(_state3) {
+                        fallbackReason = reason;
+                        return [
+                          2,
+                          onFallbackFn === null || onFallbackFn === void 0 ? void 0 : onFallbackFn(reason, {
+                            logger,
+                            reporter,
+                            metrics
+                          }, error)
+                        ];
+                      });
+                    });
+                    return function onFallback2(reason, error) {
+                      return _ref2.apply(this, arguments);
+                    };
+                  }();
+                  if (!routeInfo) {
+                    return [
+                      2,
+                      new Response(createErrorHtml(404), {
+                        status: 404,
+                        headers: {
+                          "content-type": "text/html; charset=UTF-8"
+                        }
+                      })
+                    ];
+                  }
+                  html = templates[uniqueKeyByRoute(routeInfo)];
+                  if (!html) {
+                    return [
+                      2,
+                      new Response(createErrorHtml(404), {
+                        status: 404,
+                        headers: {
+                          "content-type": "text/html; charset=UTF-8"
+                        }
+                      })
+                    ];
+                  }
+                  return [
+                    4,
+                    getRenderMode(req, fallbackHeader, routeInfo.isSSR, forceCSR, nodeReq, onFallback)
+                  ];
+                case 1:
+                  renderMode = _state2.sent();
+                  headerData = parseHeaders(req);
+                  onError = function(e) {
+                    monitors === null || monitors === void 0 ? void 0 : monitors.error("SSR Error - ".concat(_instanceof(e, Error) ? e.name : e, ", error = %s, req.url = %s, req.headers = %o"), _instanceof(e, Error) ? e.stack || e.message : e, forMatchpathname, getHeadersWithoutCookie(headerData));
+                  };
+                  onTiming = function(name, dur) {
+                    monitors === null || monitors === void 0 ? void 0 : monitors.timing(name, dur, "SSR");
+                  };
+                  onBoundError = function() {
+                    var _ref2 = _async_to_generator(function(e) {
+                      return _ts_generator(this, function(_state3) {
+                        switch (_state3.label) {
+                          case 0:
+                            onErrorFn(ErrorDigest.ERENDER, e, monitors, req);
+                            return [
+                              4,
+                              onFallback === null || onFallback === void 0 ? void 0 : onFallback("error", e)
+                            ];
+                          case 1:
+                            _state3.sent();
+                            return [
+                              2
+                            ];
+                        }
+                      });
+                    });
+                    return function onBoundError2(e) {
+                      return _ref2.apply(this, arguments);
+                    };
+                  }();
+                  renderOptions = {
+                    pwd,
+                    html,
+                    routeInfo,
+                    staticGenerate: staticGenerate || false,
+                    config,
+                    nodeReq,
+                    cacheConfig,
+                    reporter,
+                    serverRoutes: routes,
+                    params,
+                    logger,
+                    metrics,
+                    locals,
+                    serverManifest,
+                    loaderContext: loaderContext || /* @__PURE__ */ new Map(),
+                    onError,
+                    onTiming
+                  };
+                  switch (renderMode) {
+                    case "data":
+                      return [
+                        3,
+                        2
+                      ];
+                    case "ssr":
+                      return [
+                        3,
+                        6
+                      ];
+                    case "csr":
+                      return [
+                        3,
+                        6
+                      ];
+                  }
+                  return [
+                    3,
+                    8
+                  ];
+                case 2:
+                  return [
+                    4,
+                    dataHandler(req, renderOptions)
+                  ];
+                case 3:
+                  _tmp = _state2.sent();
+                  if (_tmp)
+                    return [
+                      3,
+                      5
+                    ];
+                  return [
+                    4,
+                    renderHandler(req, renderOptions, "ssr", onBoundError)
+                  ];
+                case 4:
+                  _tmp = _state2.sent();
+                  _state2.label = 5;
+                case 5:
+                  response = _tmp;
+                  return [
+                    3,
+                    9
+                  ];
+                case 6:
+                  return [
+                    4,
+                    renderHandler(req, renderOptions, renderMode, onBoundError)
+                  ];
+                case 7:
+                  response = _state2.sent();
+                  return [
+                    3,
+                    9
+                  ];
+                case 8:
+                  throw new Error("Unknown render mode: ".concat(renderMode));
+                case 9:
+                  if (fallbackReason) {
+                    response.headers.set(fallbackHeader, "1;reason=".concat(fallbackReason));
+                  }
+                  return [
+                    2,
+                    response
+                  ];
+              }
+            });
+          });
+          return function(req, _) {
+            return _ref.apply(this, arguments);
+          };
+        }()
+      ];
+    });
+  });
+  return _createRender.apply(this, arguments);
+}
+function renderHandler(request, options, mode, onError) {
+  return _renderHandler.apply(this, arguments);
+}
+function _renderHandler() {
+  _renderHandler = _async_to_generator(function(request, options, mode, onError) {
+    var _options_config_server, serverData, response, serverManifest, ssrByRouteIds, runtimeEnv, nestedRoutesJson, routes, urlPath, pathToFileURL, matchRoutes, url, matchedRoutes, _lastMatch_route, lastMatch, e, newRes, routeInfo;
+    function applyExtendHeaders(r, route) {
+      Object.entries(route.responseHeaders || {}).forEach(function(param) {
+        var _param = _sliced_to_array(param, 2), k = _param[0], v = _param[1];
+        r.headers.set(k, v);
+      });
+    }
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          serverData = {
+            router: {
+              baseUrl: options.routeInfo.urlPath,
+              params: options.params
+            }
+          };
+          response = null;
+          serverManifest = options.serverManifest;
+          ssrByRouteIds = (_options_config_server = options.config.server) === null || _options_config_server === void 0 ? void 0 : _options_config_server.ssrByRouteIds;
+          runtimeEnv = getRuntimeEnv();
+          if (!(serverManifest.nestedRoutesJson && ssrByRouteIds && (ssrByRouteIds === null || ssrByRouteIds === void 0 ? void 0 : ssrByRouteIds.length) > 0 && runtimeEnv === "node"))
+            return [
+              3,
+              3
+            ];
+          nestedRoutesJson = serverManifest.nestedRoutesJson;
+          routes = nestedRoutesJson === null || nestedRoutesJson === void 0 ? void 0 : nestedRoutesJson[options.routeInfo.entryName];
+          if (!routes)
+            return [
+              3,
+              3
+            ];
+          urlPath = "node:url";
+          return [
+            4,
+            import(urlPath)
+          ];
+        case 1:
+          pathToFileURL = _state.sent().pathToFileURL;
+          return [
+            4,
+            import(pathToFileURL(require.resolve("@modern-js/runtime-utils/remix-router")).href)
+          ];
+        case 2:
+          matchRoutes = _state.sent().matchRoutes;
+          url = new URL(request.url);
+          matchedRoutes = matchRoutes(routes, url.pathname, options.routeInfo.urlPath);
+          if (!matchedRoutes) {
+            response = csrRender(options.html);
+          } else {
+            ;
+            lastMatch = matchedRoutes[matchedRoutes.length - 1];
+            if (!(lastMatch === null || lastMatch === void 0 ? void 0 : (_lastMatch_route = lastMatch.route) === null || _lastMatch_route === void 0 ? void 0 : _lastMatch_route.id) || !ssrByRouteIds.includes(lastMatch.route.id)) {
+              response = csrRender(options.html);
+            }
+          }
+          _state.label = 3;
+        case 3:
+          if (!(mode === "ssr" && !response))
+            return [
+              3,
+              9
+            ];
+          _state.label = 4;
+        case 4:
+          _state.trys.push([
+            4,
+            6,
+            ,
+            8
+          ]);
+          return [
+            4,
+            ssrRender(request, options)
+          ];
+        case 5:
+          response = _state.sent();
+          return [
+            3,
+            8
+          ];
+        case 6:
+          e = _state.sent();
+          return [
+            4,
+            onError(e)
+          ];
+        case 7:
+          _state.sent();
+          response = csrRender(options.html);
+          return [
+            3,
+            8
+          ];
+        case 8:
+          return [
+            3,
+            10
+          ];
+        case 9:
+          response = csrRender(options.html);
+          _state.label = 10;
+        case 10:
+          newRes = transformResponse(response, injectServerData(serverData));
+          routeInfo = options.routeInfo;
+          applyExtendHeaders(newRes, routeInfo);
+          return [
+            2,
+            newRes
+          ];
+      }
+    });
+  });
+  return _renderHandler.apply(this, arguments);
+}
+function getRenderMode(req, fallbackHeader, isSSR, forceCSR, nodeReq, onFallback) {
+  return _getRenderMode.apply(this, arguments);
+}
+function _getRenderMode() {
+  _getRenderMode = _async_to_generator(function(req, fallbackHeader, isSSR, forceCSR, nodeReq, onFallback) {
+    var query;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          query = parseQuery(req);
+          if (!isSSR)
+            return [
+              3,
+              6
+            ];
+          if (query.__loader) {
+            return [
+              2,
+              "data"
+            ];
+          }
+          if (!(forceCSR && (query.csr || req.headers.get(fallbackHeader) || (nodeReq === null || nodeReq === void 0 ? void 0 : nodeReq.headers[fallbackHeader]))))
+            return [
+              3,
+              5
+            ];
+          if (!query.csr)
+            return [
+              3,
+              2
+            ];
+          return [
+            4,
+            onFallback === null || onFallback === void 0 ? void 0 : onFallback("query")
+          ];
+        case 1:
+          _state.sent();
+          return [
+            3,
+            4
+          ];
+        case 2:
+          return [
+            4,
+            onFallback === null || onFallback === void 0 ? void 0 : onFallback("header")
+          ];
+        case 3:
+          _state.sent();
+          _state.label = 4;
+        case 4:
+          return [
+            2,
+            "csr"
+          ];
+        case 5:
+          return [
+            2,
+            "ssr"
+          ];
+        case 6:
+          return [
+            2,
+            "csr"
+          ];
+        case 7:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return _getRenderMode.apply(this, arguments);
+}
+function csrRender(html) {
+  return new Response(html, {
+    status: 200,
+    headers: new Headers(_define_property({
+      "content-type": "text/html; charset=UTF-8"
+    }, X_MODERNJS_RENDER, "client"))
+  });
+}
+function injectServerData(serverData) {
+  var head = REPLACE_REG.before.head;
+  var searchValue = new RegExp(head);
+  var replcaeCb = function(beforeHead) {
+    return "".concat(beforeHead, '<script type="application/json" id="__MODERN_SERVER_DATA__">').concat(JSON.stringify(serverData), "</script>");
+  };
+  return function(template) {
+    return template.replace(searchValue, replcaeCb);
+  };
+}
+export {
+  createRender
+};

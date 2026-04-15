@@ -1,0 +1,12 @@
+import type { ICompiler } from '../../../types';
+interface Options {
+    compiler: ICompiler;
+    stdinDir: string;
+}
+export default class LessAliasesPlugin {
+    compiler: ICompiler;
+    stdinDir: string;
+    constructor(options: Options);
+    install(less: any, pluginManager: any): void;
+}
+export {};

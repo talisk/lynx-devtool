@@ -1,0 +1,86 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var serve_exports = {};
+__export(serve_exports, {
+  start: () => start
+});
+module.exports = __toCommonJS(serve_exports);
+var import_path = __toESM(require("path"));
+var import_prod_server = require("@modern-js/prod-server");
+var import_utils = require("@modern-js/utils");
+var import_loadPlugins = require("../utils/loadPlugins");
+var import_printInstructions = require("../utils/printInstructions");
+const start = async (api) => {
+  var _userConfig_source, _userConfig_output_distPath;
+  const appContext = api.getAppContext();
+  const userConfig = api.getNormalizedConfig();
+  const hooks = api.getHooks();
+  const { distDirectory, appDirectory, internalDirectory, port, metaName, serverRoutes, serverConfigFile } = appContext;
+  import_utils.logger.info(`Starting production server...`);
+  const apiOnly = await (0, import_utils.isApiOnly)(appContext.appDirectory, userConfig === null || userConfig === void 0 ? void 0 : (_userConfig_source = userConfig.source) === null || _userConfig_source === void 0 ? void 0 : _userConfig_source.entriesDir, appContext.apiDirectory);
+  let runMode;
+  if (apiOnly) {
+    runMode = "apiOnly";
+  }
+  const meta = (0, import_utils.getMeta)(metaName);
+  const serverConfigPath = import_path.default.resolve(distDirectory, import_utils.SERVER_DIR, `${meta}.server`);
+  const pluginInstances = await (0, import_loadPlugins.loadServerPlugins)(api, appDirectory, metaName);
+  const app = await (0, import_prod_server.createProdServer)({
+    metaName,
+    pwd: distDirectory,
+    config: {
+      ...userConfig,
+      dev: userConfig.dev,
+      // server-core can't get RegExp & Function output.enableInlineScripts by JSON.stringy;
+      output: {
+        path: (_userConfig_output_distPath = userConfig.output.distPath) === null || _userConfig_output_distPath === void 0 ? void 0 : _userConfig_output_distPath.root,
+        ...userConfig.output || {}
+      }
+    },
+    routes: serverRoutes,
+    plugins: pluginInstances,
+    serverConfigFile,
+    serverConfigPath,
+    appContext: {
+      appDirectory,
+      internalDirectory,
+      sharedDirectory: (0, import_utils.getTargetDir)(appContext.sharedDirectory, appContext.appDirectory, appContext.distDirectory),
+      apiDirectory: (0, import_utils.getTargetDir)(appContext.apiDirectory, appContext.appDirectory, appContext.distDirectory),
+      lambdaDirectory: (0, import_utils.getTargetDir)(appContext.lambdaDirectory, appContext.appDirectory, appContext.distDirectory)
+    },
+    runMode
+  });
+  app.listen(port, async () => {
+    await (0, import_printInstructions.printInstructions)(hooks, appContext, userConfig);
+  });
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  start
+});

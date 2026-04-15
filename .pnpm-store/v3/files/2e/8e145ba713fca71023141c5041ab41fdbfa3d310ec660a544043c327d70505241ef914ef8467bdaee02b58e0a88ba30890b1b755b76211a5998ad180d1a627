@@ -1,0 +1,71 @@
+{
+  "name": "@rsbuild/plugin-source-build",
+  "version": "1.0.2",
+  "description": "An Rsbuild plugin to provide support for monorepo source code referencing.",
+  "repository": "https://github.com/rspack-contrib/rsbuild-plugin-source-build",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+  	"build": "rslib build",
+		"dev": "rslib build --watch",
+    "lint": "biome check .",
+    "lint:write": "biome check . --write",
+    "prepare": "simple-git-hooks && npm run build",
+    "test": "playwright test",
+    "bump": "npx bumpp"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npx nano-staged"
+  },
+  "nano-staged": {
+    "*.{js,jsx,ts,tsx,mjs,cjs}": [
+      "biome check --write --no-errors-on-unmatched"
+    ]
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.2",
+    "json5": "^2.2.3",
+    "yaml": "^2.6.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@playwright/test": "^1.49.0",
+    "@rsbuild/core": "^1.1.6",
+    "@rsbuild/plugin-react": "^1.0.7",
+    "@rsbuild/plugin-type-check": "^1.1.0",
+    "@rslib/core": "^0.1.1",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "nano-staged": "^0.8.0",
+    "playwright": "^1.49.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "simple-git-hooks": "^2.11.1",
+    "typescript": "^5.7.2"
+  },
+  "peerDependencies": {
+    "@rsbuild/core": "1.x"
+  },
+  "peerDependenciesMeta": {
+    "@rsbuild/core": {
+      "optional": true
+    }
+  },
+  "packageManager": "pnpm@9.14.4",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

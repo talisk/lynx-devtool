@@ -1,0 +1,24 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createMessageHandler = void 0;
+const message_1 = require("../message");
+const message_model_1 = require("../message.model");
+function createMessageHandler(handler, connection, handleUnknownMessage) {
+    return (data) => {
+        const message = typeof data === "string"
+            ? (0, message_1.decodeSocketMessage)(data)
+            : data instanceof Buffer
+                ? (0, message_1.decodeSocketMessage)(data.toString())
+                : data;
+        if (handleUnknownMessage && (0, message_1.isUnknownMessage)(message)) {
+            connection === null || connection === void 0 ? void 0 : connection.send((0, message_1.encodeSocketMessage)({
+                event: message_model_1.SocketEvents.Exception,
+                data: message_model_1.SocketExceptions.UnknownCommand,
+            }));
+            return;
+        }
+        message && handler(message);
+    };
+}
+exports.createMessageHandler = createMessageHandler;
+//# sourceMappingURL=create-message-handler.js.map

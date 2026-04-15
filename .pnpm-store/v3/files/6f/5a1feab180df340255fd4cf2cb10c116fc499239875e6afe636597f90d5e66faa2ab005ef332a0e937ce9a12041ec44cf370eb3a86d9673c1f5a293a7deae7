@@ -1,0 +1,105 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.clearLockFileWhenProcessExit = exports.clearLockFile = exports.resetLockStatus = exports.unlock = exports.lock = exports.lockDir = exports.driver_dir = void 0;
+const fs_1 = __importDefault(require("fs"));
+const os_1 = __importDefault(require("os"));
+const signal_exit_1 = require("signal-exit");
+const DriverReportService_1 = require("../report/interface/DriverReportService");
+const logger_1 = require("./logger");
+exports.driver_dir = os_1.default.homedir() + "/.DebugRouterConnector";
+exports.lockDir = exports.driver_dir + "/lockfile";
+let hasLock = false;
+function mkdirSync(path, callback) {
+    try {
+        fs_1.default.mkdirSync(path);
+        callback(true);
+    }
+    catch (e) {
+        callback(false);
+    }
+}
+function rmdirSync(path, callback) {
+    try {
+        fs_1.default.rmSync(path, { recursive: true, force: true });
+        callback(null);
+    }
+    catch (e) {
+        callback(e);
+    }
+}
+function lock(callback) {
+    if (hasLock) {
+        callback(true);
+        return;
+    }
+    mkdirSync(exports.lockDir, (mkdirState) => {
+        var _a;
+        if (!mkdirState) {
+            const warning_msg = "mkdir failed:" + exports.lockDir;
+            logger_1.defaultLogger.debug(warning_msg);
+            callback(false);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("fs_file_lock_warning", null, {
+                error: warning_msg,
+            });
+        }
+        else {
+            hasLock = true;
+            callback(true);
+        }
+    });
+}
+exports.lock = lock;
+function unlock(afterUnlock) {
+    if (!hasLock) {
+        afterUnlock(null);
+    }
+    rmdirSync(exports.lockDir, (err) => {
+        var _a;
+        if (err !== null) {
+            const error_msg = "unlock: fs rm lockDir:" + err.message;
+            logger_1.defaultLogger.debug(error_msg);
+            afterUnlock(err);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("fs_file_lock_error", null, {
+                error: error_msg,
+            });
+        }
+        else {
+            hasLock = false;
+            afterUnlock(null);
+        }
+    });
+}
+exports.unlock = unlock;
+function resetLockStatus() {
+    hasLock = false;
+}
+exports.resetLockStatus = resetLockStatus;
+function clearLockFile() {
+    var _a, _b;
+    try {
+        fs_1.default.rmdirSync(exports.lockDir);
+    }
+    catch (e) {
+        const error_msg = (_a = e === null || e === void 0 ? void 0 : e.message) !== null && _a !== void 0 ? _a : "";
+        logger_1.defaultLogger.debug(error_msg);
+        if (error_msg.indexOf("ENOENT") === -1) {
+            (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("fs_file_lock_error", null, {
+                error: error_msg,
+            });
+        }
+    }
+}
+exports.clearLockFile = clearLockFile;
+function clearLockFileWhenProcessExit() {
+    (0, signal_exit_1.onExit)((code, signal) => {
+        logger_1.defaultLogger.debug("process exit:" + code + " " + signal);
+        if (hasLock) {
+            clearLockFile();
+        }
+    });
+}
+exports.clearLockFileWhenProcessExit = clearLockFileWhenProcessExit;
+//# sourceMappingURL=file_lock.js.map

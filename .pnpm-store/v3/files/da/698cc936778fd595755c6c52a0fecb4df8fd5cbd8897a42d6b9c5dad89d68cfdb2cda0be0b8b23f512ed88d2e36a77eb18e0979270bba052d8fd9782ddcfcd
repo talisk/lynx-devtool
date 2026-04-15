@@ -1,0 +1,6 @@
+import { BaseDevice } from "../BaseDevice";
+import { DebugRouterConnector } from "../../connector/DebugRouterConnector";
+export default class WindowsDevice extends BaseDevice {
+    constructor(driver: DebugRouterConnector);
+    getHost(): string;
+}

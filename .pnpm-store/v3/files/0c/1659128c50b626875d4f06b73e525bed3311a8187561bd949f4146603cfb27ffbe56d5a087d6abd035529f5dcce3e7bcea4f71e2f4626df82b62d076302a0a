@@ -1,0 +1,8 @@
+import type { PluginAPI } from '@modern-js/core';
+import type { BaseBuildConfig, BuildCommandOptions, ModuleTools } from '../types';
+import type { ModuleContext } from '../types/context';
+export declare const run: (options: {
+    cmdOptions: BuildCommandOptions;
+    normalizedBuildConfig: BaseBuildConfig[];
+    context: ModuleContext;
+}, api: PluginAPI<ModuleTools>) => Promise<void>;

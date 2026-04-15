@@ -1,0 +1,5 @@
+import type { IAppContext } from '@modern-js/core';
+import type { AppToolsContext } from '../types/new';
+export declare const generateRoutes: (appContext: AppToolsContext<'shared'> | IAppContext) => Promise<void>;
+export declare const getPathWithoutExt: (filename: string) => string;
+export declare const isMainEntry: (entryName: string, mainEntryName?: string) => boolean;

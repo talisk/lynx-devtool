@@ -1,0 +1,41 @@
+/// <reference types="node" />
+/// <reference types="node" />
+import * as net from "net";
+import { ClientQuery } from "../utils/type";
+import { Connection } from "./Connection";
+import { DebugRouterConnector } from "../connector";
+export interface ClientEventsListener {
+    onConnectionCreated(connection: Connection, port: number, clientQuery: ClientQuery): number;
+    onConnectionDeleted(id: number): void;
+}
+export default class ClientAdapter {
+    protected driver: DebugRouterConnector;
+    protected listener: ClientEventsListener | null;
+    protected readonly port: number;
+    protected readonly device: string;
+    protected readonly device_id: string;
+    readonly type: string;
+    protected readonly device_host: string;
+    private readonly initialBufferCapacity;
+    private readonly usbmuxdPacketHeaderLength;
+    private bufferCapacity;
+    private buffer;
+    private offset;
+    private end;
+    protected tcpClient: net.Socket;
+    protected isConnected: boolean;
+    protected connection: Connection | null;
+    protected from?: number;
+    protected id: number;
+    constructor(driver: DebugRouterConnector, listener: ClientEventsListener | null, port: number, device: string, device_id: string, type: string, device_host: string);
+    protected handleData(client: net.Socket, data: Buffer): void;
+    protected handleOff(client: net.Socket): void;
+    protected handleUnpackMessage(data: any): void;
+    onConnect(): void;
+    protected handleMessage(message: string): Promise<void>;
+    private handleConnection;
+    protected handleClientEvent(message: string, session_id: number | undefined): void;
+    protected handleSessionList(sessionList: any): void;
+    connect(): void;
+    destroy(): void;
+}

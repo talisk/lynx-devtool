@@ -1,0 +1,9 @@
+/// <reference types="node" />
+export declare function packMessage(data: any): Buffer;
+export declare function buildClientId(clientInfo: {
+    app: string;
+    os: string;
+    device: string;
+    device_id: string;
+    port: string;
+}): string;

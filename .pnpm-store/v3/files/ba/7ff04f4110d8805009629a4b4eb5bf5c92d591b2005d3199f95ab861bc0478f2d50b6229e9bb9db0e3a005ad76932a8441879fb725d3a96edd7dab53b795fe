@@ -1,0 +1,60 @@
+import type { IClientDescriptor } from "./client.model";
+export declare enum SocketEvents {
+    Initialize = "Initialize",
+    Register = "Register",
+    Registered = "Registered",
+    CreateRoom = "CreateRoom",
+    RoomCreated = "RoomCreated",
+    JoinRoom = "JoinRoom",
+    ListClients = "ListClients",
+    ClientList = "ClientList",
+    RoomJoined = "RoomJoined",
+    LeaveRoom = "LeaveRoom",
+    RoomLeaved = "RoomLeaved",
+    CloseRoom = "CloseRoom",
+    RoomClosed = "RoomClosed",
+    Exception = "Exception",
+    Customized = "Customized",
+    Ping = "Ping",
+    Pong = "Pong"
+}
+export declare enum SocketExceptions {
+    PermissionDenied = "PermissionDenied",
+    NotFound = "NotFound",
+    UselessAction = "UselessAction",
+    UnknownCommand = "UnknownCommand",
+    RoomIdAlreadyExists = "RoomIdAlreadyExists",
+    CannotSendToSelf = "CannotSendToSelf"
+}
+export interface ISocketMessage<T> {
+    from?: number;
+    to?: number;
+    event: SocketEvents;
+    data: T;
+    token?: string;
+    mark?: number;
+}
+type SocketEventRecord<T extends SocketEvents, U, V extends Record<T, U>> = V;
+export type SocketEventMap = SocketEventRecord<SocketEvents, any, {
+    [SocketEvents.Initialize]: number;
+    [SocketEvents.Register]: IClientDescriptor;
+    [SocketEvents.Registered]: IClientDescriptor;
+    [SocketEvents.CreateRoom]: string | undefined;
+    [SocketEvents.RoomCreated]: string;
+    [SocketEvents.JoinRoom]: string;
+    [SocketEvents.RoomJoined]: IClientDescriptor;
+    [SocketEvents.LeaveRoom]: void;
+    [SocketEvents.RoomLeaved]: IClientDescriptor;
+    [SocketEvents.CloseRoom]: void;
+    [SocketEvents.RoomClosed]: string;
+    [SocketEvents.Exception]: string;
+    [SocketEvents.ListClients]: void;
+    [SocketEvents.ClientList]: IClientDescriptor[];
+    [SocketEvents.Customized]: unknown;
+    [SocketEvents.Ping]: void;
+    [SocketEvents.Pong]: void;
+}>;
+export type ITypedSocketMessage<T extends SocketEvents> = ISocketMessage<SocketEventMap[T]> & {
+    event: T;
+};
+export {};

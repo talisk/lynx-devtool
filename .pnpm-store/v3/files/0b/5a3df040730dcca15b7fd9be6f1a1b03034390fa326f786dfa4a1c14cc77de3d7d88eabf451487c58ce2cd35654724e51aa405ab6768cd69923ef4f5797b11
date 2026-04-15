@@ -1,0 +1,13 @@
+import type { ModuleUserConfig } from '../types';
+export declare const miscHooks: {
+    addRuntimeExports: import("@modern-js/plugin").AsyncWaterfall<void>;
+    /**
+     * Change user configuration
+     */
+    resolveModuleUserConfig: import("@modern-js/plugin").AsyncWaterfall<ModuleUserConfig>;
+    /**
+     * @deprecated
+     * use buildConfig.hooks and buildConfig.esbuildOptions instead.
+     */
+    modifyLibuild: import("@modern-js/plugin").AsyncPipeline<unknown, unknown>;
+};

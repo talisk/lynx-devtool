@@ -1,0 +1,67 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var run_exports = {};
+__export(run_exports, {
+  run: () => run
+});
+module.exports = __toCommonJS(run_exports);
+var import_cli = require("@modern-js/plugin-v2/cli");
+var import_run = require("@modern-js/plugin-v2/run");
+var import_utils = require("@modern-js/utils");
+var import_hooks = require("../compat/hooks");
+var import_constants = require("../constants");
+var import_getConfigFile = require("../utils/getConfigFile");
+var import_isAutoLoadPlugins = require("../utils/isAutoLoadPlugins");
+var import_loadPlugins = require("../utils/loadPlugins");
+async function run({ cwd, initialLog, version, internalPlugins, packageJsonConfig, configFile }) {
+  const command = process.argv[2];
+  const cliParams = (0, import_utils.minimist)(process.argv.slice(2));
+  const SUPPORT_CONFIG_PARAM_COMMANDS = [
+    "dev",
+    "build",
+    "deploy",
+    "start",
+    "serve",
+    "inspect",
+    "upgrade"
+  ];
+  let customConfigFile;
+  if (SUPPORT_CONFIG_PARAM_COMMANDS.includes(command)) {
+    customConfigFile = cliParams.config || cliParams.c;
+  }
+  if (command === "new") {
+    customConfigFile = cliParams["config-file"];
+  }
+  const appDirectory = await (0, import_cli.initAppDir)(cwd);
+  const finalConfigFile = customConfigFile || (0, import_getConfigFile.getConfigFile)(configFile);
+  const autoLoadPlugins = await (0, import_isAutoLoadPlugins.isAutoLoadPlugins)(appDirectory, finalConfigFile);
+  const plugins = await (0, import_loadPlugins.loadInternalPlugins)(appDirectory, internalPlugins === null || internalPlugins === void 0 ? void 0 : internalPlugins.cli, internalPlugins === null || internalPlugins === void 0 ? void 0 : internalPlugins.autoLoad, autoLoadPlugins);
+  await (0, import_run.run)({
+    cwd,
+    initialLog: initialLog || `Modern.js Framework v${version}`,
+    configFile: finalConfigFile,
+    packageJsonConfig: packageJsonConfig || import_constants.PACKAGE_JSON_CONFIG_NAME,
+    internalPlugins: plugins,
+    handleSetupResult: import_hooks.handleSetupResult
+  });
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  run
+});

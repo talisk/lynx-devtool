@@ -1,0 +1,13 @@
+/// <reference types="node" />
+import type { PartialMessage } from 'esbuild';
+import type { ICompiler, Source } from '../../../types';
+export type PreprocessRender = (content: string, stdinPath: string, stdinDir: string, preprocessOptions: any, resolvePathMap: Map<string, string>, implementation?: object | string) => Promise<{
+    css: Buffer | string;
+    errors?: PartialMessage[];
+    warnings?: PartialMessage[];
+    map?: Buffer | string;
+}>;
+export declare function transformStyle(this: ICompiler, source: Source): Promise<{
+    code: string;
+    loader: "css" | "js";
+}>;

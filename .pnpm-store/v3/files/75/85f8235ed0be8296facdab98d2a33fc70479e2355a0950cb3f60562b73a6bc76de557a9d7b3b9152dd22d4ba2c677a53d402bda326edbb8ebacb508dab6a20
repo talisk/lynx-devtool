@@ -1,0 +1,71 @@
+{
+  "name": "@modern-js/plugin-i18n",
+  "description": "A Progressive React Framework for modern web development.",
+  "homepage": "https://modernjs.dev",
+  "bugs": "https://github.com/web-infra-dev/modern.js/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web-infra-dev/modern.js",
+    "directory": "packages/cli/plugin-i18n"
+  },
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "framework",
+    "modern",
+    "modern.js"
+  ],
+  "version": "2.63.2",
+  "jsnext:source": "./src/index.ts",
+  "types": "./dist/types/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "typesVersions": {
+    "*": {
+      "language-detector": [
+        "./dist/types/languageDetector.d.ts"
+      ]
+    }
+  },
+  "exports": {
+    ".": {
+      "node": {
+        "import": "./dist/esm-node/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/esm/index.js"
+    },
+    "./language-detector": {
+      "node": {
+        "import": "./dist/esm-node/languageDetector.js",
+        "require": "./dist/cjs/languageDetector.js"
+      },
+      "types": "./dist/types/languageDetector.d.ts",
+      "default": "./dist/esm/languageDetector.js"
+    }
+  },
+  "dependencies": {
+    "@swc/helpers": "0.5.13",
+    "@modern-js/utils": "2.63.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29",
+    "@types/node": "^14",
+    "jest": "^29",
+    "typescript": "^5",
+    "@scripts/jest-config": "2.63.2",
+    "@scripts/build": "2.63.2"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "new": "modern-lib new",
+    "build": "modern-lib build",
+    "test": "jest --passWithNoTests"
+  }
+}

@@ -1,0 +1,13 @@
+import { type RenderLevel } from '../../constants';
+import type { RuntimeContext } from '../../context';
+import type { HandleRequestConfig } from '../requestHandler';
+import { type SSRConfig } from '../shared';
+export type BuildShellAfterTemplateOptions = {
+    runtimeContext: RuntimeContext;
+    renderLevel: RenderLevel;
+    ssrConfig: SSRConfig;
+    request: Request;
+    entryName: string;
+    config: HandleRequestConfig;
+};
+export declare function buildShellAfterTemplate(afterAppTemplate: string, options: BuildShellAfterTemplateOptions): Promise<string>;

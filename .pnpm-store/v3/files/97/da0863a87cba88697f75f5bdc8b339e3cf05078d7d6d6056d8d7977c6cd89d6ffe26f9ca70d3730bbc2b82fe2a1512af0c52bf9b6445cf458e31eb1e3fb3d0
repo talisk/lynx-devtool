@@ -1,0 +1,11 @@
+/// <reference types="node" />
+import Connection from "./connection";
+import Parser from "./parser";
+export default abstract class Command<T> {
+    connection: Connection;
+    parser: Parser;
+    constructor(connection: Connection);
+    abstract execute(...args: any[]): Promise<T>;
+    send(data: Buffer): Command<T>;
+    private encodeData;
+}

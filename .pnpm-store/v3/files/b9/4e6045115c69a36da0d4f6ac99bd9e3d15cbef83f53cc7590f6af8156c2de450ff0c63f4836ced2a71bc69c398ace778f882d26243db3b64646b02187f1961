@@ -1,0 +1,14 @@
+import type { Format } from '../types';
+export declare const getDefaultOutExtension: (options: {
+    format: Format;
+    root: string;
+    autoExtension: boolean;
+}) => {
+    jsExtension: string;
+    dtsExtension: string;
+    isModule?: undefined;
+} | {
+    jsExtension: string;
+    dtsExtension: string;
+    isModule: boolean;
+};

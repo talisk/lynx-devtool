@@ -1,0 +1,83 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name2 in all)
+    __defProp(target, name2, { get: all[name2], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var terser_exports = {};
+__export(terser_exports, {
+  minify: () => minify
+});
+module.exports = __toCommonJS(terser_exports);
+var import_utils = require("@modern-js/utils");
+var import_terser = require("terser");
+var import_types = require("../../types");
+var import_utils2 = require("../../utils");
+const name = "terser";
+const apply = (compiler) => {
+  compiler.hooks.renderChunk.tapPromise({
+    name
+  }, async (chunk) => {
+    const { sourceMap, minify: minify2 } = compiler.config;
+    if (chunk.type === import_types.ChunkType.chunk) {
+      const code = chunk.contents.toString();
+      const needSourceMap = Boolean(sourceMap);
+      const terserOptions = resolveTerserOptions(minify2, {
+        sourceMap: Boolean(needSourceMap)
+      });
+      const result = await (0, import_terser.minify)(code, {
+        ...terserOptions,
+        sourceMap: needSourceMap
+      });
+      return {
+        ...chunk,
+        contents: result.code || chunk.contents,
+        map: (0, import_utils2.normalizeSourceMap)(result.map, {
+          needSourceMap
+        })
+      };
+    }
+    return chunk;
+  });
+};
+const minify = {
+  name,
+  apply
+};
+function resolveTerserOptions(terserOptions, { sourceMap }) {
+  return import_utils.lodash.merge({
+    compress: {
+      inline: 2,
+      comparisons: false
+    },
+    format: {
+      keep_quoted_props: true,
+      comments: false
+    },
+    // Return object to avoid redundant `JSON.parse` in remapping
+    sourceMap: sourceMap ? {
+      asObject: true,
+      // `includeSources` is not necessary for minification,
+      // and we can utilize this to reduce the size of the source map.
+      includeSources: false
+    } : false,
+    safari10: true,
+    toplevel: true
+  }, (0, import_utils.isObject)(terserOptions) ? terserOptions : {});
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  minify
+});

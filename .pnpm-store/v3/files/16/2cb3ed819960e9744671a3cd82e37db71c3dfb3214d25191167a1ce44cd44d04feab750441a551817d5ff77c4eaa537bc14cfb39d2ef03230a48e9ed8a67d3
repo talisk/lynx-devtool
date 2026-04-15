@@ -1,0 +1,14 @@
+import { DebugRouterConnector } from "../../connector";
+import { DeviceManager } from "../DeviceManager";
+export default class HarmonyDeviceManager extends DeviceManager {
+    private currentWatchStatus;
+    private retryCount;
+    private readonly hdcOptions;
+    private hdcClient;
+    constructor(driver: DebugRouterConnector, options: any);
+    private createDevice;
+    private registerDevice;
+    watchDevices(killHdc?: boolean): Promise<void>;
+    private reWatchHarmonyDevices;
+    private unregisterAllHarmonyTarget;
+}

@@ -1,0 +1,65 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var hooks_exports = {};
+__export(hooks_exports, {
+  initHooks: () => initHooks
+});
+module.exports = __toCommonJS(hooks_exports);
+var import_hooks = require("../hooks");
+function initHooks() {
+  return {
+    /**
+    * add config for this cli plugin
+    */
+    config: (0, import_hooks.createCollectAsyncHook)(),
+    /**
+    * @private
+    * modify config for this cli plugin
+    */
+    modifyConfig: (0, import_hooks.createAsyncHook)(),
+    /**
+    * modify final config
+    */
+    modifyResolvedConfig: (0, import_hooks.createAsyncHook)(),
+    modifyRsbuildConfig: (0, import_hooks.createAsyncHook)(),
+    modifyBundlerChain: (0, import_hooks.createAsyncHook)(),
+    modifyRspackConfig: (0, import_hooks.createAsyncHook)(),
+    modifyWebpackChain: (0, import_hooks.createAsyncHook)(),
+    modifyWebpackConfig: (0, import_hooks.createAsyncHook)(),
+    modifyHtmlPartials: (0, import_hooks.createAsyncHook)(),
+    addCommand: (0, import_hooks.createAsyncHook)(),
+    addWatchFiles: (0, import_hooks.createCollectAsyncHook)(),
+    onPrepare: (0, import_hooks.createAsyncHook)(),
+    onFileChanged: (0, import_hooks.createAsyncHook)(),
+    onBeforeRestart: (0, import_hooks.createAsyncHook)(),
+    onBeforeCreateCompiler: (0, import_hooks.createAsyncHook)(),
+    onAfterCreateCompiler: (0, import_hooks.createAsyncHook)(),
+    onBeforeBuild: (0, import_hooks.createAsyncHook)(),
+    onAfterBuild: (0, import_hooks.createAsyncHook)(),
+    onBeforeDev: (0, import_hooks.createAsyncHook)(),
+    onAfterDev: (0, import_hooks.createAsyncHook)(),
+    onBeforeDeploy: (0, import_hooks.createAsyncHook)(),
+    onAfterDeploy: (0, import_hooks.createAsyncHook)(),
+    onBeforeExit: (0, import_hooks.createAsyncHook)()
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  initHooks
+});

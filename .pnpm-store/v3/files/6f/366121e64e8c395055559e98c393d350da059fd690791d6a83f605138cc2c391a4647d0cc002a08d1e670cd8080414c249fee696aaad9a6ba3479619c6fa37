@@ -1,0 +1,23 @@
+/// <reference lib="dom" />
+import { IWebSocketClient, IRemoteDebugServer4Driver } from "../server";
+export declare const enum EWebsocketClientStatus {
+    created = 0,
+    opened = 1
+}
+export declare class WSClientImpl implements IWebSocketClient {
+    private readonly socketUrl;
+    private ws;
+    private status;
+    private openCallback?;
+    private closeCallback?;
+    private messageCallback?;
+    constructor(url: string);
+    private Initialize;
+    postMessage(payload: string): void;
+    onMessage(cb: (message: string) => void): void;
+    onOpen(cb: () => void): void;
+    close(): void;
+    onClose(cb: () => void): void;
+}
+export declare function createRemoteDebugDriver(endpoint: string, room?: string): Promise<IRemoteDebugServer4Driver>;
+export * from "../server";

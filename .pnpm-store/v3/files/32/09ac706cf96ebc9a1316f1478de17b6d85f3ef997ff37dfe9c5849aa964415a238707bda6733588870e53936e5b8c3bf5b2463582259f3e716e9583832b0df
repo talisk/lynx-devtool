@@ -1,0 +1,1 @@
+export declare function getCssSupport(projectBrowserslist: string[]): Record<"initial" | "customProperties" | "pageBreak" | "fontVariant" | "mediaMinmax", boolean>;

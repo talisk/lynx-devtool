@@ -1,0 +1,70 @@
+import { logger } from "@modern-js/utils";
+import { buildServerConfig } from "../utils/config";
+import { loadServerPlugins } from "../utils/loadPlugins";
+import { registerCompiler } from "../utils/register";
+import { generateRoutes } from "../utils/routes";
+const build = async (api, options) => {
+  var _resolvedConfig_source;
+  if (options === null || options === void 0 ? void 0 : options.analyze) {
+    process.env.BUNDLE_ANALYZE = "true";
+  }
+  const resolvedConfig = api.getNormalizedConfig();
+  const appContext = api.getAppContext();
+  const hooks = api.getHooks();
+  await loadServerPlugins(api, appContext.appDirectory, appContext.metaName);
+  if (appContext.moduleType && appContext.moduleType === "module") {
+    var _resolvedConfig_source1;
+    const { registerEsm } = await import("../esm/register-esm.mjs");
+    await registerEsm({
+      appDir: appContext.appDirectory,
+      distDir: appContext.distDirectory,
+      alias: (_resolvedConfig_source1 = resolvedConfig.source) === null || _resolvedConfig_source1 === void 0 ? void 0 : _resolvedConfig_source1.alias
+    });
+  }
+  await registerCompiler(appContext.appDirectory, appContext.distDirectory, resolvedConfig === null || resolvedConfig === void 0 ? void 0 : (_resolvedConfig_source = resolvedConfig.source) === null || _resolvedConfig_source === void 0 ? void 0 : _resolvedConfig_source.alias);
+  const { apiOnly } = appContext;
+  if (apiOnly) {
+    const { appDirectory: appDirectory2, distDirectory: distDirectory2, serverConfigFile: serverConfigFile2 } = appContext;
+    await hooks.onBeforeBuild.call({
+      environments: {},
+      // "null" bundlerConfigs
+      bundlerConfigs: void 0,
+      isFirstCompile: false,
+      isWatch: false
+    });
+    await buildServerConfig({
+      appDirectory: appDirectory2,
+      distDirectory: distDirectory2,
+      configFile: serverConfigFile2
+    });
+    await generateRoutes(appContext);
+    await hooks.onAfterBuild.call({
+      environments: {},
+      // "null" stats
+      stats: void 0,
+      isFirstCompile: false,
+      isWatch: false
+    });
+    return;
+  }
+  api.modifyResolvedConfig((config) => {
+    return {
+      ...config,
+      cliOptions: options
+    };
+  });
+  const { distDirectory, appDirectory, serverConfigFile } = appContext;
+  await buildServerConfig({
+    appDirectory,
+    distDirectory,
+    configFile: serverConfigFile
+  });
+  logger.info("Starting production build...");
+  if (!appContext.builder) {
+    throw new Error("Expect the Builder to have been initialized, But the appContext.builder received `undefined`");
+  }
+  await appContext.builder.build();
+};
+export {
+  build
+};

@@ -1,0 +1,74 @@
+import { fs, CONFIG_FILE_EXTENSIONS, chalk, getCommand, getNodeEnv, isDevCommand, isPlainObject, logger } from "@modern-js/utils";
+import { mergeWith } from "@modern-js/utils/lodash";
+import { mergeConfig } from "../utils/mergeConfig";
+import { getConfigFilePath, loadConfig } from "./loadConfig";
+async function getConfigObject(config) {
+  if (typeof config === "function") {
+    return await config({
+      env: getNodeEnv(),
+      command: getCommand()
+    }) || {};
+  }
+  return config || {};
+}
+async function loadLocalConfig(appDirectory, configFile) {
+  let localConfigFile = false;
+  if (typeof configFile === "string") {
+    for (const ext of CONFIG_FILE_EXTENSIONS) {
+      if (configFile.endsWith(ext)) {
+        const replacedPath = configFile.replace(ext, `.local${ext}`);
+        if (fs.existsSync(replacedPath)) {
+          localConfigFile = replacedPath;
+        }
+      }
+    }
+  }
+  if (localConfigFile) {
+    const loaded = await loadConfig(appDirectory, localConfigFile);
+    return getConfigObject(loaded.config);
+  }
+  return null;
+}
+function assignPkgConfig(userConfig, pkgConfig) {
+  return mergeWith({}, userConfig, pkgConfig, (objValue, srcValue) => {
+    if (objValue === void 0 && isPlainObject(srcValue)) {
+      return {
+        ...srcValue
+      };
+    }
+    return void 0;
+  });
+}
+async function createLoadedConfig(appDirectory, configFilePath, packageJsonConfig) {
+  const configFile = getConfigFilePath(appDirectory, configFilePath);
+  const loaded = await loadConfig(appDirectory, configFile, packageJsonConfig);
+  if (!loaded.config && !loaded.pkgConfig) {
+    logger.warn(`Can not find any config file in the current project, please check if you have a correct config file.`);
+    logger.warn(`Current project path: ${chalk.yellow(appDirectory)}`);
+  }
+  const config = await getConfigObject(loaded.config);
+  let mergedConfig = config;
+  if (loaded.pkgConfig) {
+    mergedConfig = assignPkgConfig(config, loaded === null || loaded === void 0 ? void 0 : loaded.pkgConfig);
+  }
+  if (isDevCommand()) {
+    const localConfig = await loadLocalConfig(appDirectory, configFile);
+    if (localConfig) {
+      mergedConfig = mergeConfig([
+        mergedConfig,
+        localConfig
+      ]);
+    }
+  }
+  return {
+    packageName: loaded.packageName,
+    config: mergedConfig,
+    configFile: loaded.configFile,
+    pkgConfig: loaded.pkgConfig,
+    jsConfig: loaded.config
+  };
+}
+export {
+  assignPkgConfig,
+  createLoadedConfig
+};

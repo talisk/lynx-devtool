@@ -1,0 +1,2 @@
+import type { AppToolsHooks } from '../types/new';
+export declare function restart(hooks: AppToolsHooks<'shared'>, filename: string): Promise<void>;

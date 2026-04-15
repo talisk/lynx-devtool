@@ -1,0 +1,9 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.sendEvent = void 0;
+const message_1 = require("../message");
+function sendEvent(socket, message) {
+    socket.send((0, message_1.encodeSocketMessage)(message));
+}
+exports.sendEvent = sendEvent;
+//# sourceMappingURL=send-event.js.map

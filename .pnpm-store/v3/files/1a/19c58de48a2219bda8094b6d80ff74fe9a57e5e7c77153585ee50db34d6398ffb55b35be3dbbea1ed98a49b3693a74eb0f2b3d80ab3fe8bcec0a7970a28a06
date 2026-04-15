@@ -1,0 +1,141 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var resource_exports = {};
+__export(resource_exports, {
+  getHtmlTemplates: () => getHtmlTemplates,
+  getServerManifest: () => getServerManifest,
+  injectResourcePlugin: () => injectResourcePlugin,
+  injectServerManifest: () => injectServerManifest,
+  injectTemplates: () => injectTemplates
+});
+module.exports = __toCommonJS(resource_exports);
+var import_path = __toESM(require("path"));
+var import_fileReader = require("@modern-js/runtime-utils/fileReader");
+var import_utils = require("@modern-js/utils");
+var import_utils2 = require("../../../utils");
+async function getHtmlTemplates(pwd, routes) {
+  const htmls = await Promise.all(routes.map(async (route) => {
+    let html;
+    try {
+      var _this;
+      const htmlPath = import_path.default.join(pwd, route.entryPath);
+      html = (_this = await import_fileReader.fileReader.readFile(htmlPath, "utf-8")) === null || _this === void 0 ? void 0 : _this.toString();
+    } catch (e) {
+    }
+    return [
+      (0, import_utils2.uniqueKeyByRoute)(route),
+      html
+    ];
+  }) || []);
+  const templates = Object.fromEntries(htmls);
+  return templates;
+}
+function injectTemplates(pwd, routes) {
+  return async (c, next) => {
+    if (routes && !c.get("templates")) {
+      const templates = await getHtmlTemplates(pwd, routes);
+      c.set("templates", templates);
+    }
+    await next();
+  };
+}
+const loadBundle = async (filepath, logger) => {
+  if (!await import_utils.fs.pathExists(filepath)) {
+    return void 0;
+  }
+  try {
+    const module2 = await (0, import_utils.compatibleRequire)(filepath, false);
+    return module2;
+  } catch (e) {
+    logger.error(`Load ${filepath} bundle failed, error = %s`, e instanceof Error ? e.stack || e.message : e);
+    return void 0;
+  }
+};
+async function getServerManifest(pwd, routes, logger) {
+  const loaderBundles = {};
+  const renderBundles = {};
+  await Promise.all(routes.filter((route) => Boolean(route.bundle)).map(async (route) => {
+    const entryName = route.entryName || import_utils.MAIN_ENTRY_NAME;
+    const renderBundlePath = import_path.default.join(pwd, route.bundle || "");
+    const loaderBundlePath = import_path.default.join(pwd, import_utils.SERVER_BUNDLE_DIRECTORY, `${entryName}-server-loaders.js`);
+    const renderBundle = await loadBundle(renderBundlePath, logger);
+    const loaderBundle = await loadBundle(loaderBundlePath, logger);
+    renderBundle && (renderBundles[entryName] = renderBundle);
+    loaderBundle && (loaderBundles[entryName] = (loaderBundle === null || loaderBundle === void 0 ? void 0 : loaderBundle.loadModules) ? await (loaderBundle === null || loaderBundle === void 0 ? void 0 : loaderBundle.loadModules()) : loaderBundle);
+  }));
+  const loadableUri = import_path.default.join(pwd, import_utils.LOADABLE_STATS_FILE);
+  const loadableStats = await (0, import_utils.compatibleRequire)(loadableUri).catch((_) => ({}));
+  const routesManifestUri = import_path.default.join(pwd, import_utils.ROUTE_MANIFEST_FILE);
+  const routeManifest = await (0, import_utils.compatibleRequire)(routesManifestUri).catch((_) => ({}));
+  const nestedRoutesJsonPath = import_path.default.join(pwd, import_utils.NESTED_ROUTE_SPEC_FILE);
+  const nestedRoutesJson = await (0, import_utils.compatibleRequire)(nestedRoutesJsonPath).catch((_) => ({}));
+  return {
+    loaderBundles,
+    renderBundles,
+    loadableStats,
+    routeManifest,
+    nestedRoutesJson
+  };
+}
+function injectServerManifest(pwd, routes) {
+  return async (c, next) => {
+    if (routes && !c.get("serverManifest")) {
+      const logger = c.get("logger");
+      const serverManifest = await getServerManifest(pwd, routes, logger);
+      c.set("serverManifest", serverManifest);
+    }
+    await next();
+  };
+}
+const injectResourcePlugin = () => ({
+  name: "@modern-js/plugin-inject-resource",
+  setup(api) {
+    return {
+      async prepare() {
+        const { middlewares, routes, distDirectory: pwd } = api.useAppContext();
+        middlewares.push({
+          name: "inject-server-manifest",
+          handler: injectServerManifest(pwd, routes)
+        });
+        middlewares.push({
+          name: "inject-html",
+          handler: injectTemplates(pwd, routes)
+        });
+      }
+    };
+  }
+});
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getHtmlTemplates,
+  getServerManifest,
+  injectResourcePlugin,
+  injectServerManifest,
+  injectTemplates
+});

@@ -1,0 +1,4 @@
+import type { AppLegacyUserConfig, AppUserConfig } from '../types';
+import type { AppToolsContext } from '../types/new';
+export declare function createDefaultConfig(appContext: AppToolsContext<'shared'>): AppUserConfig<'webpack'> | AppUserConfig<'rspack'>;
+export declare function createLegacyDefaultConfig(appContext: AppToolsContext<'shared'>): AppLegacyUserConfig;

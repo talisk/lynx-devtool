@@ -1,0 +1,107 @@
+import { logger } from "@modern-js/utils";
+import { program } from "@modern-js/utils/commander";
+import { createPluginManager } from "../../manager";
+import { initPluginAPI } from "../api";
+import { createContext, initAppContext } from "../context";
+import { createLoadedConfig } from "./config/createLoadedConfig";
+import { createResolveConfig } from "./config/createResolvedConfig";
+import { checkIsDuplicationPlugin } from "./utils/checkIsDuplicationPlugin";
+import { initCommandsMap, setProgramVersion } from "./utils/commander";
+import { createFileWatcher } from "./utils/createFileWatcher";
+import { initAppDir } from "./utils/initAppDir";
+import { loadEnv } from "./utils/loadEnv";
+const createCli = () => {
+  let initOptions;
+  const pluginManager = createPluginManager();
+  async function init(options) {
+    var _context_hooks;
+    pluginManager.clear();
+    initOptions = options;
+    const { metaName = "MODERN", configFile, command, version, packageJsonConfig, internalPlugins, handleSetupResult } = options;
+    const appDirectory = await initAppDir(options === null || options === void 0 ? void 0 : options.cwd);
+    initCommandsMap();
+    setProgramVersion(version);
+    loadEnv(appDirectory, process.env[`${metaName.toUpperCase()}_ENV`]);
+    const loaded = await createLoadedConfig(appDirectory, configFile, packageJsonConfig);
+    const allPlugins = [
+      ...internalPlugins || [],
+      ...loaded.config.plugins || []
+    ];
+    checkIsDuplicationPlugin(allPlugins.map((plugin) => plugin.name), loaded.config.autoLoadPlugins);
+    pluginManager.addPlugins(allPlugins);
+    const plugins = await pluginManager.getPlugins();
+    const context = await createContext({
+      appContext: initAppContext({
+        packageName: loaded.packageName,
+        configFile: loaded.configFile,
+        command,
+        appDirectory,
+        plugins
+      }),
+      config: loaded.config,
+      normalizedConfig: {}
+    });
+    const pluginAPI = initPluginAPI({
+      context,
+      pluginManager
+    });
+    context.pluginAPI = pluginAPI;
+    for (const plugin of plugins) {
+      const setupResult = await plugin.setup(pluginAPI);
+      if (handleSetupResult) {
+        await handleSetupResult(setupResult, pluginAPI);
+      }
+    }
+    [
+      "SIGINT",
+      "SIGTERM",
+      "unhandledRejection",
+      "uncaughtException"
+    ].forEach((event) => {
+      process.on(event, async (err) => {
+        await context.hooks.onBeforeExit.call();
+        let hasError = false;
+        if (err instanceof Error) {
+          logger.error(err.stack);
+          hasError = true;
+        } else if (err && (event === "unhandledRejection" || event === "uncaughtException")) {
+          console.trace("Unknown Error", err);
+          hasError = true;
+        }
+        process.nextTick(() => {
+          process.exit(hasError ? 1 : 0);
+        });
+      });
+    });
+    const extraConfigs = await context.hooks.config.call();
+    const normalizedConfig = await createResolveConfig(loaded, extraConfigs);
+    const resolved = await context.hooks.modifyResolvedConfig.call(normalizedConfig);
+    context.normalizedConfig = resolved || normalizedConfig;
+    await pluginAPI.updateAppContext(context);
+    await context.hooks.onPrepare.call();
+    await ((_context_hooks = context.hooks) === null || _context_hooks === void 0 ? void 0 : _context_hooks.onAfterPrepare.call());
+    return {
+      appContext: context
+    };
+  }
+  async function run(options) {
+    var _program_commands;
+    const { appContext } = await init(options);
+    await appContext.hooks.addCommand.call({
+      program
+    });
+    await createFileWatcher(appContext);
+    program.parse(process.argv);
+    if (!((_program_commands = program.commands) === null || _program_commands === void 0 ? void 0 : _program_commands.length)) {
+      logger.warn("No command found, please make sure you have registered plugins correctly.");
+    }
+  }
+  return {
+    init,
+    run,
+    getPrevInitOptions: () => initOptions
+  };
+};
+export {
+  createCli
+};

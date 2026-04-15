@@ -1,0 +1,23 @@
+import type { RsbuildPlugin } from '@rsbuild/core';
+import { type ExtraMonorepoStrategies } from './project-utils/index.js';
+import type { Project } from './project.js';
+export declare const PLUGIN_SOURCE_BUILD_NAME = "rsbuild:source-build";
+export declare const getSourceInclude: (options: {
+    projects: Project[];
+    sourceField: string;
+}) => Promise<string[]>;
+export interface PluginSourceBuildOptions {
+    /**
+     * Used to configure the resolve field of the source code files.
+     * @default 'source''
+     */
+    sourceField?: string;
+    /**
+     * Whether to read source code or output code first.
+     * @default 'source'
+     */
+    resolvePriority?: 'source' | 'output';
+    projectName?: string;
+    extraMonorepoStrategies?: ExtraMonorepoStrategies;
+}
+export declare function pluginSourceBuild(options?: PluginSourceBuildOptions): RsbuildPlugin;

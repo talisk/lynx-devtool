@@ -1,0 +1,3 @@
+import type { AsyncHook, CollectAsyncHook } from './types/hooks';
+export declare function createAsyncHook<Callback extends (...args: any[]) => any>(): AsyncHook<Callback>;
+export declare function createCollectAsyncHook<Callback extends (...params: any[]) => any>(): CollectAsyncHook<Callback>;

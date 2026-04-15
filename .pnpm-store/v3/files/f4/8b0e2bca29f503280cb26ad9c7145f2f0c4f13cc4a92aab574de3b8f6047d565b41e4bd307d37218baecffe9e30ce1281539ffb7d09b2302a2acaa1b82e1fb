@@ -1,0 +1,33 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { createLoadedConfig } from "@modern-js/plugin-v2/cli";
+function isAutoLoadPlugins(appDirectory) {
+  return _isAutoLoadPlugins.apply(this, arguments);
+}
+function _isAutoLoadPlugins() {
+  _isAutoLoadPlugins = _async_to_generator(function(appDirectory) {
+    var configFile, packageJsonConfig, _loaded_config, loaded, autoLoadPlugins;
+    var _arguments = arguments;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          configFile = _arguments.length > 1 && _arguments[1] !== void 0 ? _arguments[1] : "modern.config.ts", packageJsonConfig = _arguments.length > 2 && _arguments[2] !== void 0 ? _arguments[2] : "ModernConfig";
+          return [
+            4,
+            createLoadedConfig(appDirectory, configFile, packageJsonConfig)
+          ];
+        case 1:
+          loaded = _state.sent();
+          autoLoadPlugins = (_loaded_config = loaded.config) === null || _loaded_config === void 0 ? void 0 : _loaded_config.autoLoadPlugins;
+          return [
+            2,
+            autoLoadPlugins || false
+          ];
+      }
+    });
+  });
+  return _isAutoLoadPlugins.apply(this, arguments);
+}
+export {
+  isAutoLoadPlugins
+};

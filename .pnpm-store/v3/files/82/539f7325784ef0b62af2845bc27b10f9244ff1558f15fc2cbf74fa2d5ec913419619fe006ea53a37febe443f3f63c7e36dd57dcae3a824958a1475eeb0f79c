@@ -1,0 +1,31 @@
+import type { AppContext, CliConfig, ServerConfig, ServerPlugin } from './types';
+export interface PluginManagerOptions {
+    cliConfig: CliConfig;
+    appContext: AppContext;
+    plugins?: ServerPlugin[];
+    serverConfig?: ServerConfig;
+}
+export declare class PluginManager {
+    #private;
+    constructor(options: PluginManagerOptions);
+    init(): Promise<import("@modern-js/plugin").ToRunners<{
+        config: import("@modern-js/plugin").AsyncWaterfall<ServerConfig>;
+        prepare: import("@modern-js/plugin").AsyncWaterfall<void>;
+        reset: import("@modern-js/plugin").AsyncWorkflow<{
+            event: import("./types").ResetEvent;
+        }, void>;
+        prepareWebServer: import("@modern-js/plugin").AsyncPipeline<import("./types").WebServerStartInput, import("./types").WebAdapter | import("@modern-js/types").UnstableMiddleware[] | null>;
+        fallback: import("@modern-js/plugin").ParallelWorkflow<{
+            reason: import("./types").FallbackReason;
+            error: unknown;
+            logger: import("@modern-js/types").Logger;
+            metrics?: import("@modern-js/types").Metrics | undefined;
+            reporter?: import("@modern-js/types").Reporter | undefined;
+        }>;
+        prepareApiServer: import("@modern-js/plugin").AsyncPipeline<import("./types").APIServerStartInput, import("hono/types").MiddlewareHandler>;
+        afterMatch: import("@modern-js/plugin").AsyncPipeline<import("@modern-js/types").AfterMatchContext, any>;
+        afterRender: import("@modern-js/plugin").AsyncPipeline<import("@modern-js/types").AfterRenderContext, any>;
+        afterStreamingRender: import("@modern-js/plugin").AsyncPipeline<import("@modern-js/types").AfterStreamingRenderContext, string>;
+    }>>;
+    addPlugins(plugins: ServerPlugin[]): void;
+}

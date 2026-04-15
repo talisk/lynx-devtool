@@ -1,0 +1,5 @@
+import React from 'react';
+export declare function Style(props: {
+    children?: string;
+    content?: string;
+} & React.DOMAttributes<HTMLStyleElement>): React.JSX.Element;

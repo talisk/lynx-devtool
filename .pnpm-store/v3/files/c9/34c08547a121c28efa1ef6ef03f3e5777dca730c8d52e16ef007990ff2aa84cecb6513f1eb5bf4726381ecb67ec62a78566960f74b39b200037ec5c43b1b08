@@ -1,0 +1,13 @@
+import type { LessOptions, PartialBaseBuildConfig, PostcssOptions, SassOptions } from '../types';
+export declare const getLessConfig: (config: PartialBaseBuildConfig) => Promise<LessOptions>;
+export declare const getSassConfig: (config: PartialBaseBuildConfig) => Promise<SassOptions>;
+export declare const getPostcssConfig: (config: PartialBaseBuildConfig) => Promise<PostcssOptions & {
+    $$tools?: string | undefined;
+}>;
+export declare const getStyleConfig: (config: PartialBaseBuildConfig) => Promise<{
+    less: LessOptions;
+    sass: SassOptions;
+    postcss: PostcssOptions & {
+        $$tools?: string | undefined;
+    };
+}>;

@@ -1,0 +1,182 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _define_property } from "@swc/helpers/_/_define_property";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { fs, getAliasConfig, loadFromProject, logger, readTsConfigByFile } from "@modern-js/utils";
+var registerEsbuild = function() {
+  var _ref = _async_to_generator(function(param) {
+    var isTsProject, tsConfig, distDir, esbuildRegister;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          isTsProject = param.isTsProject, tsConfig = param.tsConfig, distDir = param.distDir;
+          return [
+            4,
+            import("esbuild-register/dist/node")
+          ];
+        case 1:
+          esbuildRegister = _state.sent();
+          esbuildRegister.register({
+            tsconfigRaw: isTsProject ? tsConfig : void 0,
+            hookIgnoreNodeModules: true,
+            hookMatcher: function(fileName) {
+              return !fileName.startsWith(distDir);
+            }
+          });
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function registerEsbuild2(_) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var registerCompiler = function() {
+  var _ref = _async_to_generator(function(appDir, distDir, alias) {
+    var TS_CONFIG_FILENAME, tsconfigPath, isTsProject, aliasConfig, _aliasConfig_paths, paths, _aliasConfig_absoluteBaseUrl, absoluteBaseUrl, tsPaths, tsConfig, MODERN_NODE_LOADER, tsNode, tsNodeOptions, error, tsConfigPaths;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          TS_CONFIG_FILENAME = "tsconfig.json";
+          tsconfigPath = path.resolve(appDir, TS_CONFIG_FILENAME);
+          return [
+            4,
+            fs.pathExists(tsconfigPath)
+          ];
+        case 1:
+          isTsProject = _state.sent();
+          aliasConfig = getAliasConfig(alias, {
+            appDirectory: appDir,
+            tsconfigPath
+          });
+          _aliasConfig_paths = aliasConfig.paths, paths = _aliasConfig_paths === void 0 ? {} : _aliasConfig_paths, _aliasConfig_absoluteBaseUrl = aliasConfig.absoluteBaseUrl, absoluteBaseUrl = _aliasConfig_absoluteBaseUrl === void 0 ? "./" : _aliasConfig_absoluteBaseUrl;
+          tsPaths = Object.keys(paths).reduce(function(o, key) {
+            var tsPath = paths[key];
+            if (typeof tsPath === "string" && key.startsWith("@") && tsPath.startsWith("@")) {
+              try {
+                tsPath = require.resolve(tsPath, {
+                  paths: [
+                    process.cwd()
+                  ].concat(_to_consumable_array(module.paths))
+                });
+              } catch (e) {
+              }
+            }
+            if (typeof tsPath === "string" && path.isAbsolute(tsPath)) {
+              tsPath = path.relative(absoluteBaseUrl, tsPath);
+            }
+            if (typeof tsPath === "string") {
+              tsPath = [
+                tsPath
+              ];
+            }
+            return _object_spread_props(_object_spread({}, o), _define_property({}, "".concat(key), tsPath));
+          }, {});
+          tsConfig = {};
+          if (isTsProject) {
+            tsConfig = readTsConfigByFile(tsconfigPath);
+          }
+          MODERN_NODE_LOADER = process.env.MODERN_NODE_LOADER;
+          if (!(MODERN_NODE_LOADER === "esbuild" || !isTsProject))
+            return [
+              3,
+              3
+            ];
+          return [
+            4,
+            registerEsbuild({
+              isTsProject,
+              tsConfig,
+              distDir
+            })
+          ];
+        case 2:
+          _state.sent();
+          return [
+            3,
+            7
+          ];
+        case 3:
+          _state.trys.push([
+            3,
+            5,
+            ,
+            7
+          ]);
+          return [
+            4,
+            loadFromProject("ts-node", appDir)
+          ];
+        case 4:
+          tsNode = _state.sent();
+          tsNodeOptions = tsConfig["ts-node"];
+          tsNode.register(_object_spread({
+            project: tsconfigPath,
+            scope: true,
+            // for env.d.ts, https://www.npmjs.com/package/ts-node#missing-types
+            files: true,
+            transpileOnly: true,
+            ignore: [
+              "(?:^|/)node_modules/",
+              "(?:^|/)".concat(path.relative(appDir, distDir), "/")
+            ]
+          }, tsNodeOptions));
+          return [
+            3,
+            7
+          ];
+        case 5:
+          error = _state.sent();
+          if (process.env.DEBUG) {
+            logger.error(error);
+          }
+          return [
+            4,
+            registerEsbuild({
+              isTsProject,
+              tsConfig,
+              distDir
+            })
+          ];
+        case 6:
+          _state.sent();
+          return [
+            3,
+            7
+          ];
+        case 7:
+          return [
+            4,
+            import("@modern-js/utils/tsconfig-paths")
+          ];
+        case 8:
+          tsConfigPaths = _state.sent().default;
+          return [
+            4,
+            fs.pathExists(appDir)
+          ];
+        case 9:
+          if (_state.sent()) {
+            tsConfigPaths.register({
+              baseUrl: absoluteBaseUrl || "./",
+              paths: tsPaths
+            });
+          }
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function registerCompiler2(appDir, distDir, alias) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  registerCompiler
+};

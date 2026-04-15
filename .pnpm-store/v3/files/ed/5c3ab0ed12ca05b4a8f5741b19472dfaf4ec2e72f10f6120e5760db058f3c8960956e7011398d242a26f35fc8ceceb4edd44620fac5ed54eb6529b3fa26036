@@ -1,0 +1,71 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const events_1 = require("events");
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+class Tracker extends events_1.EventEmitter {
+    constructor(client) {
+        super();
+        this.client = client;
+        this.targets = [];
+        this.targetMap = {};
+        this.read();
+    }
+    read() {
+        this.client
+            .listTargets()
+            .then((targets) => {
+            this.update(targets);
+            setTimeout(() => {
+                this.read();
+            }, 1000);
+        })
+            .catch((err) => {
+            var _a;
+            this.emit("error", err);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("hdc_read_targets_error", null, {
+                msg: "hdc tracker listTargets or updateTargets failed",
+                error: err === null || err === void 0 ? void 0 : err.message,
+            });
+        });
+    }
+    update(newTragets) {
+        const newMap = {};
+        const removed = [];
+        const changed = [];
+        const added = [];
+        newTragets.forEach((newTarget) => {
+            const oldTarget = this.targetMap[newTarget.connectKey];
+            if (newTarget.devName === "unknown...") {
+                return;
+            }
+            if (oldTarget) {
+                if (oldTarget.connStatus !== newTarget.connStatus) {
+                    changed.push(newTarget);
+                    this.emit("change", newTarget, oldTarget);
+                }
+            }
+            else {
+                added.push(newTarget);
+                this.emit("add", newTarget);
+            }
+            newMap[newTarget.connectKey] = newTarget;
+        });
+        this.targets.forEach((oldTarget) => {
+            if (!newMap[oldTarget.connectKey] ||
+                (newMap[oldTarget.connectKey].connStatus === "Offline" &&
+                    oldTarget.connStatus === "Connected")) {
+                removed.push(oldTarget);
+                this.emit("remove", oldTarget);
+            }
+        });
+        this.emit("deviceChangeSet", {
+            added,
+            removed,
+            changed,
+        });
+        this.targets = newTragets;
+        this.targetMap = newMap;
+    }
+}
+exports.default = Tracker;
+//# sourceMappingURL=tracker.js.map

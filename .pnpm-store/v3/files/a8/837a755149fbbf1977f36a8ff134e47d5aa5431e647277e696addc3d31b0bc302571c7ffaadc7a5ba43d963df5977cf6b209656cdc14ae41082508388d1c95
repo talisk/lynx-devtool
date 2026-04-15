@@ -1,0 +1,6 @@
+import Forward from "../../Forward";
+import Command from "../../command";
+export default class ListForwardCommand extends Command<Forward[]> {
+    execute(...args: any[]): Promise<Forward[]>;
+    private _parseResult;
+}

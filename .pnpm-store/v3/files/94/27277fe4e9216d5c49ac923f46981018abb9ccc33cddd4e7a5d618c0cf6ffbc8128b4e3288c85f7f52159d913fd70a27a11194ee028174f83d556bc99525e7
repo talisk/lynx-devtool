@@ -1,0 +1,82 @@
+import * as __WEBPACK_EXTERNAL_MODULE_node_fs__ from "node:fs";
+import * as __WEBPACK_EXTERNAL_MODULE_node_module__ from "node:module";
+import * as __WEBPACK_EXTERNAL_MODULE__rsbuild_core__ from "@rsbuild/core";
+import * as __WEBPACK_EXTERNAL_MODULE_deepmerge__ from "deepmerge";
+import * as __WEBPACK_EXTERNAL_MODULE_json5__ from "json5";
+import * as __WEBPACK_EXTERNAL_MODULE_reduce_configs__ from "reduce-configs";
+import * as __WEBPACK_EXTERNAL_MODULE_ts_checker_rspack_plugin__ from "ts-checker-rspack-plugin";
+const src_require = (0, __WEBPACK_EXTERNAL_MODULE_node_module__.createRequire)(import.meta.url);
+const PLUGIN_TYPE_CHECK_NAME = 'rsbuild:type-check';
+const pluginTypeCheck = (options = {})=>({
+        name: PLUGIN_TYPE_CHECK_NAME,
+        setup (api) {
+            const NODE_MODULES_REGEX = /[\\/]node_modules[\\/]/;
+            const checkedTsconfig = new Map();
+            api.modifyBundlerChain(async (chain, { isProd, environment, CHAIN_ID })=>{
+                const { enable = true, forkTsCheckerOptions } = options;
+                let { tsCheckerOptions } = options;
+                const { tsconfigPath } = environment;
+                // compatible with the legacy option
+                if (void 0 === tsCheckerOptions && void 0 !== forkTsCheckerOptions) tsCheckerOptions = forkTsCheckerOptions;
+                if (!tsconfigPath || false === enable) return;
+                // If there are identical tsconfig.json files,
+                // apply type checker only once to avoid duplicate checks.
+                if (checkedTsconfig.has(tsconfigPath) && checkedTsconfig.get(tsconfigPath) !== environment.name) return;
+                checkedTsconfig.set(tsconfigPath, environment.name);
+                // use typescript of user project
+                let typescriptPath;
+                try {
+                    typescriptPath = src_require.resolve('typescript', {
+                        paths: [
+                            api.context.rootPath
+                        ]
+                    });
+                } catch (err) {
+                    __WEBPACK_EXTERNAL_MODULE__rsbuild_core__.logger.warn('"typescript" is not found in current project, Type checker will not work.');
+                    return;
+                }
+                const { references } = __WEBPACK_EXTERNAL_MODULE_json5__["default"].parse(__WEBPACK_EXTERNAL_MODULE_node_fs__["default"].readFileSync(tsconfigPath, 'utf-8'));
+                const useReference = Array.isArray(references) && references.length > 0;
+                const defaultOptions = {
+                    typescript: {
+                        // set 'readonly' to avoid emitting tsbuildinfo,
+                        // as the generated tsbuildinfo will break ts-checker-rspack-plugin
+                        mode: 'readonly',
+                        // enable build when using project reference
+                        build: useReference,
+                        // avoid OOM issue
+                        memoryLimit: 8192,
+                        // use tsconfig of user project
+                        configFile: tsconfigPath,
+                        // use typescript of user project
+                        typescriptPath
+                    },
+                    issue: {
+                        // ignore types errors from node_modules
+                        exclude: [
+                            ({ file = '' })=>NODE_MODULES_REGEX.test(file)
+                        ]
+                    },
+                    logger: {
+                        log () {
+                        // do nothing
+                        // we only want to display error messages
+                        },
+                        error (message) {
+                            console.error(message.replace(/ERROR/g, 'Type Error'));
+                        }
+                    }
+                };
+                const mergedOptions = (0, __WEBPACK_EXTERNAL_MODULE_reduce_configs__.reduceConfigs)({
+                    initial: defaultOptions,
+                    config: tsCheckerOptions,
+                    mergeFn: __WEBPACK_EXTERNAL_MODULE_deepmerge__["default"]
+                });
+                if (isProd) __WEBPACK_EXTERNAL_MODULE__rsbuild_core__.logger.info('Type checker is enabled. It may take some time.');
+                chain.plugin(CHAIN_ID.PLUGIN.TS_CHECKER).use(__WEBPACK_EXTERNAL_MODULE_ts_checker_rspack_plugin__.TsCheckerRspackPlugin, [
+                    mergedOptions
+                ]);
+            });
+        }
+    });
+export { PLUGIN_TYPE_CHECK_NAME, pluginTypeCheck };

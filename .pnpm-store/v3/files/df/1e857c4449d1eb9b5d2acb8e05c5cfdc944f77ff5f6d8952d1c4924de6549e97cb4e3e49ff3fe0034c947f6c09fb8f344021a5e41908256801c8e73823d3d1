@@ -1,0 +1,208 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var DeferredDataScripts_node_exports = {};
+__export(DeferredDataScripts_node_exports, {
+  default: () => DeferredDataScripts_node_default
+});
+module.exports = __toCommonJS(DeferredDataScripts_node_exports);
+var import_jsx_runtime = require("react/jsx-runtime");
+var import_node = require("@modern-js/runtime-utils/node");
+var import_router = require("@modern-js/runtime-utils/router");
+var import_react = require("react");
+var import_constants = require("../../core/constants");
+var import_constants2 = require("./constants");
+var import_utils = require("./utils");
+const DeferredDataScripts = (props) => {
+  const staticContext = props === null || props === void 0 ? void 0 : props.context;
+  const useJsonScript = props === null || props === void 0 ? void 0 : props.useJsonScript;
+  const hydratedRef = (0, import_react.useRef)(false);
+  (0, import_react.useEffect)(() => {
+    hydratedRef.current = true;
+  }, []);
+  const deferredScripts = (0, import_react.useMemo)(() => {
+    if (!staticContext) {
+      return null;
+    }
+    const activeDeferreds = staticContext.activeDeferreds || [];
+    const _ROUTER_DATA = {
+      loaderData: staticContext.loaderData,
+      errors: (0, import_utils.serializeErrors)(staticContext.errors)
+    };
+    const initialScript0 = useJsonScript ? `${(0, import_node.serializeJson)(_ROUTER_DATA)}` : "";
+    const initialScript1 = useJsonScript ? import_constants2.modernInline : [
+      `_ROUTER_DATA = ${(0, import_node.serializeJson)(_ROUTER_DATA)};`,
+      import_constants2.modernInline
+    ].join("\n");
+    const deferredDataScripts = [];
+    const initialScripts = Object.entries(activeDeferreds).map(([routeId, deferredData]) => {
+      const pendingKeys = new Set(deferredData.pendingKeys);
+      const { deferredKeys } = deferredData;
+      const deferredKeyPromiseManifests = deferredKeys.map((key) => {
+        if (pendingKeys.has(key)) {
+          deferredDataScripts.push(/* @__PURE__ */ (0, import_jsx_runtime.jsx)(DeferredDataScript, {
+            nonce: props === null || props === void 0 ? void 0 : props.nonce,
+            data: deferredData.data[key],
+            dataKey: key,
+            routeId
+          }, `${routeId} | ${key}`));
+          return {
+            key,
+            routerDataFnName: "s",
+            routerDataFnArgs: [
+              (0, import_node.serializeJson)(routeId),
+              (0, import_node.serializeJson)(key)
+            ]
+          };
+        } else {
+          const trackedPromise = deferredData.data[key];
+          if (typeof trackedPromise._error !== "undefined") {
+            const error = {
+              message: trackedPromise._error.message,
+              stack: process.env.NODE_ENV !== "production" ? trackedPromise._error.stack : void 0
+            };
+            return {
+              key,
+              routerDataFnName: "p",
+              routerDataFnArgs: [
+                (0, import_node.serializeJson)(void 0),
+                (0, import_node.serializeJson)(error)
+              ]
+            };
+          } else {
+            if (typeof trackedPromise._data === "undefined") {
+              throw new Error(`The deferred data for ${key} was not resolved, did you forget to return data from a deferred promise`);
+            }
+            return {
+              key,
+              routerDataFnName: "p",
+              routerDataFnArgs: [
+                (0, import_node.serializeJson)(trackedPromise._data)
+              ]
+            };
+          }
+        }
+      });
+      return {
+        fnName: `mergeLoaderData`,
+        fnRun: import_constants2.runWindowFnStr,
+        fnArgs: [
+          routeId,
+          deferredKeyPromiseManifests
+        ],
+        fnScriptSrc: "modern-run-window-fn"
+      };
+    });
+    return [
+      initialScript0,
+      initialScript1,
+      initialScripts,
+      deferredDataScripts
+    ];
+  }, []);
+  if (!deferredScripts) {
+    return null;
+  }
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, {
+    children: [
+      !hydratedRef.current && /* @__PURE__ */ (0, import_jsx_runtime.jsxs)(import_jsx_runtime.Fragment, {
+        children: [
+          deferredScripts[0].length !== 0 && /* @__PURE__ */ (0, import_jsx_runtime.jsx)("script", {
+            type: "application/json",
+            id: import_constants.ROUTER_DATA_JSON_ID,
+            nonce: props === null || props === void 0 ? void 0 : props.nonce,
+            suppressHydrationWarning: true,
+            dangerouslySetInnerHTML: {
+              __html: deferredScripts[0]
+            }
+          }),
+          /* @__PURE__ */ (0, import_jsx_runtime.jsx)("script", {
+            async: true,
+            nonce: props === null || props === void 0 ? void 0 : props.nonce,
+            "data-script-src": "modern-inline",
+            suppressHydrationWarning: true,
+            dangerouslySetInnerHTML: {
+              __html: deferredScripts[1]
+            }
+          }),
+          deferredScripts[2].map(({ fnName, fnArgs, fnRun, fnScriptSrc }) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("script", {
+            async: true,
+            "data-script-src": fnScriptSrc,
+            "data-fn-name": fnName,
+            "data-fn-args": JSON.stringify(fnArgs),
+            nonce: props === null || props === void 0 ? void 0 : props.nonce,
+            suppressHydrationWarning: true,
+            dangerouslySetInnerHTML: {
+              __html: fnRun
+            }
+          }, fnName))
+        ]
+      }),
+      !hydratedRef.current && deferredScripts[3]
+    ]
+  });
+};
+const DeferredDataScript = ({ data, routeId, dataKey, nonce }) => {
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_react.Suspense, {
+    children: typeof document === "undefined" && data && dataKey && routeId ? /* @__PURE__ */ (0, import_jsx_runtime.jsx)(import_router.Await, {
+      resolve: data,
+      errorElement: /* @__PURE__ */ (0, import_jsx_runtime.jsx)(ErrorDeferredDataScript, {
+        routeId,
+        dataKey,
+        nonce
+      }),
+      children: (data2) => /* @__PURE__ */ (0, import_jsx_runtime.jsx)("script", {
+        async: true,
+        nonce,
+        "data-fn-name": "r",
+        "data-script-src": "modern-run-router-data-fn",
+        "data-fn-args": `${JSON.stringify([
+          routeId,
+          dataKey,
+          data2
+        ])}`,
+        suppressHydrationWarning: true,
+        dangerouslySetInnerHTML: {
+          __html: import_constants2.runRouterDataFnStr
+        }
+      })
+    }) : null
+  });
+};
+const ErrorDeferredDataScript = ({ routeId, dataKey, nonce }) => {
+  const error = (0, import_router.useAsyncError)();
+  return /* @__PURE__ */ (0, import_jsx_runtime.jsx)("script", {
+    "data-fn-name": "r",
+    "data-script-src": "modern-run-router-data-fn",
+    "data-fn-args": `${JSON.stringify([
+      routeId,
+      dataKey,
+      void 0,
+      {
+        message: error.message,
+        stack: error.stack
+      }
+    ])}`,
+    nonce,
+    suppressHydrationWarning: true,
+    dangerouslySetInnerHTML: {
+      __html: import_constants2.runRouterDataFnStr
+    }
+  });
+};
+var DeferredDataScripts_node_default = DeferredDataScripts;

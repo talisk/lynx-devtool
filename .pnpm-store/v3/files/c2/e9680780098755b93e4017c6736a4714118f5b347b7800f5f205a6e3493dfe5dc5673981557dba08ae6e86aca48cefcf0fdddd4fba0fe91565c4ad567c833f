@@ -1,0 +1,13 @@
+import Client from "../../utils/hdc/client";
+import TargetClient from "../../utils/hdc/TargetClient";
+import { DebugRouterConnector } from "../../connector";
+import { BaseDevice } from "../BaseDevice";
+export default class HarmonyDevice extends BaseDevice {
+    private hdc;
+    private static readonly localBasePort;
+    constructor(driver: DebugRouterConnector, serial: string, title: string, hdc: Client);
+    getHost(): string;
+    forwards(): Promise<void>;
+    private forward;
+    removeForward(device: TargetClient): Promise<void>;
+}

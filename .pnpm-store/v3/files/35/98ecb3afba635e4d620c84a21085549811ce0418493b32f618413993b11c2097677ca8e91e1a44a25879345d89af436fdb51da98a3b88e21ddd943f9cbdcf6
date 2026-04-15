@@ -1,0 +1,6 @@
+/**
+ * Maps old plugin hook function names to new plugin API names
+ */
+export declare function transformHookRunner(hookRunnerName: string): string;
+export declare function transformHookParams(hookRunnerName: string, params: any): any;
+export declare function transformHookResult(hookRunnerName: string, result: any): any;

@@ -1,0 +1,106 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ClientController = void 0;
+const Client_1 = require("./Client");
+const ClientAdapter_1 = __importDefault(require("./ClientAdapter"));
+const logger_1 = require("../utils/logger");
+class ClientController {
+    constructor(driver, serverDevice) {
+        this.sockets = new Map();
+        this.ports = new Map();
+        this.clientInfos = new Map();
+        this.connections = new Map();
+        this.driver = driver;
+        this.device = serverDevice;
+        this.device.ports.map((port) => {
+            const connectAdapter = new ClientAdapter_1.default(this.driver, this, port, this.device.info.title, this.device.info.serial, this.device.info.os, this.device.getHost());
+            this.sockets.set(port, connectAdapter);
+            this.ports.set(port, false);
+        });
+    }
+    onConnectionDeleted(id) {
+        this.removeConnection(id);
+    }
+    onConnectionCreated(connection, port, ClientQuery) {
+        return this.addConnection(connection, port, ClientQuery);
+    }
+    addConnection(connection, port, query) {
+        logger_1.defaultLogger.debug("addConnection port: " + port + " info: " + JSON.stringify(query));
+        const id = this.driver.createClientId();
+        const info = {
+            port,
+            id,
+            query,
+        };
+        if (this.connections.has(id)) {
+            return id;
+        }
+        const client = new Client_1.UsbClient(info, connection);
+        this.connections.set(id, client);
+        this.ports.set(port, true);
+        this.clientInfos.set(id, port);
+        this.driver.regiserUsbClient(client);
+        return id;
+    }
+    removeConnection(id) {
+        const client = this.connections.get(id);
+        if (client) {
+            this.connections.delete(id);
+        }
+        const port = this.clientInfos.get(id);
+        if (port) {
+            this.ports.set(port, false);
+            this.clientInfos.delete(id);
+        }
+        this.driver.unregiserUsbClient(id);
+    }
+    createAdapter(connectAdapter, port) {
+        return new ClientAdapter_1.default(this.driver, this, port, this.device.info.title, this.device.info.serial, this.device.info.os, this.device.getHost());
+    }
+    watchClient() {
+        for (const port of this.ports.keys()) {
+            if (!this.ports.get(port)) {
+                const connectAdapter = this.sockets.get(port);
+                const newAdapter = this.createAdapter(connectAdapter, port);
+                connectAdapter === null || connectAdapter === void 0 ? void 0 : connectAdapter.destroy();
+                if (newAdapter === null) {
+                    logger_1.defaultLogger.debug("newAdapter === null:" + port);
+                    return;
+                }
+                this.sockets.set(port, newAdapter);
+                logger_1.defaultLogger.debug("watchClient:connect:" + port);
+                newAdapter.connect();
+            }
+        }
+    }
+    startWatchClient() {
+        this.watchClient();
+        if (process.env.DriverAutoFindClientsEnv === "false") {
+            logger_1.defaultLogger.warn("AutoFinding new client is closed for debug");
+            return;
+        }
+        this.timer = setInterval(() => {
+            this.watchClient();
+        }, this.driver.usbConnectOpt.retryTime);
+    }
+    stopWatchClient() {
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+    }
+    closeAllConnection() {
+        logger_1.defaultLogger.debug("closeAllConnection");
+        this.connections.forEach((connectionInfo, id) => {
+            this.removeConnection(id);
+        });
+    }
+    close() {
+        this.stopWatchClient();
+        this.closeAllConnection();
+    }
+}
+exports.ClientController = ClientController;
+//# sourceMappingURL=ClientController.js.map

@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WatchStatus = void 0;
+var WatchStatus;
+(function (WatchStatus) {
+    WatchStatus[WatchStatus["PrepareToWatch"] = 0] = "PrepareToWatch";
+    WatchStatus[WatchStatus["Watching"] = 1] = "Watching";
+    WatchStatus[WatchStatus["StopWatching"] = 2] = "StopWatching";
+})(WatchStatus = exports.WatchStatus || (exports.WatchStatus = {}));
+//# sourceMappingURL=WatchStatus.js.map

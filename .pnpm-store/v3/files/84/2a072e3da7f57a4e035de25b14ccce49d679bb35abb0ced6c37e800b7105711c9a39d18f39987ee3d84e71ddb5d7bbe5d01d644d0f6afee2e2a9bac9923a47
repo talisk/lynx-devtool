@@ -1,0 +1,452 @@
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
+var __commonJS = (cb, mod) => function __require() {
+  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+
+// node_modules/.pnpm/tsup@8.3.5_postcss@8.4.47_typescript@5.6.3/node_modules/tsup/assets/esm_shims.js
+var init_esm_shims = __esm({
+  "node_modules/.pnpm/tsup@8.3.5_postcss@8.4.47_typescript@5.6.3/node_modules/tsup/assets/esm_shims.js"() {
+    "use strict";
+  }
+});
+
+// node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/lib/pixel-unit-regex.js
+var require_pixel_unit_regex = __commonJS({
+  "node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/lib/pixel-unit-regex.js"(exports, module) {
+    "use strict";
+    init_esm_shims();
+    module.exports = (unit) => new RegExp(
+      `"[^"]+"|'[^']+'|url\\([^)]+\\)|var\\([^)]+\\)|(\\d*\\.?\\d+)${unit}`,
+      "g"
+    );
+  }
+});
+
+// node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/lib/filter-prop-list.js
+var require_filter_prop_list = __commonJS({
+  "node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/lib/filter-prop-list.js"(exports, module) {
+    "use strict";
+    init_esm_shims();
+    module.exports = {
+      exact: (list) => list.filter((m) => m.match(/^[^*!]+$/)),
+      contain: (list) => list.filter((m) => m.match(/^\*.+\*$/)).map((m) => m.substr(1, m.length - 2)),
+      endWith: (list) => list.filter((m) => m.match(/^\*[^*]+$/)).map((m) => m.substr(1)),
+      startWith: (list) => list.filter((m) => m.match(/^[^*!]+\*$/)).map((m) => m.substr(0, m.length - 1)),
+      notExact: (list) => list.filter((m) => m.match(/^![^*].*$/)).map((m) => m.substr(1)),
+      notContain: (list) => list.filter((m) => m.match(/^!\*.+\*$/)).map((m) => m.substr(2, m.length - 3)),
+      notEndWith: (list) => list.filter((m) => m.match(/^!\*[^*]+$/)).map((m) => m.substr(2)),
+      notStartWith: (list) => list.filter((m) => m.match(/^![^*]+\*$/)).map((m) => m.substr(1, m.length - 2))
+    };
+  }
+});
+
+// node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/lib/type.js
+var require_type = __commonJS({
+  "node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/lib/type.js"(exports, module) {
+    "use strict";
+    init_esm_shims();
+    var type = (s) => Object.prototype.toString.call(s).slice(8, -1).toLowerCase();
+    var types = [
+      "String",
+      "Array",
+      "Undefined",
+      "Boolean",
+      "Number",
+      "Function",
+      "Symbol",
+      "Object"
+    ];
+    module.exports = types.reduce((acc, str) => {
+      acc["is" + str] = (val) => type(val) === str.toLowerCase();
+      return acc;
+    }, {});
+  }
+});
+
+// node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/index.js
+var require_postcss_pxtorem = __commonJS({
+  "node_modules/.pnpm/postcss-pxtorem@6.1.0_postcss@8.4.47/node_modules/postcss-pxtorem/index.js"(exports, module) {
+    "use strict";
+    init_esm_shims();
+    var pxRegex = require_pixel_unit_regex();
+    var filterPropList = require_filter_prop_list();
+    var type = require_type();
+    var defaults = {
+      rootValue: 16,
+      unitPrecision: 5,
+      selectorBlackList: [],
+      propList: ["font", "font-size", "line-height", "letter-spacing"],
+      replace: true,
+      mediaQuery: false,
+      minPixelValue: 0,
+      exclude: null,
+      unit: "px"
+    };
+    var legacyOptions = {
+      root_value: "rootValue",
+      unit_precision: "unitPrecision",
+      selector_black_list: "selectorBlackList",
+      prop_white_list: "propList",
+      media_query: "mediaQuery",
+      propWhiteList: "propList"
+    };
+    function convertLegacyOptions(options) {
+      if (typeof options !== "object") return;
+      if ((typeof options["prop_white_list"] !== "undefined" && options["prop_white_list"].length === 0 || typeof options.propWhiteList !== "undefined" && options.propWhiteList.length === 0) && typeof options.propList === "undefined") {
+        options.propList = ["*"];
+        delete options["prop_white_list"];
+        delete options.propWhiteList;
+      }
+      Object.keys(legacyOptions).forEach((key) => {
+        if (Reflect.has(options, key)) {
+          options[legacyOptions[key]] = options[key];
+          delete options[key];
+        }
+      });
+    }
+    function createPxReplace(rootValue, unitPrecision, minPixelValue) {
+      return (m, $1) => {
+        if (!$1) return m;
+        const pixels = parseFloat($1);
+        if (pixels < minPixelValue) return m;
+        const fixedVal = toFixed(pixels / rootValue, unitPrecision);
+        return fixedVal === 0 ? "0" : fixedVal + "rem";
+      };
+    }
+    function toFixed(number, precision) {
+      const multiplier = Math.pow(10, precision + 1), wholeNumber = Math.floor(number * multiplier);
+      return Math.round(wholeNumber / 10) * 10 / multiplier;
+    }
+    function declarationExists(decls, prop, value) {
+      return decls.some((decl) => decl.prop === prop && decl.value === value);
+    }
+    function blacklistedSelector(blacklist, selector) {
+      if (typeof selector !== "string") return;
+      return blacklist.some((regex) => {
+        if (typeof regex === "string") {
+          return selector.indexOf(regex) !== -1;
+        }
+        return selector.match(regex);
+      });
+    }
+    function createPropListMatcher(propList) {
+      const hasWild = propList.indexOf("*") > -1;
+      const matchAll = hasWild && propList.length === 1;
+      const lists = {
+        exact: filterPropList.exact(propList),
+        contain: filterPropList.contain(propList),
+        startWith: filterPropList.startWith(propList),
+        endWith: filterPropList.endWith(propList),
+        notExact: filterPropList.notExact(propList),
+        notContain: filterPropList.notContain(propList),
+        notStartWith: filterPropList.notStartWith(propList),
+        notEndWith: filterPropList.notEndWith(propList)
+      };
+      return (prop) => {
+        if (matchAll) return true;
+        return (hasWild || lists.exact.indexOf(prop) > -1 || lists.contain.some(function(m) {
+          return prop.indexOf(m) > -1;
+        }) || lists.startWith.some(function(m) {
+          return prop.indexOf(m) === 0;
+        }) || lists.endWith.some(function(m) {
+          return prop.indexOf(m) === prop.length - m.length;
+        })) && !(lists.notExact.indexOf(prop) > -1 || lists.notContain.some(function(m) {
+          return prop.indexOf(m) > -1;
+        }) || lists.notStartWith.some(function(m) {
+          return prop.indexOf(m) === 0;
+        }) || lists.notEndWith.some(function(m) {
+          return prop.indexOf(m) === prop.length - m.length;
+        }));
+      };
+    }
+    module.exports = (options = {}) => {
+      convertLegacyOptions(options);
+      const opts = Object.assign({}, defaults, options);
+      const satisfyPropList = createPropListMatcher(opts.propList);
+      const exclude = opts.exclude;
+      let isExcludeFile = false;
+      let pxReplace;
+      return {
+        postcssPlugin: "postcss-pxtorem",
+        Once(css) {
+          const filePath = css.source.input.file;
+          if (exclude && (type.isFunction(exclude) && exclude(filePath) || type.isString(exclude) && filePath.indexOf(exclude) !== -1 || filePath.match(exclude) !== null)) {
+            isExcludeFile = true;
+          } else {
+            isExcludeFile = false;
+          }
+          const rootValue = typeof opts.rootValue === "function" ? opts.rootValue(css.source.input) : opts.rootValue;
+          pxReplace = createPxReplace(
+            rootValue,
+            opts.unitPrecision,
+            opts.minPixelValue
+          );
+        },
+        Declaration(decl) {
+          if (isExcludeFile) return;
+          if (decl.value.indexOf(opts.unit) === -1 || !satisfyPropList(decl.prop) || blacklistedSelector(opts.selectorBlackList, decl.parent.selector))
+            return;
+          const value = decl.value.replace(pxRegex(opts.unit), pxReplace);
+          if (declarationExists(decl.parent, decl.prop, value)) return;
+          if (opts.replace) {
+            decl.value = value;
+          } else {
+            decl.cloneAfter({ value });
+          }
+        },
+        AtRule(atRule) {
+          if (isExcludeFile) return;
+          if (opts.mediaQuery && atRule.name === "media") {
+            if (atRule.params.indexOf(opts.unit) === -1) return;
+            atRule.params = atRule.params.replace(pxRegex(opts.unit), pxReplace);
+          }
+        }
+      };
+    };
+    module.exports.postcss = true;
+  }
+});
+
+// src/index.ts
+init_esm_shims();
+var import_postcss_pxtorem = __toESM(require_postcss_pxtorem(), 1);
+import path from "node:path";
+import {
+  ensureAssetPrefix,
+  logger
+} from "@rsbuild/core";
+import deepmerge from "deepmerge";
+
+// src/helpers.ts
+init_esm_shims();
+async function getRootPixelCode(options, isCompress = false) {
+  const code = genJSTemplate(options);
+  if (!isCompress) {
+    return code;
+  }
+  const { minify } = await import("terser");
+  const { code: minifiedRuntimeCode } = await minify(
+    {
+      RootPixelCode: code
+    },
+    {
+      ecma: 5
+    }
+  );
+  if (!minifiedRuntimeCode) {
+    throw new Error(
+      "[AutoSetRootFontSizePlugin] Failed to minify runtime code."
+    );
+  }
+  return minifiedRuntimeCode;
+}
+var DEFAULT_OPTIONS = {
+  enableRuntime: true,
+  screenWidth: 375,
+  rootFontSize: 50,
+  maxRootFontSize: 64,
+  widthQueryKey: "",
+  rootFontSizeVariableName: "ROOT_FONT_SIZE",
+  excludeEntries: [],
+  inlineRuntime: true,
+  supportLandscape: false,
+  useRootFontSizeBeyondMax: false
+};
+var genJSTemplate = (opts) => `function setRootPixel() {
+  function getQuery(name) {
+    return (new RegExp('[?&]' + name + '=([^&#\\b]+)').exec(location.search || '') || [])[1];
+  }
+
+  function setRootFontSize() {
+    var widthQueryKey = '${opts.widthQueryKey}';
+    var rem2px = ${opts.rootFontSize};
+    var clientWidth;
+    var docEl = document.documentElement;
+    if (widthQueryKey && (+getQuery(widthQueryKey))) {
+      clientWidth = +getQuery(widthQueryKey);
+    } else {
+      clientWidth = window.innerWidth && docEl.clientWidth ?
+        Math.min(window.innerWidth, docEl.clientWidth) :
+        (window.innerWidth || docEl.clientWidth || (document.body && document.body.clientWidth) || ${opts.screenWidth});
+        ${opts.supportLandscape ? `
+        var isLandscape = ((screen.orientation && screen.orientation.angle) || window.orientation) / 90 % 2;
+        if (isLandscape) {
+          var clientHeight = window.innerHeight && docEl.clientHeight ?
+          Math.min(window.innerHeight, docEl.clientHeight) :
+          (window.innerHeight || docEl.clientHeight || (document.body && document.body.clientHeight) || ${opts.screenWidth});
+
+          clientWidth = Math.max(clientHeight, 350);
+        }` : ""}
+    }
+
+    var htmlFontSizePx = (clientWidth * rem2px) / ${opts.screenWidth};
+    var maxRootFontSize = ${opts.maxRootFontSize};
+
+    ${opts.useRootFontSizeBeyondMax ? "htmlFontSizePx = htmlFontSizePx < maxRootFontSize ? htmlFontSizePx : rem2px ;" : "htmlFontSizePx = Math.min(htmlFontSizePx, maxRootFontSize);"}
+
+    window.${opts.rootFontSizeVariableName} = htmlFontSizePx;
+    docEl.style.fontSize = htmlFontSizePx + 'px';
+  }
+
+  function adjust(immediate) {
+    if (immediate) {
+      setRootFontSize();
+      return;
+    }
+    setTimeout(setRootFontSize, 30);
+  }
+
+  adjust(true);
+
+  window.addEventListener('resize', adjust, false);
+
+  if ('onorientationchange' in window) {
+    window.addEventListener('orientationchange', adjust, false);
+  }
+}
+
+typeof window !== 'undefined' && setRootPixel();`;
+
+// src/index.ts
+var PLUGIN_REM_NAME = "rsbuild:rem";
+var pluginRem = (userOptions = {}) => ({
+  name: PLUGIN_REM_NAME,
+  setup(api) {
+    const options = {
+      ...DEFAULT_OPTIONS,
+      ...userOptions
+    };
+    let scriptPath;
+    let runtimeCode;
+    const getScriptPath = (distDir) => {
+      if (!scriptPath) {
+        scriptPath = path.posix.join(distDir, `convert-rem.${"1.0.2"}.js`);
+      }
+      return scriptPath;
+    };
+    const getRuntimeCode = async (config) => {
+      if (!runtimeCode) {
+        const isCompress = config.mode === "production";
+        runtimeCode = await getRootPixelCode(options, isCompress);
+      }
+      return runtimeCode;
+    };
+    const getPostCSSPlugin = async () => {
+      return (0, import_postcss_pxtorem.default)({
+        rootValue: options.rootFontSize,
+        unitPrecision: 5,
+        propList: ["*"],
+        ...options.pxtorem ? deepmerge({}, options.pxtorem) : {}
+      });
+    };
+    api.modifyEnvironmentConfig(async (config, { mergeEnvironmentConfig }) => {
+      const remPlugin = await getPostCSSPlugin();
+      return mergeEnvironmentConfig(config, {
+        tools: {
+          postcss(_, { addPlugins }) {
+            addPlugins(remPlugin);
+          }
+        }
+      });
+    });
+    api.processAssets(
+      { stage: "additional" },
+      async ({ compilation, environment, sources }) => {
+        const { config } = environment;
+        if (config.output.target !== "web" || !options.enableRuntime || options.inlineRuntime) {
+          return;
+        }
+        const code = await getRuntimeCode(config);
+        const scriptPath2 = getScriptPath(config.output.distPath.js);
+        compilation.emitAsset(scriptPath2, new sources.RawSource(code));
+      }
+    );
+    api.modifyHTMLTags(
+      async ({ headTags, bodyTags }, { environment, filename, assetPrefix }) => {
+        if (!options.enableRuntime) {
+          return { headTags, bodyTags };
+        }
+        const entries = Object.keys(environment.entry);
+        const { config } = environment;
+        const isExclude = options.excludeEntries.find((item) => {
+          if (!entries.includes(item)) {
+            logger.error(`convertToRem: can't find the entryName: ${item}`);
+            return false;
+          }
+          const reg = new RegExp(`(/${item}/index.html)|(/${item}.html)`, "gi");
+          return reg.test(filename);
+        });
+        if (isExclude) {
+          return { headTags, bodyTags };
+        }
+        const scriptTag = {
+          tag: "script",
+          attrs: {}
+        };
+        let injectPosition = 0;
+        headTags.forEach((tag, index) => {
+          if (tag.tag === "meta") {
+            injectPosition = index + 1;
+          }
+        });
+        if (options.inlineRuntime) {
+          headTags.splice(injectPosition, 0, {
+            ...scriptTag,
+            children: await getRuntimeCode(config)
+          });
+        } else {
+          const url = ensureAssetPrefix(
+            getScriptPath(config.output.distPath.js),
+            assetPrefix
+          );
+          const attrs = {
+            ...scriptTag.attrs,
+            src: url
+          };
+          if (config.html.scriptLoading === "defer") {
+            attrs.defer = "";
+          }
+          if (config.html.scriptLoading === "module") {
+            attrs.type = "module";
+          }
+          headTags.splice(injectPosition, 0, {
+            ...scriptTag,
+            attrs
+          });
+        }
+        return {
+          headTags,
+          bodyTags
+        };
+      }
+    );
+  }
+});
+export {
+  PLUGIN_REM_NAME,
+  pluginRem
+};

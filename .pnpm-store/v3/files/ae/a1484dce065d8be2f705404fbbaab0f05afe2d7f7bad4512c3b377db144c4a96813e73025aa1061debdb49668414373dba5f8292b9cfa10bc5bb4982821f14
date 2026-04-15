@@ -1,0 +1,149 @@
+"use strict";
+// The require scope
+var __webpack_require__ = {};
+/************************************************************************/ // webpack/runtime/compat_get_default_export
+(()=>{
+    // getDefaultExport function for compatibility with non-ESM modules
+    __webpack_require__.n = function(module1) {
+        var getter = module1 && module1.__esModule ? function() {
+            return module1['default'];
+        } : function() {
+            return module1;
+        };
+        __webpack_require__.d(getter, {
+            a: getter
+        });
+        return getter;
+    };
+})();
+// webpack/runtime/define_property_getters
+(()=>{
+    __webpack_require__.d = function(exports1, definition) {
+        for(var key in definition)if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports1, key)) Object.defineProperty(exports1, key, {
+            enumerable: true,
+            get: definition[key]
+        });
+    };
+})();
+// webpack/runtime/has_own_property
+(()=>{
+    __webpack_require__.o = function(obj, prop) {
+        return Object.prototype.hasOwnProperty.call(obj, prop);
+    };
+})();
+// webpack/runtime/make_namespace_object
+(()=>{
+    // define __esModule on exports
+    __webpack_require__.r = function(exports1) {
+        if ('undefined' != typeof Symbol && Symbol.toStringTag) Object.defineProperty(exports1, Symbol.toStringTag, {
+            value: 'Module'
+        });
+        Object.defineProperty(exports1, '__esModule', {
+            value: true
+        });
+    };
+})();
+/************************************************************************/ var __webpack_exports__ = {};
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+    PLUGIN_LESS_NAME: ()=>/* binding */ PLUGIN_LESS_NAME,
+    isPlainObject: ()=>/* binding */ isPlainObject,
+    pluginLess: ()=>/* binding */ pluginLess
+});
+const external_node_path_namespaceObject = require("node:path");
+var external_node_path_default = /*#__PURE__*/ __webpack_require__.n(external_node_path_namespaceObject);
+const external_node_url_namespaceObject = require("node:url");
+const external_deepmerge_namespaceObject = require("deepmerge");
+var external_deepmerge_default = /*#__PURE__*/ __webpack_require__.n(external_deepmerge_namespaceObject);
+const external_reduce_configs_namespaceObject = require("reduce-configs");
+const src_dirname = external_node_path_default().dirname((0, external_node_url_namespaceObject.fileURLToPath)(/*#__PURE__*/ function() {
+    return 'undefined' == typeof document ? new (module.require('url'.replace('', ''))).URL('file:' + __filename).href : document.currentScript && document.currentScript.src || new URL('main.js', document.baseURI).href;
+}()));
+const isPlainObject = (obj)=>null !== obj && 'object' == typeof obj && Object.getPrototypeOf(obj) === Object.prototype;
+const PLUGIN_LESS_NAME = 'rsbuild:less';
+const getLessLoaderOptions = (userOptions, isUseCssSourceMap, rootPath)=>{
+    const excludes = [];
+    const addExcludes = (items)=>{
+        excludes.push(...Array.isArray(items) ? items : [
+            items
+        ]);
+    };
+    const defaultLessLoaderOptions = {
+        lessOptions: {
+            javascriptEnabled: true,
+            // let less resolve from node_modules in the current root directory,
+            // Avoid resolving from wrong node_modules.
+            paths: [
+                external_node_path_default().join(rootPath, 'node_modules')
+            ]
+        },
+        sourceMap: isUseCssSourceMap,
+        implementation: external_node_path_default().join(src_dirname, '../compiled/less/index.js')
+    };
+    const mergeFn = (defaults, userOptions)=>{
+        const getLessOptions = ()=>{
+            if (defaults.lessOptions && userOptions.lessOptions) return external_deepmerge_default()(defaults.lessOptions, userOptions.lessOptions, {
+                isMergeableObject: isPlainObject
+            });
+            return userOptions.lessOptions || defaults.lessOptions;
+        };
+        return {
+            ...defaults,
+            ...userOptions,
+            lessOptions: getLessOptions()
+        };
+    };
+    const mergedOptions = (0, external_reduce_configs_namespaceObject.reduceConfigsWithContext)({
+        initial: defaultLessLoaderOptions,
+        config: userOptions,
+        ctx: {
+            addExcludes
+        },
+        mergeFn
+    });
+    return {
+        options: mergedOptions,
+        excludes
+    };
+};
+// Find a unique rule id for the less rule,
+// this allows to add multiple less rules.
+const findRuleId = (chain, defaultId)=>{
+    let id = defaultId;
+    let index = 0;
+    while(chain.module.rules.has(id))id = `${defaultId}-${++index}`;
+    return id;
+};
+const pluginLess = (pluginOptions = {})=>({
+        name: PLUGIN_LESS_NAME,
+        setup (api) {
+            api.modifyBundlerChain(async (chain, { CHAIN_ID, environment })=>{
+                const { config } = environment;
+                const ruleId = findRuleId(chain, CHAIN_ID.RULE.LESS);
+                const rule = chain.module.rule(ruleId).test(pluginOptions.include ?? /\.less$/).merge({
+                    sideEffects: true
+                }).resolve.preferRelative(true).end();
+                const { excludes, options } = getLessLoaderOptions(pluginOptions.lessLoaderOptions, config.output.sourceMap.css, api.context.rootPath);
+                for (const item of excludes)rule.exclude.add(item);
+                if (pluginOptions.exclude) rule.exclude.add(pluginOptions.exclude);
+                const cssRule = chain.module.rules.get(CHAIN_ID.RULE.CSS);
+                // Copy the builtin CSS rules
+                for (const id of Object.keys(cssRule.uses.entries())){
+                    const loader = cssRule.uses.get(id);
+                    const options = loader.get('options') ?? {};
+                    const clonedOptions = external_deepmerge_default()({}, options);
+                    if (id === CHAIN_ID.USE.CSS) // add less-loader
+                    clonedOptions.importLoaders += 1;
+                    rule.use(id).loader(loader.get('loader')).options(clonedOptions);
+                }
+                rule.use(CHAIN_ID.USE.LESS).loader(external_node_path_default().join(src_dirname, '../compiled/less-loader/index.js')).options(options);
+            });
+        }
+    });
+var __webpack_export_target__ = exports;
+for(var i in __webpack_exports__)__webpack_export_target__[i] = __webpack_exports__[i];
+if (__webpack_exports__.__esModule) Object.defineProperty(__webpack_export_target__, '__esModule', {
+    value: true
+});

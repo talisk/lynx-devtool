@@ -1,0 +1,187 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { MAIN_ENTRY_NAME } from "@modern-js/utils/universal/constants";
+import { getLoaderCtx } from "../../helper";
+import { sortRoutes } from "../../utils";
+import { CustomServer, getServerMidFromUnstableMid, injectRoute } from "../customServer";
+import { initReporter } from "../monitors";
+export * from "./inject";
+var renderPlugin = function() {
+  return {
+    name: "@modern-js/plugin-render",
+    setup: function setup(api) {
+      return {
+        prepare: function prepare() {
+          return _async_to_generator(function() {
+            var _config_render, _api_useAppContext, middlewares, routes, render, pwd, serverBase, runner, config, customServer, serverMiddleware, pageRoutes, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, route, originUrlPath, _route_entryName, entryName, urlPath, customServerHookMiddleware, customServerMiddleware, err;
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  _api_useAppContext = api.useAppContext(), middlewares = _api_useAppContext.middlewares, routes = _api_useAppContext.routes, render = _api_useAppContext.render, pwd = _api_useAppContext.distDirectory, serverBase = _api_useAppContext.serverBase;
+                  runner = api.useHookRunners();
+                  config = api.useConfigContext();
+                  if (!routes) {
+                    return [
+                      2
+                    ];
+                  }
+                  customServer = new CustomServer(runner, serverBase, pwd);
+                  serverMiddleware = ((_config_render = config.render) === null || _config_render === void 0 ? void 0 : _config_render.middleware) && getServerMidFromUnstableMid(config.render.middleware);
+                  pageRoutes = getPageRoutes(routes);
+                  _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+                  _state.label = 1;
+                case 1:
+                  _state.trys.push([
+                    1,
+                    6,
+                    7,
+                    8
+                  ]);
+                  _iterator = pageRoutes[Symbol.iterator]();
+                  _state.label = 2;
+                case 2:
+                  if (!!(_iteratorNormalCompletion = (_step = _iterator.next()).done))
+                    return [
+                      3,
+                      5
+                    ];
+                  route = _step.value;
+                  originUrlPath = route.urlPath, _route_entryName = route.entryName, entryName = _route_entryName === void 0 ? MAIN_ENTRY_NAME : _route_entryName;
+                  urlPath = originUrlPath.endsWith("/") ? "".concat(originUrlPath, "*") : "".concat(originUrlPath, "/*");
+                  middlewares.push({
+                    name: "init-reporter",
+                    handler: initReporter(entryName)
+                  });
+                  customServerHookMiddleware = customServer.getHookMiddleware(entryName, routes);
+                  middlewares.push({
+                    name: "inject-route-info",
+                    handler: injectRoute({
+                      entryName
+                    })
+                  });
+                  middlewares.push({
+                    name: "custom-server-hook",
+                    path: urlPath,
+                    handler: customServerHookMiddleware
+                  });
+                  return [
+                    4,
+                    customServer.getServerMiddleware(serverMiddleware)
+                  ];
+                case 3:
+                  customServerMiddleware = _state.sent();
+                  customServerMiddleware && middlewares.push({
+                    name: "custom-server-middleware",
+                    path: urlPath,
+                    handler: customServerMiddleware
+                  });
+                  render && middlewares.push({
+                    name: "render",
+                    path: urlPath,
+                    handler: createRenderHandler(render)
+                  });
+                  _state.label = 4;
+                case 4:
+                  _iteratorNormalCompletion = true;
+                  return [
+                    3,
+                    2
+                  ];
+                case 5:
+                  return [
+                    3,
+                    8
+                  ];
+                case 6:
+                  err = _state.sent();
+                  _didIteratorError = true;
+                  _iteratorError = err;
+                  return [
+                    3,
+                    8
+                  ];
+                case 7:
+                  try {
+                    if (!_iteratorNormalCompletion && _iterator.return != null) {
+                      _iterator.return();
+                    }
+                  } finally {
+                    if (_didIteratorError) {
+                      throw _iteratorError;
+                    }
+                  }
+                  return [
+                    7
+                  ];
+                case 8:
+                  return [
+                    2
+                  ];
+              }
+            });
+          })();
+        }
+      };
+    }
+  };
+};
+function getPageRoutes(routes) {
+  return routes.filter(function(route) {
+    return !route.isApi;
+  }).sort(sortRoutes);
+}
+function createRenderHandler(render) {
+  return function() {
+    var _ref = _async_to_generator(function(c, _) {
+      var _c_env_node, logger, reporter, monitors, templates, serverManifest, locals, metrics, matchPathname, loaderContext, request, nodeReq, res, body, status, headers, headersData;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            logger = c.get("logger");
+            reporter = c.get("reporter");
+            monitors = c.get("monitors");
+            templates = c.get("templates") || {};
+            serverManifest = c.get("serverManifest") || {};
+            locals = c.get("locals");
+            metrics = c.get("metrics");
+            matchPathname = c.get("matchPathname");
+            loaderContext = getLoaderCtx(c);
+            request = c.req.raw;
+            nodeReq = (_c_env_node = c.env.node) === null || _c_env_node === void 0 ? void 0 : _c_env_node.req;
+            return [
+              4,
+              render(request, {
+                nodeReq,
+                monitors,
+                logger,
+                reporter,
+                templates,
+                metrics,
+                serverManifest,
+                loaderContext,
+                locals,
+                matchPathname
+              })
+            ];
+          case 1:
+            res = _state.sent();
+            body = res.body, status = res.status, headers = res.headers;
+            headersData = {};
+            headers.forEach(function(v, k) {
+              headersData[k] = v;
+            });
+            return [
+              2,
+              c.body(body, status, headersData)
+            ];
+        }
+      });
+    });
+    return function(c, _) {
+      return _ref.apply(this, arguments);
+    };
+  }();
+}
+export {
+  renderPlugin
+};

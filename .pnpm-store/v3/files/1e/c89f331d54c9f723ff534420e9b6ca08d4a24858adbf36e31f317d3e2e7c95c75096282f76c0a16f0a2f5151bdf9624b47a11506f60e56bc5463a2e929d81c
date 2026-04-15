@@ -1,0 +1,85 @@
+import { MAIN_ENTRY_NAME } from "@modern-js/utils/universal/constants";
+import { X_MODERNJS_RENDER } from "../../constants";
+import { getPathname, parseHeaders } from "../../utils";
+import { getCacheResult, matchCacheControl } from "./ssrCache";
+const SERVER_RUNTIME_ENTRY = "requestHandler";
+async function ssrRender(request, { routeInfo, html, config: userConfig, staticGenerate, nodeReq, serverManifest, locals, params, loaderContext, reporter, cacheConfig, logger, metrics, onError, onTiming }) {
+  var _serverManifest_renderBundles;
+  const { entryName } = routeInfo;
+  const loadableStats = serverManifest.loadableStats || {};
+  const routeManifest = serverManifest.routeManifest || {};
+  const headers = parseHeaders(request);
+  if (nodeReq) {
+    for (const key in nodeReq.headers) {
+      if (!headers[key]) {
+        headers[key] = nodeReq.headers[key];
+      }
+    }
+  }
+  const renderBundle = (_serverManifest_renderBundles = serverManifest.renderBundles) === null || _serverManifest_renderBundles === void 0 ? void 0 : _serverManifest_renderBundles[entryName || MAIN_ENTRY_NAME];
+  if (!renderBundle) {
+    throw new Error(`Can't found renderBundle ${entryName || MAIN_ENTRY_NAME}`);
+  }
+  const requestHandler = await renderBundle[SERVER_RUNTIME_ENTRY];
+  const config = createRequestHandlerConfig(userConfig);
+  const requestHandlerOptions = {
+    resource: {
+      route: routeInfo,
+      loadableStats,
+      routeManifest,
+      htmlTemplate: html,
+      entryName: entryName || MAIN_ENTRY_NAME
+    },
+    params,
+    loaderContext,
+    config,
+    locals,
+    reporter,
+    staticGenerate,
+    logger,
+    metrics,
+    onError,
+    onTiming
+  };
+  const cacheControl = await matchCacheControl(cacheConfig === null || cacheConfig === void 0 ? void 0 : cacheConfig.strategy, nodeReq || new IncomingMessgeProxy(request));
+  let response;
+  if (cacheControl) {
+    response = await getCacheResult(request, {
+      cacheControl,
+      container: cacheConfig === null || cacheConfig === void 0 ? void 0 : cacheConfig.container,
+      requestHandler,
+      requestHandlerOptions
+    });
+  } else {
+    response = await requestHandler(request, requestHandlerOptions);
+  }
+  response.headers.set(X_MODERNJS_RENDER, "server");
+  response.headers.set("content-type", "text/html; charset=UTF-8");
+  return response;
+}
+class IncomingMessgeProxy {
+  constructor(req) {
+    this.headers = {};
+    req.headers.forEach((value, key) => {
+      this.headers[key] = value;
+    });
+    this.method = req.method;
+    this.url = getPathname(req);
+  }
+}
+function createRequestHandlerConfig(userConfig) {
+  const { output, server, security, html } = userConfig;
+  return {
+    ssr: server === null || server === void 0 ? void 0 : server.ssr,
+    ssrByEntries: server === null || server === void 0 ? void 0 : server.ssrByEntries,
+    nonce: security === null || security === void 0 ? void 0 : security.nonce,
+    enableInlineScripts: output === null || output === void 0 ? void 0 : output.enableInlineScripts,
+    enableInlineStyles: output === null || output === void 0 ? void 0 : output.enableInlineStyles,
+    crossorigin: html === null || html === void 0 ? void 0 : html.crossorigin,
+    scriptLoading: html === null || html === void 0 ? void 0 : html.scriptLoading,
+    useJsonScript: server === null || server === void 0 ? void 0 : server.useJsonScript
+  };
+}
+export {
+  ssrRender
+};

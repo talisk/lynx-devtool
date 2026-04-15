@@ -1,0 +1,353 @@
+// src/manager.ts
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { createDebugger, isFunction, logger } from "@modern-js/utils";
+var debug = createDebugger("plugin-v2");
+function validatePlugin(plugin) {
+  var type = typeof plugin === "undefined" ? "undefined" : _type_of(plugin);
+  if (type !== "object" || plugin === null) {
+    throw new Error("Expect CLI Plugin instance to be an object, but got ".concat(type, "."));
+  }
+  if (!plugin.setup)
+    return;
+  if (isFunction(plugin.setup)) {
+    return;
+  }
+  throw new Error("Expect CLI Plugin plugin.setup to be a function, but got ".concat(type, "."));
+}
+function createPluginManager() {
+  var plugins = /* @__PURE__ */ new Map();
+  var dependencies = /* @__PURE__ */ new Map();
+  var addDependency = function(plugin, dependency, type) {
+    if (!dependencies.has(dependency)) {
+      dependencies.set(dependency, {
+        pre: /* @__PURE__ */ new Map(),
+        post: /* @__PURE__ */ new Map()
+      });
+    }
+    if (type === "pre") {
+      dependencies.get(plugin).pre.set(dependency, {
+        name: dependency,
+        isUse: false
+      });
+    } else if (type === "post") {
+      dependencies.get(plugin).post.set(dependency, {
+        name: dependency
+      });
+    } else if (type === "use") {
+      if (!dependencies.get(plugin).post.has(dependency) && !dependencies.get(dependency).pre.has(plugin)) {
+        dependencies.get(plugin).pre.set(dependency, {
+          name: dependency,
+          isUse: true
+        });
+      }
+    }
+  };
+  var addPlugin = function(newPlugin) {
+    if (!newPlugin) {
+      return;
+    }
+    validatePlugin(newPlugin);
+    var name = newPlugin.name, _newPlugin_usePlugins = newPlugin.usePlugins, usePlugins = _newPlugin_usePlugins === void 0 ? [] : _newPlugin_usePlugins, _newPlugin_pre = newPlugin.pre, pre = _newPlugin_pre === void 0 ? [] : _newPlugin_pre, _newPlugin_post = newPlugin.post, post = _newPlugin_post === void 0 ? [] : _newPlugin_post;
+    if (plugins.has(name)) {
+      logger.warn("Plugin ".concat(name, " already exists."));
+      return;
+    }
+    plugins.set(name, newPlugin);
+    dependencies.set(name, {
+      pre: /* @__PURE__ */ new Map(),
+      post: /* @__PURE__ */ new Map()
+    });
+    pre.forEach(function(dep) {
+      addDependency(name, dep, "pre");
+    });
+    post.forEach(function(dep) {
+      addDependency(name, dep, "post");
+    });
+    usePlugins.forEach(function(plugin) {
+      if (!plugins.has(plugin.name)) {
+        addPlugin(plugin);
+      }
+      addDependency(name, plugin.name, "use");
+    });
+  };
+  var addPlugins = function(newPlugins) {
+    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+    try {
+      for (var _iterator = newPlugins[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var newPlugin = _step.value;
+        addPlugin(newPlugin);
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
+  };
+  var getPlugins = function() {
+    var visited = /* @__PURE__ */ new Set();
+    var temp = /* @__PURE__ */ new Set();
+    var result = [];
+    var visit = function(name) {
+      if (temp.has(name)) {
+        throw new Error("Circular dependency detected: ".concat(name));
+      }
+      if (!visited.has(name) && plugins.get(name)) {
+        temp.add(name);
+        var _plugins_get = plugins.get(name), _plugins_get_required = _plugins_get.required, required = _plugins_get_required === void 0 ? [] : _plugins_get_required;
+        required.forEach(function(dep) {
+          if (!plugins.get(dep)) {
+            throw new Error("".concat(name, " plugin required plugin ").concat(dep, ", but not found."));
+          }
+        });
+        var pre = dependencies.get(name).pre;
+        Array.from(pre.values()).filter(function(dep) {
+          return !dep.isUse;
+        }).forEach(function(dep) {
+          return visit(dep.name);
+        });
+        Array.from(pre.values()).filter(function(dep) {
+          return dep.isUse;
+        }).forEach(function(dep) {
+          return visit(dep.name);
+        });
+        temp.delete(name);
+        visited.add(name);
+        result.push(plugins.get(name));
+      }
+    };
+    plugins.forEach(function(_, name) {
+      var post = dependencies.get(name).post;
+      post.forEach(function(dep) {
+        if (!dependencies.get(dep.name).pre.has(name)) {
+          dependencies.get(dep.name).pre.set(name, {
+            name,
+            isUse: false
+          });
+        }
+      });
+    });
+    plugins.forEach(function(_, name) {
+      visit(name);
+    });
+    result = result.filter(function(result2) {
+      return result2;
+    });
+    debug("CLI Plugins:", result.map(function(p) {
+      return p.name;
+    }));
+    return result;
+  };
+  var clear = function() {
+    plugins.clear();
+    dependencies.clear();
+  };
+  return {
+    getPlugins,
+    addPlugins,
+    clear
+  };
+}
+
+// src/hooks.ts
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+function createAsyncHook() {
+  var callbacks = [];
+  var tap = function(cb) {
+    callbacks.push(cb);
+  };
+  var call = function() {
+    var _ref = _async_to_generator(function() {
+      var _len, params, _key, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, callback, result, err;
+      var _arguments = arguments;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            for (_len = _arguments.length, params = new Array(_len), _key = 0; _key < _len; _key++) {
+              params[_key] = _arguments[_key];
+            }
+            _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+            _state.label = 1;
+          case 1:
+            _state.trys.push([
+              1,
+              6,
+              7,
+              8
+            ]);
+            _iterator = callbacks[Symbol.iterator]();
+            _state.label = 2;
+          case 2:
+            if (!!(_iteratorNormalCompletion = (_step = _iterator.next()).done))
+              return [
+                3,
+                5
+              ];
+            callback = _step.value;
+            return [
+              4,
+              callback.apply(void 0, _to_consumable_array(params))
+            ];
+          case 3:
+            result = _state.sent();
+            if (result !== void 0) {
+              params[0] = result;
+            }
+            _state.label = 4;
+          case 4:
+            _iteratorNormalCompletion = true;
+            return [
+              3,
+              2
+            ];
+          case 5:
+            return [
+              3,
+              8
+            ];
+          case 6:
+            err = _state.sent();
+            _didIteratorError = true;
+            _iteratorError = err;
+            return [
+              3,
+              8
+            ];
+          case 7:
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return != null) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+            return [
+              7
+            ];
+          case 8:
+            return [
+              2,
+              params[0] || []
+            ];
+        }
+      });
+    });
+    return function call2() {
+      return _ref.apply(this, arguments);
+    };
+  }();
+  return {
+    tap,
+    call
+  };
+}
+function createCollectAsyncHook() {
+  var callbacks = [];
+  var tap = function(cb) {
+    callbacks.push(cb);
+  };
+  var call = function() {
+    var _ref = _async_to_generator(function() {
+      var _len, params, _key, results, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, callback, result, err;
+      var _arguments = arguments;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            for (_len = _arguments.length, params = new Array(_len), _key = 0; _key < _len; _key++) {
+              params[_key] = _arguments[_key];
+            }
+            results = [];
+            _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+            _state.label = 1;
+          case 1:
+            _state.trys.push([
+              1,
+              6,
+              7,
+              8
+            ]);
+            _iterator = callbacks[Symbol.iterator]();
+            _state.label = 2;
+          case 2:
+            if (!!(_iteratorNormalCompletion = (_step = _iterator.next()).done))
+              return [
+                3,
+                5
+              ];
+            callback = _step.value;
+            return [
+              4,
+              callback(params)
+            ];
+          case 3:
+            result = _state.sent();
+            if (result !== void 0) {
+              results.push(result);
+            }
+            _state.label = 4;
+          case 4:
+            _iteratorNormalCompletion = true;
+            return [
+              3,
+              2
+            ];
+          case 5:
+            return [
+              3,
+              8
+            ];
+          case 6:
+            err = _state.sent();
+            _didIteratorError = true;
+            _iteratorError = err;
+            return [
+              3,
+              8
+            ];
+          case 7:
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return != null) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+            return [
+              7
+            ];
+          case 8:
+            return [
+              2,
+              results
+            ];
+        }
+      });
+    });
+    return function call2() {
+      return _ref.apply(this, arguments);
+    };
+  }();
+  return {
+    tap,
+    call
+  };
+}
+export {
+  createAsyncHook,
+  createCollectAsyncHook,
+  createPluginManager
+};

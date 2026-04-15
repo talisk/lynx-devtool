@@ -1,0 +1,94 @@
+import path from "node:path";
+import { fs, getAliasConfig, loadFromProject, logger, readTsConfigByFile } from "@modern-js/utils";
+const registerEsbuild = async ({ isTsProject, tsConfig, distDir }) => {
+  const esbuildRegister = await import("esbuild-register/dist/node");
+  esbuildRegister.register({
+    tsconfigRaw: isTsProject ? tsConfig : void 0,
+    hookIgnoreNodeModules: true,
+    hookMatcher: (fileName) => !fileName.startsWith(distDir)
+  });
+};
+const registerCompiler = async (appDir, distDir, alias) => {
+  const TS_CONFIG_FILENAME = `tsconfig.json`;
+  const tsconfigPath = path.resolve(appDir, TS_CONFIG_FILENAME);
+  const isTsProject = await fs.pathExists(tsconfigPath);
+  const aliasConfig = getAliasConfig(alias, {
+    appDirectory: appDir,
+    tsconfigPath
+  });
+  const { paths = {}, absoluteBaseUrl = "./" } = aliasConfig;
+  const tsPaths = Object.keys(paths).reduce((o, key) => {
+    let tsPath = paths[key];
+    if (typeof tsPath === "string" && key.startsWith("@") && tsPath.startsWith("@")) {
+      try {
+        tsPath = require.resolve(tsPath, {
+          paths: [
+            process.cwd(),
+            ...module.paths
+          ]
+        });
+      } catch {
+      }
+    }
+    if (typeof tsPath === "string" && path.isAbsolute(tsPath)) {
+      tsPath = path.relative(absoluteBaseUrl, tsPath);
+    }
+    if (typeof tsPath === "string") {
+      tsPath = [
+        tsPath
+      ];
+    }
+    return {
+      ...o,
+      [`${key}`]: tsPath
+    };
+  }, {});
+  let tsConfig = {};
+  if (isTsProject) {
+    tsConfig = readTsConfigByFile(tsconfigPath);
+  }
+  const { MODERN_NODE_LOADER } = process.env;
+  if (MODERN_NODE_LOADER === "esbuild" || !isTsProject) {
+    await registerEsbuild({
+      isTsProject,
+      tsConfig,
+      distDir
+    });
+  } else {
+    try {
+      const tsNode = await loadFromProject("ts-node", appDir);
+      const tsNodeOptions = tsConfig["ts-node"];
+      tsNode.register({
+        project: tsconfigPath,
+        scope: true,
+        // for env.d.ts, https://www.npmjs.com/package/ts-node#missing-types
+        files: true,
+        transpileOnly: true,
+        ignore: [
+          "(?:^|/)node_modules/",
+          `(?:^|/)${path.relative(appDir, distDir)}/`
+        ],
+        ...tsNodeOptions
+      });
+    } catch (error) {
+      if (process.env.DEBUG) {
+        logger.error(error);
+      }
+      await registerEsbuild({
+        isTsProject,
+        tsConfig,
+        distDir
+      });
+    }
+  }
+  const tsConfigPaths = (await import("@modern-js/utils/tsconfig-paths")).default;
+  if (await fs.pathExists(appDir)) {
+    tsConfigPaths.register({
+      baseUrl: absoluteBaseUrl || "./",
+      paths: tsPaths
+    });
+  }
+};
+export {
+  registerCompiler
+};

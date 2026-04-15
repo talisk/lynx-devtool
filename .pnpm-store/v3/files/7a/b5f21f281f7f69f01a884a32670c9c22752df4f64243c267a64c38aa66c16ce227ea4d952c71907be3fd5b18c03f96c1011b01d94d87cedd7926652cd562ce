@@ -1,0 +1,13 @@
+/// <reference types="react" />
+import type { NestedRoute, Reporter } from '@modern-js/types';
+export declare const transformNestedRoutes: (routes: NestedRoute[], reporter?: Reporter) => import("react-router-dom").RouteObject[];
+type DeferredDataComponentType = (props?: {
+    nonce?: string;
+}) => JSX.Element | null;
+export declare const renderNestedRoute: (nestedRoute: NestedRoute, options?: {
+    parent?: NestedRoute;
+    DeferredDataComponent?: DeferredDataComponentType;
+    props?: Record<string, any>;
+    reporter?: Reporter;
+}) => import("react/jsx-runtime").JSX.Element;
+export {};

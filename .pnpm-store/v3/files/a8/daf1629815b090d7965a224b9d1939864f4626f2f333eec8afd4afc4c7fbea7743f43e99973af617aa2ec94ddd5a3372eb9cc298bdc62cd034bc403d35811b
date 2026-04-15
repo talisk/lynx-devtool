@@ -1,0 +1,404 @@
+import * as __WEBPACK_EXTERNAL_MODULE_node_fs__ from "node:fs";
+import * as __WEBPACK_EXTERNAL_MODULE_node_path__ from "node:path";
+import * as __WEBPACK_EXTERNAL_MODULE_json5__ from "json5";
+import * as __WEBPACK_EXTERNAL_MODULE_fast_glob__ from "fast-glob";
+const PNPM_WORKSPACE_FILE = 'pnpm-workspace.yaml';
+const RUSH_JSON_FILE = 'rush.json';
+const PACKAGE_JSON = 'package.json';
+async function pathExists(path) {
+    return __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.access(path).then(()=>true).catch(()=>false);
+}
+const isPnpmMonorepo = async (monorepoRootPath)=>{
+    const existPnpmWorkspaceFile = await pathExists(__WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(monorepoRootPath, PNPM_WORKSPACE_FILE));
+    return existPnpmWorkspaceFile;
+};
+const isRushMonorepo = async (monorepoRootPath)=>{
+    const existRushJsonFile = await pathExists(__WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(monorepoRootPath, RUSH_JSON_FILE));
+    return existRushJsonFile;
+};
+const isMonorepo = async (monorepoRootPath, otherMonorepoChecks)=>{
+    if ('object' == typeof otherMonorepoChecks) {
+        for (const [monorepoType, monorepoCheck] of Object.entries(otherMonorepoChecks))if ('function' == typeof monorepoCheck && await monorepoCheck(monorepoRootPath)) return {
+            isMonorepo: true,
+            type: monorepoType
+        };
+    }
+    if (await isPnpmMonorepo(monorepoRootPath)) return {
+        isMonorepo: true,
+        type: 'pnpm'
+    };
+    if (await isRushMonorepo(monorepoRootPath)) return {
+        isMonorepo: true,
+        type: 'rush'
+    };
+    return {
+        isMonorepo: false,
+        type: ''
+    };
+};
+const getMonorepoBaseData = async (starFindPath, otherMonorepoAnalyzer)=>{
+    var _otherMonorepoAnalyzer_type;
+    let repoIsMonorepo = false;
+    let findPath = starFindPath;
+    let type = '';
+    let otherMonorepoChecks;
+    if (otherMonorepoAnalyzer) {
+        otherMonorepoChecks = otherMonorepoChecks ?? {};
+        for (const [monoType, analyzer] of Object.entries(otherMonorepoAnalyzer))otherMonorepoChecks[monoType] = analyzer.check;
+    }
+    while(true){
+        const result = await isMonorepo(findPath, otherMonorepoChecks);
+        if (result.isMonorepo) {
+            repoIsMonorepo = true;
+            ({ type } = result);
+            break;
+        }
+        // find system root path
+        if (findPath === __WEBPACK_EXTERNAL_MODULE_node_path__["default"].dirname(findPath)) break;
+        findPath = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].dirname(findPath);
+    }
+    return {
+        isMonorepo: repoIsMonorepo,
+        rootPath: repoIsMonorepo ? findPath : '',
+        type,
+        getProjects: null == otherMonorepoAnalyzer ? void 0 : null === (_otherMonorepoAnalyzer_type = otherMonorepoAnalyzer[type]) || void 0 === _otherMonorepoAnalyzer_type ? void 0 : _otherMonorepoAnalyzer_type.getProjects
+    };
+};
+const readPackageJson = async (pkgJsonFilePath)=>readJson(pkgJsonFilePath);
+const readRushJson = async (rushJsonFilePath)=>{
+    const rushJson = readJson(rushJsonFilePath.includes(RUSH_JSON_FILE) ? rushJsonFilePath : __WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(rushJsonFilePath, RUSH_JSON_FILE));
+    return rushJson;
+};
+async function utils_pathExists(path) {
+    return __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.access(path).then(()=>true).catch(()=>false);
+}
+const readJson = async (jsonFileAbsPath)=>{
+    if (!await utils_pathExists(jsonFileAbsPath)) return {};
+    const content = await __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.readFile(jsonFileAbsPath, 'utf-8');
+    const json = __WEBPACK_EXTERNAL_MODULE_json5__["default"].parse(content);
+    return json;
+};
+function _check_private_redeclaration(obj, privateCollection) {
+    if (privateCollection.has(obj)) throw new TypeError("Cannot initialize the same private elements twice on an object");
+}
+function _class_private_method_get(receiver, privateSet, fn) {
+    if (!privateSet.has(receiver)) throw new TypeError("attempted to get private field on non-instance");
+    return fn;
+}
+function _class_private_method_init(obj, privateSet) {
+    _check_private_redeclaration(obj, privateSet);
+    privateSet.add(obj);
+}
+function _define_property(obj, key, value) {
+    if (key in obj) Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+    });
+    else obj[key] = value;
+    return obj;
+}
+var _getExportsSourceDirs = /*#__PURE__*/ new WeakSet(), /**
+   *
+   * @param paths normalize paths
+   * @returns common root paths
+   */ _getCommonRootPaths = /*#__PURE__*/ new WeakSet(), _getRootPath = /*#__PURE__*/ new WeakSet();
+class Project {
+    async init() {
+        this.metaData = await readPackageJson(__WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(this.dir, PACKAGE_JSON));
+    }
+    getMetaData() {
+        if (null === this.metaData) throw new Error('The Project object needs to be initialized by executing the `init` function');
+        return this.metaData;
+    }
+    getDependentProjects(monorepoProjects, options) {
+        const { recursive } = options ?? {
+            recursive: false
+        };
+        const allProjectMap = new Map();
+        for (const project of monorepoProjects)allProjectMap.set(project.name, project);
+        if (!recursive) return this.getDirectDependentProjects(allProjectMap);
+        const computedSet = new Set();
+        computedSet.add(this.name);
+        const queue = this.getDirectDependentProjects(allProjectMap).filter((p)=>!computedSet.has(p.name));
+        const result = [];
+        while(queue.length > 0){
+            const item = queue.shift();
+            if (computedSet.has(item.name)) continue;
+            result.push(item);
+            computedSet.add(item.name);
+            const newDeps = item.getDirectDependentProjects(allProjectMap);
+            if (newDeps.length > 0) queue.push(...newDeps);
+        }
+        return result;
+    }
+    getDirectDependentProjects(allProjectMap) {
+        const pkgJson = this.getMetaData();
+        const { dependencies = {}, devDependencies = {} } = pkgJson;
+        const projects = [];
+        for (const d of Object.keys(dependencies))if (allProjectMap.has(d)) projects.push(allProjectMap.get(d));
+        for (const d of Object.keys(devDependencies))if (allProjectMap.has(d)) projects.push(allProjectMap.get(d));
+        return projects;
+    }
+    getSourceEntryPaths(options) {
+        const { exports: checkExports = false, field: sourceField = 'source' } = options ?? {};
+        const pkgJson = this.getMetaData();
+        // normalize strings
+        const sourceDirs = pkgJson[sourceField] ? [
+            __WEBPACK_EXTERNAL_MODULE_node_path__["default"].normalize(pkgJson[sourceField])
+        ] : [];
+        if (checkExports) {
+            /**
+       * analyze exports:
+       * "exports": {
+       *   ".": {
+       *     "source": "./src/index.ts"
+       *   }
+       * },
+       */ const exportsSourceDirs = _class_private_method_get(this, _getExportsSourceDirs, getExportsSourceDirs).call(this, pkgJson.exports ?? {}, sourceField);
+            sourceDirs.push(...exportsSourceDirs);
+        }
+        if (!sourceDirs.length) throw new Error(`"${sourceField}" field is not found in ${this.name} package.json`);
+        return _class_private_method_get(this, _getCommonRootPaths, getCommonRootPaths).call(this, sourceDirs);
+    }
+    constructor(name, dir){
+        _class_private_method_init(this, _getExportsSourceDirs);
+        _class_private_method_init(this, _getCommonRootPaths);
+        _class_private_method_init(this, _getRootPath);
+        _define_property(this, "name", void 0);
+        _define_property(this, "dir", void 0);
+        _define_property(this, "metaData", void 0);
+        this.name = name;
+        this.dir = dir;
+    }
+}
+function getExportsSourceDirs(exportsConfig, sourceField) {
+    const exportsSourceDirs = [];
+    if ('string' == typeof exportsConfig[sourceField]) exportsSourceDirs.push(__WEBPACK_EXTERNAL_MODULE_node_path__["default"].normalize(exportsConfig[sourceField]));
+    for (const moduleRules of Object.values(exportsConfig))if ('object' == typeof moduleRules && 'string' == typeof moduleRules[sourceField]) exportsSourceDirs.push(__WEBPACK_EXTERNAL_MODULE_node_path__["default"].normalize(moduleRules[sourceField]));
+    // normalize strings
+    return exportsSourceDirs;
+}
+function getCommonRootPaths(paths) {
+    const commonRootPathsSet = new Set();
+    for (const p of paths){
+        let dir;
+        try {
+            dir = __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].statSync(p).isDirectory() ? p : __WEBPACK_EXTERNAL_MODULE_node_path__["default"].dirname(p);
+        } catch  {
+            dir = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].dirname(p);
+        }
+        const rootPath = _class_private_method_get(this, _getRootPath, getRootPath).call(this, dir);
+        if (!commonRootPathsSet.has(rootPath)) commonRootPathsSet.add(rootPath);
+    }
+    return Array.from(commonRootPathsSet).map((p)=>__WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(this.dir, p));
+}
+function getRootPath(p) {
+    return p.split(__WEBPACK_EXTERNAL_MODULE_node_path__["default"].sep)[0];
+}
+const getPatternsFromYaml = async (monorepoRoot)=>{
+    const { parse } = await import("yaml");
+    const workspaceYamlFilePath = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(monorepoRoot, PNPM_WORKSPACE_FILE);
+    const yamlContent = await __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.readFile(workspaceYamlFilePath, 'utf8');
+    const pnpmWorkspace = parse(yamlContent);
+    return pnpmWorkspace.packages || [];
+};
+const normalize = (results)=>results.map((fp)=>__WEBPACK_EXTERNAL_MODULE_node_path__["default"].normalize(fp));
+const getGlobOpts = (rootPath, patterns)=>{
+    const globOpts = {
+        cwd: rootPath,
+        absolute: true,
+        followSymbolicLinks: false
+    };
+    if (patterns.some((cfg)=>cfg.includes('**') || cfg.includes('*'))) globOpts.ignore = [
+        // allow globs like "packages/**" or "packages/*",
+        // but avoid picking up node_modules/**/package.json and dist/**/package.json
+        '**/dist/**',
+        '**/node_modules/**'
+    ];
+    return globOpts;
+};
+const makeFileFinder = (rootPath, patterns)=>{
+    const globOpts = getGlobOpts(rootPath, patterns);
+    return async (fileName, fileMapper)=>{
+        let result = await (0, __WEBPACK_EXTERNAL_MODULE_fast_glob__["default"])(patterns.map((globPath)=>__WEBPACK_EXTERNAL_MODULE_node_path__["default"].posix.join(globPath, fileName)), globOpts);
+        // fast-glob does not respect pattern order, so we re-sort by absolute path
+        result = result.sort();
+        // POSIX results always need to be normalized
+        result = normalize(result);
+        return fileMapper(result);
+    };
+};
+const readPnpmProjects = async (monorepoRoot, patterns)=>{
+    const finder = makeFileFinder(monorepoRoot, patterns);
+    const mapper = async (pkgJsonFilePath)=>{
+        const pkgJson = await readPackageJson(pkgJsonFilePath);
+        return {
+            dir: __WEBPACK_EXTERNAL_MODULE_node_path__["default"].dirname(pkgJsonFilePath),
+            manifest: pkgJson
+        };
+    };
+    const projects = await finder(PACKAGE_JSON, (filePaths)=>Promise.all(filePaths.map(mapper)));
+    return projects;
+};
+const pnpm_getProjects = async (monorepoRoot)=>{
+    const patterns = await getPatternsFromYaml(monorepoRoot);
+    const pnpmProjects = await readPnpmProjects(monorepoRoot, patterns);
+    return Promise.all(pnpmProjects.filter((p)=>p.manifest.name).map(async (p)=>{
+        const project = new Project(p.manifest.name, p.dir);
+        await project.init();
+        return project;
+    }));
+};
+const rush_getProjects = async (monorepoRoot)=>{
+    const rushConfiguration = await readRushJson(monorepoRoot);
+    const { projects = [] } = rushConfiguration;
+    return Promise.all(projects.map(async (p)=>{
+        const project = new Project(p.packageName, __WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(monorepoRoot, p.projectFolder));
+        await project.init();
+        return project;
+    }));
+};
+const getMonorepoSubProjects = async (monorepoBaseData)=>{
+    const { type, rootPath, getProjects } = monorepoBaseData;
+    if ('pnpm' === type) return pnpm_getProjects(rootPath);
+    if ('rush' === type) return rush_getProjects(rootPath);
+    if (getProjects) return getProjects(rootPath);
+    return [];
+};
+async function getDependentProjects_pathExists(path) {
+    return __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.access(path).then(()=>true).catch(()=>false);
+}
+const getDependentProjects = async (projectNameOrRootPath, options)=>{
+    const { cwd = process.cwd(), recursive, filter, extraMonorepoStrategies } = options;
+    // check if first argument is projectRootPath.
+    const currentProjectPkgJsonPath = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(projectNameOrRootPath, 'package.json');
+    let projectName;
+    if (await getDependentProjects_pathExists(currentProjectPkgJsonPath)) ({ name: projectName } = await readPackageJson(currentProjectPkgJsonPath));
+    else projectName = projectNameOrRootPath;
+    const monoBaseData = await getMonorepoBaseData(cwd, extraMonorepoStrategies);
+    if (!monoBaseData.isMonorepo) return [];
+    const projects = await getMonorepoSubProjects(monoBaseData);
+    const currentProject = projects.find((project)=>project.name === projectName);
+    if (!currentProject) return [];
+    let dependentProjects = currentProject.getDependentProjects(projects, {
+        recursive
+    });
+    if (filter) dependentProjects = await filter(dependentProjects);
+    return dependentProjects;
+};
+function hasExportsSourceField(exportsConfig, sourceField) {
+    return 'string' == typeof exportsConfig[sourceField] || Object.values(exportsConfig).some((moduleRules)=>'object' == typeof moduleRules && 'string' == typeof moduleRules[sourceField]);
+}
+const filterByField = (fieldName, checkExports)=>(projects)=>projects.filter((p)=>fieldName in p.metaData || checkExports && hasExportsSourceField(p.metaData.exports || {}, fieldName));
+const PLUGIN_SOURCE_BUILD_NAME = 'rsbuild:source-build';
+const getSourceInclude = async (options)=>{
+    const { projects, sourceField } = options;
+    const includes = [];
+    for (const project of projects)includes.push(...project.getSourceEntryPaths({
+        field: sourceField,
+        exports: true
+    }));
+    return includes;
+};
+function pluginSourceBuild(options) {
+    const { projectName, sourceField = 'source', resolvePriority = 'source', extraMonorepoStrategies } = options ?? {};
+    return {
+        name: PLUGIN_SOURCE_BUILD_NAME,
+        setup (api) {
+            const projectRootPath = api.context.rootPath;
+            let projects;
+            api.modifyEnvironmentConfig(async (config)=>{
+                projects = projects || await getDependentProjects(projectName || projectRootPath, {
+                    cwd: projectRootPath,
+                    recursive: true,
+                    filter: filterByField(sourceField, true),
+                    extraMonorepoStrategies
+                });
+                const includes = await getSourceInclude({
+                    projects,
+                    sourceField
+                });
+                config.source = config.source ?? {};
+                config.source.include = [
+                    ...config.source.include ?? [],
+                    ...includes
+                ];
+            });
+            api.modifyBundlerChain((chain, { CHAIN_ID })=>{
+                for (const ruleId of [
+                    CHAIN_ID.RULE.TS,
+                    CHAIN_ID.RULE.JS
+                ])if (chain.module.rules.get(ruleId)) {
+                    const rule = chain.module.rule(ruleId);
+                    // https://rspack.dev/config/resolve
+                    // when source is not exist, other mainFields will effect. // source > Rspack default mainFields.
+                    rule.resolve.mainFields.merge('source' === resolvePriority ? [
+                        sourceField,
+                        '...'
+                    ] : [
+                        '...',
+                        sourceField
+                    ]);
+                    // `conditionNames` is not affected by `resolvePriority`.
+                    // The priority is controlled by the order of fields declared in `exports`.
+                    rule.resolve.conditionNames.add('...').add(sourceField);
+                }
+            });
+            const getReferences = async (tsconfigPath, rspackReferences)=>{
+                const references = new Set();
+                for (const project of projects || []){
+                    const filePath = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(project.dir, 'tsconfig.json');
+                    if (__WEBPACK_EXTERNAL_MODULE_node_fs__["default"].existsSync(filePath)) references.add(filePath);
+                }
+                // Add references in the current project's tsconfig.json
+                const tsconfig = __WEBPACK_EXTERNAL_MODULE_json5__["default"].parse(__WEBPACK_EXTERNAL_MODULE_node_fs__["default"].readFileSync(tsconfigPath, 'utf-8'));
+                const userReferences = [
+                    ...Array.isArray(rspackReferences) ? rspackReferences : [],
+                    ...tsconfig.references ? tsconfig.references.map((item)=>item.path).filter(Boolean) : []
+                ];
+                if (userReferences.length) {
+                    const baseDir = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].dirname(tsconfigPath);
+                    for (const item of userReferences){
+                        if (!item) continue;
+                        const absolutePath = __WEBPACK_EXTERNAL_MODULE_node_path__["default"].isAbsolute(item) ? item : __WEBPACK_EXTERNAL_MODULE_node_path__["default"].join(baseDir, item);
+                        references.add(absolutePath);
+                    }
+                }
+                // avoid self reference, it will break the resolver
+                references.delete(tsconfigPath);
+                return Array.from(references);
+            };
+            if ('rspack' === api.context.bundlerType) api.modifyRspackConfig(async (config, { environment })=>{
+                const { tsconfigPath } = environment;
+                if (!tsconfigPath) return;
+                config.resolve ||= {};
+                const { tsConfig = {
+                    configFile: tsconfigPath
+                } } = config.resolve;
+                const configObject = 'string' == typeof tsConfig ? {
+                    configFile: tsConfig
+                } : tsConfig;
+                const references = await getReferences(tsconfigPath, configObject.references);
+                config.resolve.tsConfig = {
+                    configFile: (null == configObject ? void 0 : configObject.configFile) || tsconfigPath,
+                    references: references
+                };
+            });
+            else api.modifyBundlerChain(async (chain, { CHAIN_ID, environment })=>{
+                const { TS_CONFIG_PATHS } = CHAIN_ID.RESOLVE_PLUGIN;
+                const { tsconfigPath } = environment;
+                if (!chain.resolve.plugins.has(TS_CONFIG_PATHS) || !tsconfigPath) return;
+                const references = await getReferences(tsconfigPath);
+                // set references config
+                // https://github.com/dividab/tsconfig-paths-webpack-plugin#options
+                chain.resolve.plugin(TS_CONFIG_PATHS).tap((options)=>options.map((option)=>({
+                            ...option,
+                            references
+                        })));
+            });
+        }
+    };
+}
+export { PLUGIN_SOURCE_BUILD_NAME, Project, getMonorepoBaseData, getMonorepoSubProjects, pluginSourceBuild };

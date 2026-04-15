@@ -1,0 +1,193 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { applyPlugins } from "@modern-js/prod-server";
+import { createDevServer } from "@modern-js/server";
+import { DEFAULT_DEV_HOST, SERVER_DIR, getMeta, logger } from "@modern-js/utils";
+import { buildServerConfig } from "../utils/config";
+import { setServer } from "../utils/createServer";
+import { loadServerPlugins } from "../utils/loadPlugins";
+import { printInstructions } from "../utils/printInstructions";
+import { registerCompiler } from "../utils/register";
+import { generateRoutes } from "../utils/routes";
+var dev = function() {
+  var _ref = _async_to_generator(function(api, options, devServerOptions) {
+    var _normalizedConfig_source, _normalizedConfig_tools, _normalizedConfig_dev, normalizedConfig, appContext, hooks, _normalizedConfig_source1, registerEsm, appDirectory, distDirectory, port, apiOnly, serverConfigFile, metaName, serverRoutes, meta, serverConfigPath, pluginInstances, serverOptions, host, server, _ref2, server1, afterListen;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          if (options.analyze) {
+            process.env.BUNDLE_ANALYZE = "true";
+          }
+          normalizedConfig = api.getNormalizedConfig();
+          appContext = api.getAppContext();
+          hooks = api.getHooks();
+          if (!(appContext.moduleType && appContext.moduleType === "module"))
+            return [
+              3,
+              3
+            ];
+          return [
+            4,
+            import("../esm/register-esm.mjs")
+          ];
+        case 1:
+          registerEsm = _state.sent().registerEsm;
+          return [
+            4,
+            registerEsm({
+              appDir: appContext.appDirectory,
+              distDir: appContext.distDirectory,
+              alias: (_normalizedConfig_source1 = normalizedConfig.source) === null || _normalizedConfig_source1 === void 0 ? void 0 : _normalizedConfig_source1.alias
+            })
+          ];
+        case 2:
+          _state.sent();
+          _state.label = 3;
+        case 3:
+          return [
+            4,
+            registerCompiler(appContext.appDirectory, appContext.distDirectory, normalizedConfig === null || normalizedConfig === void 0 ? void 0 : (_normalizedConfig_source = normalizedConfig.source) === null || _normalizedConfig_source === void 0 ? void 0 : _normalizedConfig_source.alias)
+          ];
+        case 4:
+          _state.sent();
+          api.modifyResolvedConfig(function(config) {
+            return _object_spread_props(_object_spread({}, config), {
+              cliOptions: options
+            });
+          });
+          appDirectory = appContext.appDirectory, distDirectory = appContext.distDirectory, port = appContext.port, apiOnly = appContext.apiOnly, serverConfigFile = appContext.serverConfigFile, metaName = appContext.metaName, serverRoutes = appContext.serverRoutes;
+          return [
+            4,
+            buildServerConfig({
+              appDirectory,
+              distDirectory,
+              configFile: serverConfigFile,
+              watch: true
+            })
+          ];
+        case 5:
+          _state.sent();
+          meta = getMeta(metaName);
+          serverConfigPath = path.resolve(appDirectory, SERVER_DIR, "".concat(meta, ".server"));
+          return [
+            4,
+            hooks.onBeforeDev.call()
+          ];
+        case 6:
+          _state.sent();
+          if (!appContext.builder && !apiOnly) {
+            throw new Error("Expect the Builder to have been initialized, But the appContext.builder received `undefined`");
+          }
+          return [
+            4,
+            generateRoutes(appContext)
+          ];
+        case 7:
+          _state.sent();
+          return [
+            4,
+            loadServerPlugins(api, appDirectory, metaName)
+          ];
+        case 8:
+          pluginInstances = _state.sent();
+          serverOptions = _object_spread({
+            metaName,
+            dev: _object_spread({
+              port,
+              https: normalizedConfig.dev.https,
+              host: normalizedConfig.dev.host
+            }, (_normalizedConfig_tools = normalizedConfig.tools) === null || _normalizedConfig_tools === void 0 ? void 0 : _normalizedConfig_tools.devServer),
+            appContext: {
+              appDirectory,
+              internalDirectory: appContext.internalDirectory,
+              apiDirectory: appContext.apiDirectory,
+              lambdaDirectory: appContext.lambdaDirectory,
+              sharedDirectory: appContext.sharedDirectory
+            },
+            serverConfigPath,
+            routes: serverRoutes,
+            pwd: appDirectory,
+            config: normalizedConfig,
+            serverConfigFile,
+            plugins: pluginInstances
+          }, devServerOptions);
+          host = ((_normalizedConfig_dev = normalizedConfig.dev) === null || _normalizedConfig_dev === void 0 ? void 0 : _normalizedConfig_dev.host) || DEFAULT_DEV_HOST;
+          if (!apiOnly)
+            return [
+              3,
+              10
+            ];
+          return [
+            4,
+            createDevServer(_object_spread_props(_object_spread({}, serverOptions), {
+              runCompile: false
+            }), (devServerOptions === null || devServerOptions === void 0 ? void 0 : devServerOptions.applyPlugins) || applyPlugins)
+          ];
+        case 9:
+          server = _state.sent().server;
+          server.listen({
+            port,
+            host
+          }, function() {
+            printInstructions(hooks, appContext, normalizedConfig);
+          });
+          return [
+            3,
+            12
+          ];
+        case 10:
+          return [
+            4,
+            createDevServer(_object_spread_props(_object_spread({}, serverOptions), {
+              builder: appContext.builder
+            }), (devServerOptions === null || devServerOptions === void 0 ? void 0 : devServerOptions.applyPlugins) || applyPlugins)
+          ];
+        case 11:
+          _ref2 = _state.sent(), server1 = _ref2.server, afterListen = _ref2.afterListen;
+          server1.listen({
+            port,
+            host
+          }, function() {
+            var _ref3 = _async_to_generator(function(err) {
+              return _ts_generator(this, function(_state2) {
+                switch (_state2.label) {
+                  case 0:
+                    if (err) {
+                      logger.error("Occur error %s, when start dev server", err);
+                    }
+                    logger.debug("listen dev server done");
+                    return [
+                      4,
+                      afterListen()
+                    ];
+                  case 1:
+                    _state2.sent();
+                    return [
+                      2
+                    ];
+                }
+              });
+            });
+            return function(err) {
+              return _ref3.apply(this, arguments);
+            };
+          }());
+          setServer(server1);
+          _state.label = 12;
+        case 12:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function dev2(api, options, devServerOptions) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  dev
+};

@@ -1,0 +1,9 @@
+import type { CLIPluginExtends } from '../../types/cli/plugin';
+import type { CLIRunOptions } from './types';
+export declare const createCli: <Extends extends CLIPluginExtends>() => {
+    init: (options: CLIRunOptions) => Promise<{
+        appContext: import("../..").InternalContext<Extends>;
+    }>;
+    run: (options: CLIRunOptions) => Promise<void>;
+    getPrevInitOptions: () => CLIRunOptions;
+};

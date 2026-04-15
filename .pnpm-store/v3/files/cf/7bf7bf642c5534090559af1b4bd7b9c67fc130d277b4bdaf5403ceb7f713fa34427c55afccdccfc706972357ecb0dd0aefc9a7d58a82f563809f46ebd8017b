@@ -1,0 +1,8 @@
+import type { CLIPluginAPI } from '../types/cli/api';
+import type { InternalContext } from '../types/cli/context';
+import type { CLIPluginExtends } from '../types/cli/plugin';
+import type { PluginManager } from '../types/plugin';
+export declare function initPluginAPI<Extends extends CLIPluginExtends>({ context, }: {
+    context: InternalContext<Extends>;
+    pluginManager: PluginManager;
+}): CLIPluginAPI<Extends>;

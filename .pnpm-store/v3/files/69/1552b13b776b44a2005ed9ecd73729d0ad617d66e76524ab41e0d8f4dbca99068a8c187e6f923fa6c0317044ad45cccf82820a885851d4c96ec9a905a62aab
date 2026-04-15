@@ -1,0 +1,10 @@
+const sortRoutes = (route1, route2) => {
+  return route2.urlPath.length - route1.urlPath.length;
+};
+const uniqueKeyByRoute = (route) => {
+  return `${route.entryName}-${route.urlPath}`;
+};
+export {
+  sortRoutes,
+  uniqueKeyByRoute
+};

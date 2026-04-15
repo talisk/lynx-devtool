@@ -1,0 +1,145 @@
+import { getPathname, parseCookie, parseHeaders, parseQuery } from "@modern-js/runtime-utils/universal/request";
+import { getGlobalAppInit } from "../context";
+import { getInitialContext } from "../context/runtime";
+import { createLoaderManager } from "../loader/loaderManager";
+import { getGlobalRunner } from "../plugin/runner";
+import { createRoot } from "../react";
+import { CHUNK_CSS_PLACEHOLDER } from "./constants";
+import { getSSRConfigByEntry, getSSRMode } from "./utils";
+function createSSRContext(request, options) {
+  const { config, loaderContext, onError, onTiming, locals, resource, params, responseProxy, logger, metrics, reporter } = options;
+  const { nonce, useJsonScript } = config;
+  const { entryName, route } = resource;
+  const { headers } = request;
+  const cookie = headers.get("cookie") || "";
+  const cookieMap = parseCookie(request);
+  const pathname = getPathname(request);
+  const query = parseQuery(request);
+  const headersData = parseHeaders(request);
+  const url = new URL(request.url);
+  const host = headers.get("X-Forwarded-Host") || headers.get("host") || url.host;
+  let protocol = (headers.get("X-Forwarded-Proto") || url.protocol || "http").split(/\s*,\s*/, 1)[0];
+  if (!protocol.endsWith(":")) {
+    protocol += ":";
+  }
+  const ssrConfig = getSSRConfigByEntry(entryName, config.ssr, config.ssrByEntries);
+  const ssrMode = getSSRMode(ssrConfig);
+  const loaderFailureMode = typeof ssrConfig === "object" ? ssrConfig.loaderFailureMode : void 0;
+  return {
+    nonce,
+    useJsonScript,
+    loaderContext,
+    redirection: {},
+    htmlModifiers: [],
+    logger,
+    metrics,
+    request: {
+      url: request.url.replace(url.host, host).replace(url.protocol, protocol),
+      baseUrl: route.urlPath,
+      userAgent: headers.get("user-agent"),
+      cookie,
+      cookieMap,
+      pathname,
+      query,
+      params,
+      headers: headersData,
+      host,
+      raw: request
+    },
+    response: {
+      setHeader(key, value) {
+        responseProxy.headers[key] = value;
+      },
+      status(code) {
+        responseProxy.code = code;
+      },
+      locals: locals || {}
+    },
+    reporter,
+    mode: ssrMode,
+    onError,
+    onTiming,
+    loaderFailureMode
+  };
+}
+const createRequestHandler = async (handleRequest) => {
+  const requestHandler = async (request, options) => {
+    var _context_routerContext, _context_routerContext1;
+    const Root = createRoot();
+    const runner = getGlobalRunner();
+    const { routeManifest } = options.resource;
+    const context = getInitialContext(runner, false, routeManifest);
+    const runBeforeRender = async (context2) => {
+      const result = await runner.beforeRender(context2);
+      if (typeof Response !== "undefined" && result instanceof Response) {
+        return result;
+      }
+      const init = getGlobalAppInit();
+      return init === null || init === void 0 ? void 0 : init(context2);
+    };
+    const responseProxy = {
+      headers: {},
+      code: -1
+    };
+    const ssrContext = createSSRContext(request, {
+      ...options,
+      responseProxy
+    });
+    Object.assign(context, {
+      ssrContext,
+      isBrowser: false,
+      loaderManager: createLoaderManager({}, {
+        skipNonStatic: options.staticGenerate,
+        // if not static generate, only non-static loader can exec on prod env
+        skipStatic: process.env.NODE_ENV === "production" && !options.staticGenerate
+      })
+    });
+    const getRedirectResponse = (result) => {
+      if (typeof Response !== "undefined" && // fix: ssg workflow doesn't inject Web Response
+      result instanceof Response && result.status >= 300 && result.status <= 399) {
+        const { status } = result;
+        const redirectUrl = result.headers.get("Location") || "/";
+        const { ssrContext: ssrContext2 } = context;
+        if (ssrContext2) {
+          return new Response(null, {
+            status,
+            headers: {
+              Location: redirectUrl
+            }
+          });
+        }
+      }
+      return void 0;
+    };
+    const initialData = await runBeforeRender(context);
+    if (((_context_routerContext = context.routerContext) === null || _context_routerContext === void 0 ? void 0 : _context_routerContext.statusCode) && ((_context_routerContext1 = context.routerContext) === null || _context_routerContext1 === void 0 ? void 0 : _context_routerContext1.statusCode) !== 200) {
+      var _context_routerContext2, _context_ssrContext;
+      (_context_ssrContext = context.ssrContext) === null || _context_ssrContext === void 0 ? void 0 : _context_ssrContext.response.status((_context_routerContext2 = context.routerContext) === null || _context_routerContext2 === void 0 ? void 0 : _context_routerContext2.statusCode);
+    }
+    context.initialData = initialData;
+    const redirectResponse = getRedirectResponse(initialData);
+    if (redirectResponse) {
+      return redirectResponse;
+    }
+    const { htmlTemplate } = options.resource;
+    options.resource.htmlTemplate = htmlTemplate.replace("</head>", `${CHUNK_CSS_PLACEHOLDER}</head>`);
+    const response = await handleRequest(request, Root, {
+      ...options,
+      runtimeContext: context
+    });
+    Object.entries(responseProxy.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    if (responseProxy.code !== -1) {
+      return new Response(response.body, {
+        status: responseProxy.code,
+        headers: response.headers
+      });
+    }
+    return response;
+  };
+  return requestHandler;
+};
+export {
+  createRequestHandler
+};

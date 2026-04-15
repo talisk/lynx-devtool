@@ -1,0 +1,92 @@
+import { I18n } from '@modern-js/plugin-i18n';
+declare const i18n: I18n;
+declare const localeKeys: {
+    command: {
+        shared: {
+            config: string;
+            noNeedInstall: string;
+        };
+        build: {
+            describe: string;
+            watch: string;
+            tsconfig: string;
+            styleOnly: string;
+            platform: string;
+            noTsc: string;
+            dts: string;
+            noClear: string;
+        };
+        dev: {
+            describe: string;
+            tsconfig: string;
+        };
+        new: {
+            describe: string;
+            debug: string;
+            config: string;
+            distTag: string;
+            registry: string;
+            lang: string;
+        };
+    };
+    log: {
+        dev: {
+            noDevtools: string;
+        };
+        buildConfigTip: string;
+    };
+    errors: {
+        externalHelpers: string;
+    };
+    warns: {
+        dts: {
+            abortOnError: string;
+        };
+        clearRootPath: string;
+    };
+} | {
+    command: {
+        shared: {
+            config: string;
+            noNeedInstall: string;
+        };
+        build: {
+            describe: string;
+            watch: string;
+            tsconfig: string;
+            styleOnly: string;
+            platform: string;
+            noTsc: string;
+            dts: string;
+            noClear: string;
+        };
+        dev: {
+            describe: string;
+            tsconfig: string;
+        };
+        new: {
+            describe: string;
+            debug: string;
+            config: string;
+            distTag: string;
+            registry: string;
+            lang: string;
+        };
+    };
+    log: {
+        dev: {
+            noDevtools: string;
+        };
+        buildConfigTip: string;
+    };
+    errors: {
+        externalHelpers: string;
+    };
+    warns: {
+        dts: {
+            abortOnError: string;
+        };
+        clearRootPath: string;
+    };
+};
+export { i18n, localeKeys };

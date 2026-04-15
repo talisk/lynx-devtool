@@ -1,0 +1,2 @@
+import type { CliPlugin } from '@modern-js/core';
+export declare const getPlugins: (runningCmd: string) => CliPlugin[];

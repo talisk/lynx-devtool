@@ -1,0 +1,50 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const command_1 = __importDefault(require("../../command"));
+class ListForwardCommand extends command_1.default {
+    execute(...args) {
+        const command = `fport ls`;
+        const data = Buffer.from(command, "ascii");
+        this.send(data);
+        return this.connection.parser.readValue().then(this._parseResult);
+    }
+    _parseResult(value) {
+        return value
+            .toString("ascii")
+            .split("\n")
+            .filter((e) => e)
+            .map((line) => {
+            if (line.startsWith("[Fail]")) {
+                throw new Error(line);
+            }
+            const parts = line.trim().split(/\s+/).filter(Boolean);
+            let taskInfo = "";
+            let connectKey = "";
+            if (parts.length >= 3 &&
+                parts[1].includes(":") &&
+                parts[2].includes(":")) {
+                connectKey = parts[0];
+                taskInfo = `${parts[1]} ${parts[2]}`;
+            }
+            else if (parts.length >= 2 && parts[1].includes(":")) {
+                connectKey = parts[0];
+                taskInfo = parts[1];
+            }
+            else if (parts.length >= 1) {
+                taskInfo = parts[0];
+            }
+            taskInfo = taskInfo.replace("'", "");
+            const [local, remote = ""] = taskInfo.split(" ").filter(Boolean);
+            return {
+                connectKey,
+                local,
+                remote,
+            };
+        });
+    }
+}
+exports.default = ListForwardCommand;
+//# sourceMappingURL=listforward.js.map

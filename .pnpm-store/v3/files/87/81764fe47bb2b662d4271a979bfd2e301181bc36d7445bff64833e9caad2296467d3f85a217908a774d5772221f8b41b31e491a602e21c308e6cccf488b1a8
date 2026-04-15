@@ -1,0 +1,41 @@
+import { createAsyncHook, createCollectAsyncHook } from "../hooks";
+function initHooks() {
+  return {
+    /**
+    * add config for this cli plugin
+    */
+    config: createCollectAsyncHook(),
+    /**
+    * @private
+    * modify config for this cli plugin
+    */
+    modifyConfig: createAsyncHook(),
+    /**
+    * modify final config
+    */
+    modifyResolvedConfig: createAsyncHook(),
+    modifyRsbuildConfig: createAsyncHook(),
+    modifyBundlerChain: createAsyncHook(),
+    modifyRspackConfig: createAsyncHook(),
+    modifyWebpackChain: createAsyncHook(),
+    modifyWebpackConfig: createAsyncHook(),
+    modifyHtmlPartials: createAsyncHook(),
+    addCommand: createAsyncHook(),
+    addWatchFiles: createCollectAsyncHook(),
+    onPrepare: createAsyncHook(),
+    onFileChanged: createAsyncHook(),
+    onBeforeRestart: createAsyncHook(),
+    onBeforeCreateCompiler: createAsyncHook(),
+    onAfterCreateCompiler: createAsyncHook(),
+    onBeforeBuild: createAsyncHook(),
+    onAfterBuild: createAsyncHook(),
+    onBeforeDev: createAsyncHook(),
+    onAfterDev: createAsyncHook(),
+    onBeforeDeploy: createAsyncHook(),
+    onAfterDeploy: createAsyncHook(),
+    onBeforeExit: createAsyncHook()
+  };
+}
+export {
+  initHooks
+};

@@ -1,0 +1,55 @@
+{
+  "name": "@rsbuild/webpack",
+  "version": "1.1.5",
+  "homepage": "https://rsbuild.dev",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web-infra-dev/rsbuild",
+    "directory": "packages/compat/webpack"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "static",
+    "dist"
+  ],
+  "dependencies": {
+    "copy-webpack-plugin": "11.0.0",
+    "mini-css-extract-plugin": "2.9.2",
+    "picocolors": "^1.1.1",
+    "reduce-configs": "^1.1.0",
+    "tsconfig-paths-webpack-plugin": "4.2.0",
+    "webpack": "^5.97.1"
+  },
+  "devDependencies": {
+    "@rslib/core": "0.1.3",
+    "@types/node": "^22.10.1",
+    "ansi-escapes": "4.3.2",
+    "cli-truncate": "2.1.0",
+    "patch-console": "1.0.0",
+    "typescript": "^5.7.2",
+    "@rsbuild/core": "1.1.9",
+    "@scripts/test-helper": "1.0.1"
+  },
+  "peerDependencies": {
+    "@rsbuild/core": "^1.1.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "build": "rslib build",
+    "dev": "rslib build --watch"
+  }
+}

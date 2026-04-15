@@ -1,0 +1,45 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.Connection = void 0;
+const events_1 = __importDefault(require("events"));
+class Connection {
+    constructor() {
+        this.events = new events_1.default();
+        this.pendingRequests = new Map();
+    }
+    handleClientEvent(event, params, session_id) {
+        this.events.emit(event, params, session_id);
+        this.events.emit("all-cdp-message", event, params, session_id);
+    }
+    handleSessionList(sessionList) {
+        this.events.emit("SessionList", sessionList);
+    }
+    on(event, callback) {
+        this.events.on(event, callback);
+    }
+    onAllEvents(callback) {
+        this.events.on("all-cdp-message", callback);
+    }
+    off(event, callback) {
+        this.events.off(event, callback);
+    }
+    offAllEvents(callback) {
+        this.events.off("all-cdp-message", callback);
+    }
+    once(event, callback) {
+        this.events.once(event, callback);
+    }
+    matchPendingRequest(id) {
+        const callbacks = this.pendingRequests.get(id);
+        if (!callbacks) {
+            return;
+        }
+        this.pendingRequests.delete(id);
+        return callbacks;
+    }
+}
+exports.Connection = Connection;
+//# sourceMappingURL=Connection.js.map

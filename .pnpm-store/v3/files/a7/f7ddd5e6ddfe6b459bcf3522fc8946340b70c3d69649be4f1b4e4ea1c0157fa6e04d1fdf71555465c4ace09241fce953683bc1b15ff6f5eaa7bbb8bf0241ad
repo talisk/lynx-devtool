@@ -1,0 +1,101 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var transformStyle_exports = {};
+__export(transformStyle_exports, {
+  transformStyle: () => transformStyle
+});
+module.exports = __toCommonJS(transformStyle_exports);
+var import_path = __toESM(require("path"));
+var import_lessRender = require("./lessRender");
+var import_postcssTransformer = require("./postcssTransformer");
+var import_sassRender = require("./sassRender");
+const cssLangs = `\\.(css|less|sass|scss)($|\\?)`;
+const cssLangRE = new RegExp(cssLangs);
+const cssRender = async function(content) {
+  return {
+    css: content
+  };
+};
+const renderMap = {
+  less: import_lessRender.lessRender,
+  sass: import_sassRender.sassRender,
+  scss: import_sassRender.sassRender,
+  css: cssRender
+};
+async function transformStyle(source) {
+  var _source_path_match;
+  const lang = (_source_path_match = source.path.match(cssLangRE)) === null || _source_path_match === void 0 ? void 0 : _source_path_match[1];
+  if (!lang) {
+    throw new Error(`UNSUPPORTED_CSS_LANG: not supported css lang${lang}`);
+  }
+  const { less, sass } = this.config.style;
+  let options;
+  let additionalData;
+  let implementation;
+  if (lang === "less") {
+    options = less === null || less === void 0 ? void 0 : less.lessOptions;
+    additionalData = less === null || less === void 0 ? void 0 : less.additionalData;
+    implementation = less === null || less === void 0 ? void 0 : less.implementation;
+  }
+  if (lang === "scss" || lang === "sass") {
+    options = sass === null || sass === void 0 ? void 0 : sass.sassOptions;
+    additionalData = sass === null || sass === void 0 ? void 0 : sass.additionalData;
+    implementation = sass === null || sass === void 0 ? void 0 : sass.implementation;
+  }
+  const preprocessRender = renderMap[lang];
+  const stdinDir = import_path.default.dirname(source.path);
+  const resolvePathMap = /* @__PURE__ */ new Map();
+  let content = "";
+  if (typeof additionalData === "string") {
+    content = `${additionalData}
+`;
+  } else if (typeof additionalData === "function") {
+    content = `${additionalData(source.path)}
+`;
+  }
+  content += source.code;
+  const renderResult = await preprocessRender.apply(this, [
+    content,
+    source.path,
+    stdinDir,
+    options,
+    resolvePathMap,
+    implementation
+  ]);
+  const css = renderResult.css.toString();
+  const { code, loader } = await (0, import_postcssTransformer.postcssTransformer)(css !== null && css !== void 0 ? css : "", source.path, this);
+  return {
+    code,
+    loader
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  transformStyle
+});

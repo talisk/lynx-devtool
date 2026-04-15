@@ -1,0 +1,18 @@
+import type { INodePackageJson } from './types/packageJson.js';
+export declare class Project {
+    #private;
+    name: string;
+    dir: string;
+    metaData: INodePackageJson;
+    constructor(name: string, dir: string);
+    init(): Promise<void>;
+    getMetaData(): INodePackageJson;
+    getDependentProjects(monorepoProjects: Project[], options?: {
+        recursive?: boolean;
+    }): Project[];
+    getDirectDependentProjects(allProjectMap: Map<string, Project>): Project[];
+    getSourceEntryPaths(options?: {
+        field?: string;
+        exports?: boolean;
+    }): string[];
+}

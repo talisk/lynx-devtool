@@ -1,0 +1,25 @@
+import type { ModuleToolsLegacyUserConfig, ModuleUserConfig, PartialBaseBuildConfig } from '../types';
+/**
+ * transform `tools` to buildConfig
+ * include tools.less/sass/postcss/tailwindcss
+ * @param buildConfig PartialBaseBuildConfig
+ * @param legacyUserConfig Readonly<ModuleToolsLegacyUserConfig>
+ */
+export declare const transformToolsToBuildConfig: (buildConfig: PartialBaseBuildConfig, legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => void;
+/**
+ * transform `source` to buildConfig
+ *
+ * @param buildConfig PartialBaseBuildConfig
+ * @param legacyUserConfig Readonly<ModuleToolsLegacyUserConfig>
+ *
+ * NB: ignore source.designSystem in this function
+ */
+export declare const transformSourceToBuildConfig: (buildConfig: PartialBaseBuildConfig, legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => void;
+export declare const transformOutputToBuildConfig: (buildConfig: PartialBaseBuildConfig, legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => void;
+export declare const commonTransformAndLog: (legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;
+export declare const createConfigByBuildConfig: (legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;
+export declare const createConfigByBuildPreset: (legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;
+export declare const createConfigByPackageFields: (legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;
+export declare const createConfigByPackageMode: (legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;
+export declare const createConfigByDefault: (legacyUserConfig: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;
+export declare const createUserConfigFromLegacy: (config: Readonly<ModuleToolsLegacyUserConfig>) => Promise<ModuleUserConfig>;

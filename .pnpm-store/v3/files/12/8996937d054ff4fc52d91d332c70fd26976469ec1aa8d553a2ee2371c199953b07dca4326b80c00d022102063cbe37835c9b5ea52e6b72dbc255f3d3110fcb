@@ -1,0 +1,361 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { fileReader } from "@modern-js/runtime-utils/fileReader";
+import { fs, LOADABLE_STATS_FILE, MAIN_ENTRY_NAME, NESTED_ROUTE_SPEC_FILE, ROUTE_MANIFEST_FILE, SERVER_BUNDLE_DIRECTORY, compatibleRequire } from "@modern-js/utils";
+import { uniqueKeyByRoute } from "../../../utils";
+function getHtmlTemplates(pwd, routes) {
+  return _getHtmlTemplates.apply(this, arguments);
+}
+function _getHtmlTemplates() {
+  _getHtmlTemplates = _async_to_generator(function(pwd, routes) {
+    var htmls, templates;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            Promise.all(routes.map(function() {
+              var _ref = _async_to_generator(function(route) {
+                var html, _this, htmlPath, e;
+                return _ts_generator(this, function(_state2) {
+                  switch (_state2.label) {
+                    case 0:
+                      _state2.trys.push([
+                        0,
+                        2,
+                        ,
+                        3
+                      ]);
+                      htmlPath = path.join(pwd, route.entryPath);
+                      return [
+                        4,
+                        fileReader.readFile(htmlPath, "utf-8")
+                      ];
+                    case 1:
+                      html = (_this = _state2.sent()) === null || _this === void 0 ? void 0 : _this.toString();
+                      return [
+                        3,
+                        3
+                      ];
+                    case 2:
+                      e = _state2.sent();
+                      return [
+                        3,
+                        3
+                      ];
+                    case 3:
+                      return [
+                        2,
+                        [
+                          uniqueKeyByRoute(route),
+                          html
+                        ]
+                      ];
+                  }
+                });
+              });
+              return function(route) {
+                return _ref.apply(this, arguments);
+              };
+            }()) || [])
+          ];
+        case 1:
+          htmls = _state.sent();
+          templates = Object.fromEntries(htmls);
+          return [
+            2,
+            templates
+          ];
+      }
+    });
+  });
+  return _getHtmlTemplates.apply(this, arguments);
+}
+function injectTemplates(pwd, routes) {
+  return function() {
+    var _ref = _async_to_generator(function(c, next) {
+      var templates;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            if (!(routes && !c.get("templates")))
+              return [
+                3,
+                2
+              ];
+            return [
+              4,
+              getHtmlTemplates(pwd, routes)
+            ];
+          case 1:
+            templates = _state.sent();
+            c.set("templates", templates);
+            _state.label = 2;
+          case 2:
+            return [
+              4,
+              next()
+            ];
+          case 3:
+            _state.sent();
+            return [
+              2
+            ];
+        }
+      });
+    });
+    return function(c, next) {
+      return _ref.apply(this, arguments);
+    };
+  }();
+}
+var loadBundle = function() {
+  var _ref = _async_to_generator(function(filepath, logger) {
+    var module, e;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            fs.pathExists(filepath)
+          ];
+        case 1:
+          if (!_state.sent()) {
+            return [
+              2,
+              void 0
+            ];
+          }
+          _state.label = 2;
+        case 2:
+          _state.trys.push([
+            2,
+            4,
+            ,
+            5
+          ]);
+          return [
+            4,
+            compatibleRequire(filepath, false)
+          ];
+        case 3:
+          module = _state.sent();
+          return [
+            2,
+            module
+          ];
+        case 4:
+          e = _state.sent();
+          logger.error("Load ".concat(filepath, " bundle failed, error = %s"), _instanceof(e, Error) ? e.stack || e.message : e);
+          return [
+            2,
+            void 0
+          ];
+        case 5:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function loadBundle2(filepath, logger) {
+    return _ref.apply(this, arguments);
+  };
+}();
+function getServerManifest(pwd, routes, logger) {
+  return _getServerManifest.apply(this, arguments);
+}
+function _getServerManifest() {
+  _getServerManifest = _async_to_generator(function(pwd, routes, logger) {
+    var loaderBundles, renderBundles, loadableUri, loadableStats, routesManifestUri, routeManifest, nestedRoutesJsonPath, nestedRoutesJson;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          loaderBundles = {};
+          renderBundles = {};
+          return [
+            4,
+            Promise.all(routes.filter(function(route) {
+              return Boolean(route.bundle);
+            }).map(function() {
+              var _ref = _async_to_generator(function(route) {
+                var entryName, renderBundlePath, loaderBundlePath, renderBundle, loaderBundle, _tmp, _tmp1;
+                return _ts_generator(this, function(_state2) {
+                  switch (_state2.label) {
+                    case 0:
+                      entryName = route.entryName || MAIN_ENTRY_NAME;
+                      renderBundlePath = path.join(pwd, route.bundle || "");
+                      loaderBundlePath = path.join(pwd, SERVER_BUNDLE_DIRECTORY, "".concat(entryName, "-server-loaders.js"));
+                      return [
+                        4,
+                        loadBundle(renderBundlePath, logger)
+                      ];
+                    case 1:
+                      renderBundle = _state2.sent();
+                      return [
+                        4,
+                        loadBundle(loaderBundlePath, logger)
+                      ];
+                    case 2:
+                      loaderBundle = _state2.sent();
+                      renderBundle && (renderBundles[entryName] = renderBundle);
+                      _tmp = loaderBundle;
+                      if (!_tmp)
+                        return [
+                          3,
+                          6
+                        ];
+                      if (!(loaderBundle === null || loaderBundle === void 0 ? void 0 : loaderBundle.loadModules))
+                        return [
+                          3,
+                          4
+                        ];
+                      return [
+                        4,
+                        loaderBundle === null || loaderBundle === void 0 ? void 0 : loaderBundle.loadModules()
+                      ];
+                    case 3:
+                      _tmp1 = _state2.sent();
+                      return [
+                        3,
+                        5
+                      ];
+                    case 4:
+                      _tmp1 = loaderBundle;
+                      _state2.label = 5;
+                    case 5:
+                      _tmp = loaderBundles[entryName] = _tmp1;
+                      _state2.label = 6;
+                    case 6:
+                      _tmp;
+                      return [
+                        2
+                      ];
+                  }
+                });
+              });
+              return function(route) {
+                return _ref.apply(this, arguments);
+              };
+            }()))
+          ];
+        case 1:
+          _state.sent();
+          loadableUri = path.join(pwd, LOADABLE_STATS_FILE);
+          return [
+            4,
+            compatibleRequire(loadableUri).catch(function(_) {
+              return {};
+            })
+          ];
+        case 2:
+          loadableStats = _state.sent();
+          routesManifestUri = path.join(pwd, ROUTE_MANIFEST_FILE);
+          return [
+            4,
+            compatibleRequire(routesManifestUri).catch(function(_) {
+              return {};
+            })
+          ];
+        case 3:
+          routeManifest = _state.sent();
+          nestedRoutesJsonPath = path.join(pwd, NESTED_ROUTE_SPEC_FILE);
+          return [
+            4,
+            compatibleRequire(nestedRoutesJsonPath).catch(function(_) {
+              return {};
+            })
+          ];
+        case 4:
+          nestedRoutesJson = _state.sent();
+          return [
+            2,
+            {
+              loaderBundles,
+              renderBundles,
+              loadableStats,
+              routeManifest,
+              nestedRoutesJson
+            }
+          ];
+      }
+    });
+  });
+  return _getServerManifest.apply(this, arguments);
+}
+function injectServerManifest(pwd, routes) {
+  return function() {
+    var _ref = _async_to_generator(function(c, next) {
+      var logger, serverManifest;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            if (!(routes && !c.get("serverManifest")))
+              return [
+                3,
+                2
+              ];
+            logger = c.get("logger");
+            return [
+              4,
+              getServerManifest(pwd, routes, logger)
+            ];
+          case 1:
+            serverManifest = _state.sent();
+            c.set("serverManifest", serverManifest);
+            _state.label = 2;
+          case 2:
+            return [
+              4,
+              next()
+            ];
+          case 3:
+            _state.sent();
+            return [
+              2
+            ];
+        }
+      });
+    });
+    return function(c, next) {
+      return _ref.apply(this, arguments);
+    };
+  }();
+}
+var injectResourcePlugin = function() {
+  return {
+    name: "@modern-js/plugin-inject-resource",
+    setup: function setup(api) {
+      return {
+        prepare: function prepare() {
+          return _async_to_generator(function() {
+            var _api_useAppContext, middlewares, routes, pwd;
+            return _ts_generator(this, function(_state) {
+              _api_useAppContext = api.useAppContext(), middlewares = _api_useAppContext.middlewares, routes = _api_useAppContext.routes, pwd = _api_useAppContext.distDirectory;
+              middlewares.push({
+                name: "inject-server-manifest",
+                handler: injectServerManifest(pwd, routes)
+              });
+              middlewares.push({
+                name: "inject-html",
+                handler: injectTemplates(pwd, routes)
+              });
+              return [
+                2
+              ];
+            });
+          })();
+        }
+      };
+    }
+  };
+};
+export {
+  getHtmlTemplates,
+  getServerManifest,
+  injectResourcePlugin,
+  injectServerManifest,
+  injectTemplates
+};

@@ -1,0 +1,103 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var builder_exports = {};
+__export(builder_exports, {
+  run: () => run
+});
+module.exports = __toCommonJS(builder_exports);
+var import_os = __toESM(require("os"));
+var import_utils = require("@modern-js/utils");
+var import_p_map = __toESM(require("../../compiled/p-map"));
+var import_debug = require("../debug");
+var import_build = require("./build");
+var import_clear = require("./clear");
+const run = async (options, api) => {
+  const { normalizedBuildConfig, context, cmdOptions } = options;
+  const { watch, clear } = cmdOptions;
+  const runner = api.useHookRunners();
+  let totalDuration = 0;
+  if (normalizedBuildConfig.length !== 0) {
+    totalDuration = Date.now();
+    if (clear) {
+      (0, import_debug.debug)("clear output paths");
+      await (0, import_clear.clearBuildConfigPaths)(normalizedBuildConfig, context.appDirectory);
+      (0, import_debug.debug)("clear output paths done");
+    }
+    if (watch) {
+      import_utils.logger.info("Start build in watch mode...");
+    }
+    try {
+      await (0, import_p_map.default)(normalizedBuildConfig, async (config) => {
+        (0, import_debug.debug)("run beforeBuildTask hooks");
+        const buildConfig = await runner.beforeBuildTask(config);
+        (0, import_debug.debug)("run beforeBuildTask hooks done");
+        await (0, import_build.runBuildTask)({
+          buildConfig,
+          buildCmdOptions: cmdOptions,
+          context
+        }, api);
+        (0, import_debug.debug)("run afterBuildTask hooks");
+        await runner.afterBuildTask({
+          status: "success",
+          config
+        });
+        (0, import_debug.debug)("run afterBuildTask hooks done");
+      }, {
+        concurrency: import_os.default.cpus().length
+      });
+    } catch (e) {
+      const { isInternalError, ModuleBuildError } = await Promise.resolve().then(() => __toESM(require("../error")));
+      if (isInternalError(e)) {
+        throw new ModuleBuildError(e);
+      } else {
+        throw e;
+      }
+    }
+    totalDuration = Date.now() - totalDuration;
+    if (!watch) {
+      const { printFileSize, printSucceed } = await Promise.resolve().then(() => __toESM(require("../utils/print")));
+      printSucceed(totalDuration);
+      printFileSize();
+    }
+  } else {
+    import_utils.logger.warn(import_utils.chalk.yellow(`No build configuration found! Please configure \`buildConfig\` or \`buildPreset\``));
+  }
+  (0, import_debug.debug)("run afterBuild hooks");
+  await runner.afterBuild({
+    status: "success",
+    config: normalizedBuildConfig,
+    commandOptions: cmdOptions,
+    totalDuration
+  });
+  (0, import_debug.debug)("run afterBuild hooks done");
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  run
+});

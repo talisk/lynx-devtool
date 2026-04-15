@@ -1,0 +1,190 @@
+import path from "path";
+import { fs, createDebugger, findExists } from "@modern-js/utils";
+import { build } from "esbuild";
+import React from "react";
+import ReactDomServer from "react-dom/server";
+import { DocumentContext } from "../DocumentContext";
+import { BODY_PARTICALS_SEPARATOR, DOCUMENT_CHUNKSMAP_PLACEHOLDER, DOCUMENT_COMMENT_PLACEHOLDER_END, DOCUMENT_COMMENT_PLACEHOLDER_START, DOCUMENT_FILE_NAME, DOCUMENT_LINKS_PLACEHOLDER, DOCUMENT_META_PLACEHOLDER, DOCUMENT_SCRIPTS_PLACEHOLDER, DOCUMENT_SCRIPT_ATTRIBUTES_END, DOCUMENT_SCRIPT_ATTRIBUTES_START, DOCUMENT_SCRIPT_PLACEHOLDER_END, DOCUMENT_SCRIPT_PLACEHOLDER_START, DOCUMENT_SSRDATASCRIPT_PLACEHOLDER, DOCUMENT_SSR_PLACEHOLDER, DOCUMENT_STYLE_PLACEHOLDER_END, DOCUMENT_STYLE_PLACEHOLDER_START, DOCUMENT_TITLE_PLACEHOLDER, DOC_EXT, HEAD_PARTICALS_SEPARATOR, HTML_SEPARATOR, PLACEHOLDER_REPLACER_MAP, TOP_PARTICALS_SEPARATOR } from "../constants";
+const debug = createDebugger("html_genarate");
+const getDocumenByEntryName = function(entrypoints, entryName, fallbackDir) {
+  var _entrypoints_find;
+  const entryDir = (_entrypoints_find = entrypoints.find((item) => item.entryName === entryName)) === null || _entrypoints_find === void 0 ? void 0 : _entrypoints_find.absoluteEntryDir;
+  const entryDirs = DOC_EXT.map((item) => `${entryDir}${path.sep}${DOCUMENT_FILE_NAME}.${item}`);
+  const fallbackDirs = fallbackDir ? DOC_EXT.map((item) => [
+    fallbackDir,
+    "src",
+    `${DOCUMENT_FILE_NAME}.${item}`
+  ].join(path.sep)) : [];
+  const docFile = findExists([
+    ...entryDirs,
+    ...fallbackDirs
+  ]);
+  return docFile || void 0;
+};
+const documentPlugin = () => ({
+  name: "@modern-js/plugin-document",
+  pre: [
+    "@modern-js/plugin-analyze"
+  ],
+  setup: async (api) => {
+    function getDocParams(params) {
+      const { config, templateParameters, entryName } = params;
+      return {
+        processEnv: process.env,
+        config: {
+          output: config.output
+        },
+        entryName,
+        templateParams: templateParameters
+      };
+    }
+    const documentEntry = (entryName, templateParameters) => {
+      const { entrypoints, internalDirectory, appDirectory } = api.useAppContext();
+      const documentFilePath = getDocumenByEntryName(entrypoints, entryName, appDirectory);
+      if (!documentFilePath) {
+        return null;
+      }
+      return async ({ htmlWebpackPlugin }) => {
+        const config = api.useResolvedConfigContext();
+        const documentParams = getDocParams({
+          config,
+          entryName,
+          templateParameters
+        });
+        const tempTsConfigFile = path.join(internalDirectory, `./document/_tempTsconfig.json`);
+        const userTsConfigFilePath = path.join(appDirectory, "tsconfig.json");
+        let tsConfig;
+        try {
+          tsConfig = await require(userTsConfigFilePath);
+        } catch (err) {
+          tsConfig = {};
+        }
+        if (tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) {
+          tsConfig.compilerOptions.jsx = "react-jsx";
+        } else {
+          tsConfig.compilerOptions = {
+            jsx: "react-jsx"
+          };
+        }
+        fs.outputFileSync(tempTsConfigFile, JSON.stringify(tsConfig));
+        const htmlOutputFile = path.join(internalDirectory, `./document/_${entryName}.html.js`);
+        await build({
+          entryPoints: [
+            documentFilePath
+          ],
+          outfile: htmlOutputFile,
+          platform: "node",
+          // change esbuild use the rootDir tsconfig.json as default to tempTsConfigFile
+          tsconfig: tempTsConfigFile,
+          target: "es6",
+          loader: {
+            ".ts": "ts",
+            ".tsx": "tsx"
+          },
+          bundle: true,
+          plugins: [
+            {
+              name: "make-all-packages-external",
+              setup(build2) {
+                build2.onResolve({
+                  filter: /^[^./]|^\.[^./]|^\.\.[^/]/
+                }, (args) => {
+                  let external = true;
+                  if (args.kind === "entry-point") {
+                    external = false;
+                  }
+                  return {
+                    path: args.path,
+                    external
+                  };
+                });
+              }
+            }
+          ]
+        });
+        delete require.cache[require.resolve(htmlOutputFile)];
+        const Document = (await require(htmlOutputFile)).default;
+        const HTMLElement = React.createElement(DocumentContext.Provider, {
+          value: documentParams
+        }, React.createElement(Document, null));
+        let html = ReactDomServer.renderToStaticMarkup(HTMLElement);
+        debug("entry %s's document jsx rendered html: %o", entryName, html);
+        const { partialsByEntrypoint } = api.useAppContext();
+        const scripts = [
+          htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName === "script").join(""),
+          htmlWebpackPlugin.tags.bodyTags.toString()
+        ].join("");
+        const partialsContent = {
+          partialsTop: "",
+          partialsHead: "",
+          partialsBody: ""
+        };
+        if (partialsByEntrypoint === null || partialsByEntrypoint === void 0 ? void 0 : partialsByEntrypoint[entryName]) {
+          partialsContent.partialsTop = partialsByEntrypoint[entryName].top.join("\n");
+          partialsContent.partialsHead = partialsByEntrypoint[entryName].head.join("\n");
+          partialsContent.partialsBody = partialsByEntrypoint[entryName].body.join("\n");
+        }
+        html = html.replace(TOP_PARTICALS_SEPARATOR, partialsContent.partialsTop).replace(HEAD_PARTICALS_SEPARATOR, partialsContent.partialsHead).replace(BODY_PARTICALS_SEPARATOR, partialsContent.partialsBody);
+        const links = [
+          htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName === "link").join("")
+        ].join("");
+        const metas = [
+          templateParameters.meta,
+          htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName !== "script" && item.tagName !== "link" && item.tagName !== "title").join("")
+        ].join("");
+        const titles = htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName === "title").join("").replace("<title>", "").replace("</title>", "") || templateParameters.title;
+        if (html.includes(DOCUMENT_SCRIPT_PLACEHOLDER_START) && html.includes(DOCUMENT_SCRIPT_PLACEHOLDER_END)) {
+          const { nonce } = config.security || {};
+          const nonceAttr = nonce ? `nonce=${nonce}` : "";
+          html = html.replace(new RegExp(`${DOCUMENT_SCRIPT_PLACEHOLDER_START}${DOCUMENT_SCRIPT_ATTRIBUTES_START}(.*)${DOCUMENT_SCRIPT_ATTRIBUTES_END}(.*?)${DOCUMENT_SCRIPT_PLACEHOLDER_END}`, "g"), (_scriptStr, $1, $2) => `<script ${decodeURIComponent($1)} ${nonceAttr}>${decodeURIComponent($2)}</script>`);
+        }
+        if (html.includes(DOCUMENT_STYLE_PLACEHOLDER_START) && html.includes(DOCUMENT_STYLE_PLACEHOLDER_END)) {
+          html = html.replace(new RegExp(`${DOCUMENT_STYLE_PLACEHOLDER_START}(.*?)${DOCUMENT_STYLE_PLACEHOLDER_END}`, "g"), (_styleStr, $1) => `<style>${decodeURIComponent($1)}</style>`);
+        }
+        if (html.includes(DOCUMENT_COMMENT_PLACEHOLDER_START) && html.includes(DOCUMENT_COMMENT_PLACEHOLDER_END)) {
+          html = html.replace(new RegExp(`${DOCUMENT_COMMENT_PLACEHOLDER_START}(.*?)${DOCUMENT_COMMENT_PLACEHOLDER_END}`, "g"), (_scriptStr, $1) => `${decodeURIComponent($1)}`);
+        }
+        const finalHtml = `<!DOCTYPE html>${html}`.replace(DOCUMENT_META_PLACEHOLDER, metas).replace(DOCUMENT_SSR_PLACEHOLDER, HTML_SEPARATOR).replace(DOCUMENT_SCRIPTS_PLACEHOLDER, scripts).replace(DOCUMENT_LINKS_PLACEHOLDER, links).replace(DOCUMENT_CHUNKSMAP_PLACEHOLDER, PLACEHOLDER_REPLACER_MAP[DOCUMENT_CHUNKSMAP_PLACEHOLDER]).replace(DOCUMENT_SSRDATASCRIPT_PLACEHOLDER, PLACEHOLDER_REPLACER_MAP[DOCUMENT_SSRDATASCRIPT_PLACEHOLDER]).replace(DOCUMENT_TITLE_PLACEHOLDER, titles);
+        return finalHtml;
+      };
+    };
+    return {
+      config: () => {
+        var _userConfig_tools;
+        const userConfig = api.useConfigContext();
+        if (((_userConfig_tools = userConfig.tools) === null || _userConfig_tools === void 0 ? void 0 : _userConfig_tools.htmlPlugin) === false) {
+          return {};
+        }
+        return {
+          tools: {
+            htmlPlugin: (options, entry) => {
+              const hackParameters = typeof (options === null || options === void 0 ? void 0 : options.templateParameters) === "function" ? options === null || options === void 0 ? void 0 : options.templateParameters({}, {}, {}, {}) : {
+                ...options === null || options === void 0 ? void 0 : options.templateParameters
+              };
+              const templateContent = documentEntry(
+                entry.entryName,
+                // options,
+                hackParameters
+              );
+              const documentHtmlOptions = templateContent ? {
+                templateContent,
+                // Note: the behavior of inject/modify tags in afterTemplateExecution hook will not take effect
+                inject: false
+              } : {};
+              return {
+                ...options,
+                ...documentHtmlOptions
+              };
+            }
+          }
+        };
+      }
+    };
+  }
+});
+var cli_default = documentPlugin;
+export {
+  cli_default as default,
+  documentPlugin,
+  getDocumenByEntryName
+};

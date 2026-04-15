@@ -1,0 +1,157 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var rspack_exports = {};
+__export(rspack_exports, {
+  createRspackBuilder: () => createRspackBuilder,
+  parseConfig: () => parseConfig
+});
+module.exports = __toCommonJS(rspack_exports);
+var import_core = require("@rsbuild/core");
+var import_compatLegacyPlugin = require("../shared/compatLegacyPlugin");
+var import_parseCommonConfig = require("../shared/parseCommonConfig");
+var import_utils = require("../shared/utils");
+async function parseConfig(uniBuilderConfig, options) {
+  var _uniBuilderConfig_experiments, _uniBuilderConfig_tools, _uniBuilderConfig_tools1;
+  const { rsbuildConfig, rsbuildPlugins } = await (0, import_parseCommonConfig.parseCommonConfig)(uniBuilderConfig, options);
+  if ((_uniBuilderConfig_experiments = uniBuilderConfig.experiments) === null || _uniBuilderConfig_experiments === void 0 ? void 0 : _uniBuilderConfig_experiments.lazyCompilation) {
+    rsbuildConfig.dev.lazyCompilation = uniBuilderConfig.experiments.lazyCompilation;
+  }
+  const { sri } = uniBuilderConfig.security || {};
+  if (sri) {
+    if (sri === true) {
+      rsbuildConfig.security.sri = {
+        enable: "auto"
+      };
+    } else {
+      const algorithm = Array.isArray(sri.hashFuncNames) ? sri.hashFuncNames[0] : void 0;
+      rsbuildConfig.security.sri = {
+        enable: sri.enabled,
+        algorithm
+      };
+    }
+  }
+  if (Boolean(rsbuildConfig.tools.lightningcssLoader) === false) {
+    var _uniBuilderConfig_tools2;
+    const { pluginPostcss } = await Promise.resolve().then(() => __toESM(require("../shared/plugins/postcss")));
+    rsbuildPlugins.push(pluginPostcss({
+      autoprefixer: (_uniBuilderConfig_tools2 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools2 === void 0 ? void 0 : _uniBuilderConfig_tools2.autoprefixer
+    }));
+  }
+  const hasEnvironmentBabelConfig = Object.values(uniBuilderConfig.environments || {}).some((c) => {
+    var _c_tools;
+    return ((_c_tools = c.tools) === null || _c_tools === void 0 ? void 0 : _c_tools.babel) !== void 0;
+  });
+  if (hasEnvironmentBabelConfig) {
+    const mergeSharedBabelConfig = (config) => {
+      var _uniBuilderConfig_tools5;
+      if ((_uniBuilderConfig_tools5 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools5 === void 0 ? void 0 : _uniBuilderConfig_tools5.babel) {
+        var _uniBuilderConfig_tools12;
+        return (0, import_utils.castArray)(config).concat(...(0, import_utils.castArray)((_uniBuilderConfig_tools12 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools12 === void 0 ? void 0 : _uniBuilderConfig_tools12.babel));
+      }
+      return config;
+    };
+    const { pluginBabel } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-babel")));
+    const { pluginBabelPost } = await Promise.resolve().then(() => __toESM(require("./plugins/babel-post")));
+    Object.entries(uniBuilderConfig.environments).forEach(([name, config]) => {
+      var _rsbuildConfig_environments, _config_tools, _uniBuilderConfig_tools5;
+      const environmentConfig = (_rsbuildConfig_environments = rsbuildConfig.environments) === null || _rsbuildConfig_environments === void 0 ? void 0 : _rsbuildConfig_environments[name];
+      if (!environmentConfig) {
+        return;
+      }
+      if ((_config_tools = config.tools) === null || _config_tools === void 0 ? void 0 : _config_tools.babel) {
+        var _config_tools1;
+        var _environmentConfig;
+        var _plugins;
+        (_plugins = (_environmentConfig = environmentConfig).plugins) !== null && _plugins !== void 0 ? _plugins : _environmentConfig.plugins = [];
+        environmentConfig.plugins.push(pluginBabel({
+          babelLoaderOptions: mergeSharedBabelConfig((_config_tools1 = config.tools) === null || _config_tools1 === void 0 ? void 0 : _config_tools1.babel)
+        }), pluginBabelPost());
+      } else if ((_uniBuilderConfig_tools5 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools5 === void 0 ? void 0 : _uniBuilderConfig_tools5.babel) {
+        var _uniBuilderConfig_tools12;
+        var _environmentConfig1;
+        var _plugins1;
+        (_plugins1 = (_environmentConfig1 = environmentConfig).plugins) !== null && _plugins1 !== void 0 ? _plugins1 : _environmentConfig1.plugins = [];
+        environmentConfig.plugins.push(pluginBabel({
+          babelLoaderOptions: (_uniBuilderConfig_tools12 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools12 === void 0 ? void 0 : _uniBuilderConfig_tools12.babel
+        }), pluginBabelPost());
+      }
+    });
+  } else if ((_uniBuilderConfig_tools = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools === void 0 ? void 0 : _uniBuilderConfig_tools.babel) {
+    var _uniBuilderConfig_tools3;
+    const { pluginBabel } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-babel")));
+    const { pluginBabelPost } = await Promise.resolve().then(() => __toESM(require("./plugins/babel-post")));
+    rsbuildPlugins.push(pluginBabel({
+      babelLoaderOptions: (_uniBuilderConfig_tools3 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools3 === void 0 ? void 0 : _uniBuilderConfig_tools3.babel
+    }), pluginBabelPost());
+  }
+  if (((_uniBuilderConfig_tools1 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools1 === void 0 ? void 0 : _uniBuilderConfig_tools1.styledComponents) !== false) {
+    var _uniBuilderConfig_tools4, _uniBuilderConfig_environments;
+    const { pluginStyledComponents } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-styled-components")));
+    const options2 = ((_uniBuilderConfig_tools4 = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools4 === void 0 ? void 0 : _uniBuilderConfig_tools4.styledComponents) || {};
+    if ((_uniBuilderConfig_environments = uniBuilderConfig.environments) === null || _uniBuilderConfig_environments === void 0 ? void 0 : _uniBuilderConfig_environments[import_utils.SERVICE_WORKER_ENVIRONMENT_NAME]) {
+      options2.ssr = true;
+    }
+    rsbuildPlugins.push(pluginStyledComponents(options2));
+  }
+  return {
+    rsbuildConfig,
+    rsbuildPlugins
+  };
+}
+async function createRspackBuilder(options) {
+  const { cwd = process.cwd(), config, ...rest } = options;
+  const { rsbuildConfig, rsbuildPlugins } = await parseConfig(config, {
+    ...rest,
+    cwd
+  });
+  rsbuildConfig.plugins = [
+    ...rsbuildPlugins,
+    ...rsbuildConfig.plugins || []
+  ];
+  const rsbuild = await (0, import_core.createRsbuild)({
+    cwd,
+    rsbuildConfig
+  });
+  return {
+    ...rsbuild,
+    addPlugins: (plugins, options2) => {
+      const warpedPlugins = plugins.map((plugin) => {
+        return (0, import_compatLegacyPlugin.compatLegacyPlugin)(plugin, {
+          cwd
+        });
+      });
+      rsbuild.addPlugins(warpedPlugins, options2);
+    }
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createRspackBuilder,
+  parseConfig
+});

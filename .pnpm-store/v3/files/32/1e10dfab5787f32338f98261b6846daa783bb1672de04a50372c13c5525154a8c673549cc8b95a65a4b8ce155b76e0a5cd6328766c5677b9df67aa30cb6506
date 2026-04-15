@@ -1,0 +1,91 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var dev_exports = {};
+__export(dev_exports, {
+  dev: () => dev,
+  showMenu: () => showMenu
+});
+module.exports = __toCommonJS(dev_exports);
+var import_utils = require("@modern-js/utils");
+const showMenu = async (metas, devCmdOptions, api, context) => {
+  const runner = api.useHookRunners();
+  const menuTitle = import_utils.chalk.rgb(255, 153, 0);
+  const choices = metas.map((meta) => meta.menuItem).filter((menuItem) => typeof menuItem === "object");
+  const questions = [
+    {
+      name: "choiceDevTool",
+      message: menuTitle("选择调试工具"),
+      type: "list",
+      choices
+    }
+  ];
+  const newQuestions = await runner.beforeDevMenu(questions);
+  const result = await import_utils.inquirer.prompt(newQuestions.length !== 0 ? newQuestions : questions);
+  await runner.afterDevMenu({
+    result,
+    devTools: metas
+  });
+  const currentDevTool = metas.find((meta) => {
+    var _meta_menuItem;
+    return ((_meta_menuItem = meta.menuItem) === null || _meta_menuItem === void 0 ? void 0 : _meta_menuItem.value) === result.choiceDevTool;
+  });
+  if (currentDevTool) {
+    await runner.beforeDevTask(currentDevTool);
+    await currentDevTool.action(devCmdOptions, {
+      isTsProject: context.isTsProject
+    });
+  }
+};
+const dev = async (options, metas, api, context) => {
+  const { green } = await Promise.resolve().then(() => __toESM(require("./constants/color")));
+  const runner = api.useHookRunners();
+  if (metas.length === 0) {
+    const local = await Promise.resolve().then(() => __toESM(require("./locale")));
+    const noDevToolsLog = await runner.noDevTools(local.i18n.t(local.localeKeys.log.dev.noDevtools));
+    import_utils.logger.info(noDevToolsLog);
+    process.exit(0);
+  }
+  if (metas.length === 1) {
+    var _metas__menuItem;
+    var _metas__menuItem_name;
+    import_utils.logger.info(import_utils.chalk.rgb(...green)(`Only one dev tooling is currently detected as available, run it directly [${(_metas__menuItem_name = (_metas__menuItem = metas[0].menuItem) === null || _metas__menuItem === void 0 ? void 0 : _metas__menuItem.name) !== null && _metas__menuItem_name !== void 0 ? _metas__menuItem_name : metas[0].name}]`));
+    const meta = metas[0];
+    await runner.beforeDevTask(meta);
+    await meta.action(options, {
+      isTsProject: context.isTsProject
+    });
+  } else if (metas.length > 1) {
+    await showMenu(metas, options, api, context);
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  dev,
+  showMenu
+});

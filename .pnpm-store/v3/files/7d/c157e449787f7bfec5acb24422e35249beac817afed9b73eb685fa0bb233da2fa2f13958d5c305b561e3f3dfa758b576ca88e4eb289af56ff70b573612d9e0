@@ -1,0 +1,30 @@
+export declare const registerHook: {
+    buildWatchJs: import("@modern-js/plugin").ParallelWorkflow<import("..").WatchJsHookContext, void>;
+    buildWatchDts: import("@modern-js/plugin").ParallelWorkflow<import("..").WatchDtsHookContext, void>;
+    addRuntimeExports: import("@modern-js/plugin").AsyncWaterfall<void>;
+    resolveModuleUserConfig: import("@modern-js/plugin").AsyncWaterfall<import("..").ModuleUserConfig>;
+    modifyLibuild: import("@modern-js/plugin").AsyncPipeline<unknown, unknown>;
+    registerDev: import("@modern-js/plugin").ParallelWorkflow<void, import("..").DevToolData>;
+    beforeDev: import("@modern-js/plugin").ParallelWorkflow<import("..").DevToolData[], void>;
+    beforeDevMenu: import("@modern-js/plugin").AsyncWaterfall<any>;
+    afterDevMenu: import("@modern-js/plugin").ParallelWorkflow<{
+        result: import("..").PromptResult;
+        devTools: import("..").DevToolData[];
+    }, void>;
+    beforeDevTask: import("@modern-js/plugin").ParallelWorkflow<import("..").DevToolData, void>;
+    afterDev: import("@modern-js/plugin").ParallelWorkflow<void, void>;
+    noDevTools: import("@modern-js/plugin").AsyncWaterfall<string>;
+    beforeBuild: import("@modern-js/plugin").ParallelWorkflow<{
+        config: import("..").BaseBuildConfig[];
+        cliOptions: import("..").BuildCommandOptions;
+    }, void>;
+    beforeBuildTask: import("@modern-js/plugin").AsyncWaterfall<import("..").BaseBuildConfig>;
+    afterBuildTask: import("@modern-js/plugin").ParallelWorkflow<import("..").BuildTaskResult, void>;
+    afterBuild: import("@modern-js/plugin").ParallelWorkflow<import("..").BuildResult, void>;
+    registerBuildPlatform: import("@modern-js/plugin").ParallelWorkflow<void, import("@modern-js/core").RegisterBuildPlatformResult>;
+    beforeBuildPlatform: import("@modern-js/plugin").ParallelWorkflow<import("@modern-js/core").RegisterBuildPlatformResult[], void>;
+    buildPlatform: import("@modern-js/plugin").ParallelWorkflow<{
+        platform: string;
+    }, void>;
+    afterBuildPlatform: import("@modern-js/plugin").ParallelWorkflow<import("..").BuildPlatformResult, void>;
+};

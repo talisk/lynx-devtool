@@ -1,0 +1,27 @@
+import type { Entrypoint, HtmlPartials, HtmlTemplates } from '@modern-js/types';
+import type { AppNormalizedConfig } from '../../types';
+import type { AppToolsContext, AppToolsHooks } from '../../types/new';
+export declare const getModifyHtmlPartials: (partials: Record<keyof HtmlPartials, string[]>) => {
+    top: {
+        append: (...script: string[]) => void;
+        prepend: (...script: string[]) => void;
+        current: string[];
+    };
+    head: {
+        append: (...script: string[]) => void;
+        prepend: (...script: string[]) => void;
+        current: string[];
+    };
+    body: {
+        append: (...script: string[]) => void;
+        prepend: (...script: string[]) => void;
+        current: string[];
+    };
+};
+export declare const getHtmlTemplate: (entrypoints: Entrypoint[], hooks: AppToolsHooks<'shared'>, { appContext, config, }: {
+    appContext: AppToolsContext<'shared'>;
+    config: AppNormalizedConfig<'shared'>;
+}) => Promise<{
+    partialsByEntrypoint: Record<string, HtmlPartials>;
+    htmlTemplates: HtmlTemplates;
+}>;

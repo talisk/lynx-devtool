@@ -1,0 +1,3 @@
+import type { IAbstractSocketConnection } from "../socket.model";
+import type { ISocketMessage } from "../message.model";
+export declare function createMessageHandler(handler: (data: ISocketMessage<any>) => void, connection?: IAbstractSocketConnection, handleUnknownMessage?: boolean): (data: string | ISocketMessage<any>) => void;

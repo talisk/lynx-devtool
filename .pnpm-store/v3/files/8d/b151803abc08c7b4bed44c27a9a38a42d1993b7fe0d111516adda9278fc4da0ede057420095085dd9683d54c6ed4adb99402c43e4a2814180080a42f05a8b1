@@ -1,0 +1,15 @@
+import webpack from 'webpack';
+import type { Props } from './helpers/types.js';
+export interface ProgressOptions extends Omit<Partial<Props>, 'message' | 'total' | 'current' | 'done'> {
+    id?: string;
+    prettyTime: (seconds: number) => string;
+}
+export declare class ProgressPlugin extends webpack.ProgressPlugin {
+    readonly name: string;
+    id: string;
+    hasCompileErrors: boolean;
+    compileTime: string | null;
+    prettyTime: (seconds: number) => string;
+    constructor(options: ProgressOptions);
+    apply(compiler: webpack.Compiler): void;
+}

@@ -1,0 +1,6 @@
+import type { ITypedSocketMessage, SocketEvents, SocketEventMap, ISocketMessage } from "../message.model";
+import type { IAbstractSocketConnection } from "../socket.model";
+export declare function sendEvent<T extends SocketEvents>(socket: IAbstractSocketConnection, message: ITypedSocketMessage<T>): void;
+export declare function sendEvent<T = void>(socket: IAbstractSocketConnection, message: ISocketMessage<T> & {
+    event: Exclude<number, keyof SocketEventMap>;
+}): void;

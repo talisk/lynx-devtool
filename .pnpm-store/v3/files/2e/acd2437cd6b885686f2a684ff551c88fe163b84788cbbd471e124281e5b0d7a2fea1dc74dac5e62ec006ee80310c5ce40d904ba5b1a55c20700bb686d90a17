@@ -1,0 +1,146 @@
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _object_without_properties } from "@swc/helpers/_/_object_without_properties";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import path from "path";
+import { fs, ROUTE_SPEC_FILE, SERVER_BUNDLE_DIRECTORY, SERVER_WORKER_BUNDLE_DIRECTORY, getEntryOptions, isPlainObject, removeLeadingSlash, removeTailSlash, urlJoin } from "@modern-js/utils";
+import { isMainEntry } from "../../utils/routes";
+import { walkDirectory } from "./utils";
+var applyBaseUrl = function(baseUrl, routes) {
+  if (baseUrl) {
+    if (Array.isArray(baseUrl)) {
+      return baseUrl.reduce(function(previous, current) {
+        return _to_consumable_array(previous).concat(_to_consumable_array(applyBaseUrl(current, routes)));
+      }, []);
+    } else {
+      return routes.map(function(route) {
+        var urlPath = urlJoin(baseUrl, route.urlPath);
+        return _object_spread_props(_object_spread({}, route), {
+          urlPath: urlPath === "/" ? urlPath : removeTailSlash(urlPath)
+        });
+      });
+    }
+  }
+  return routes;
+};
+var applyRouteOptions = function(original, routeOptions) {
+  var route = routeOptions.route, disableSpa = routeOptions.disableSpa;
+  original.isSPA = !disableSpa;
+  !original.isSPA && (original.entryPath = path.dirname(original.entryPath));
+  var routes;
+  if (route) {
+    if (Array.isArray(route)) {
+      routes = route.map(function(url) {
+        if (isPlainObject(url)) {
+          var urlPath2 = url.path, other2 = _object_without_properties(url, [
+            "path"
+          ]);
+          return _object_spread_props(_object_spread({}, original, other2), {
+            urlPath: urlPath2
+          });
+        } else {
+          return _object_spread_props(_object_spread({}, original), {
+            urlPath: url
+          });
+        }
+      });
+    } else if (isPlainObject(route)) {
+      var urlPath = route.path, other = _object_without_properties(route, [
+        "path"
+      ]);
+      routes = [
+        _object_spread_props(_object_spread({}, original, other), {
+          urlPath
+        })
+      ];
+    } else {
+      routes = [
+        _object_spread_props(_object_spread({}, original), {
+          urlPath: route
+        })
+      ];
+    }
+  } else {
+    routes = [
+      original
+    ];
+  }
+  return routes;
+};
+var collectHtmlRoutes = function(entrypoints, appContext, config) {
+  var _deploy_worker;
+  var mainEntryName = config.source.mainEntryName, disableHtmlFolder = config.html.disableHtmlFolder, _config_output = config.output, tmp = _config_output.distPath, _ref = tmp === void 0 ? {} : tmp, htmlPath = _ref.html, _config_server = config.server, baseUrl = _config_server.baseUrl, routes = _config_server.routes, ssr = _config_server.ssr, ssrByEntries = _config_server.ssrByEntries, deploy = config.deploy;
+  var packageName = appContext.packageName;
+  var workerSSR = deploy === null || deploy === void 0 ? void 0 : (_deploy_worker = deploy.worker) === null || _deploy_worker === void 0 ? void 0 : _deploy_worker.ssr;
+  var htmlRoutes = entrypoints.reduce(function(previous, param) {
+    var entryName = param.entryName;
+    var isMain = isMainEntry(entryName, mainEntryName);
+    var entryOptions = getEntryOptions(entryName, isMain, ssr, ssrByEntries, packageName);
+    var isSSR = Boolean(entryOptions);
+    var isWorker = Boolean(workerSSR);
+    var isStream = (typeof entryOptions === "undefined" ? "undefined" : _type_of(entryOptions)) === "object" && entryOptions.mode === "stream";
+    var resHeaders = ((routes === null || routes === void 0 ? void 0 : routes[entryName]) || {}).resHeaders;
+    var route = {
+      urlPath: "/".concat(isMain ? "" : entryName),
+      entryName,
+      entryPath: removeLeadingSlash(path.posix.normalize("".concat(htmlPath, "/").concat(entryName).concat(disableHtmlFolder ? ".html" : "/index.html"))),
+      isSPA: true,
+      isStream,
+      isSSR,
+      responseHeaders: resHeaders,
+      worker: isWorker ? "".concat(SERVER_WORKER_BUNDLE_DIRECTORY, "/").concat(entryName, ".js") : void 0,
+      bundle: isSSR ? "".concat(SERVER_BUNDLE_DIRECTORY, "/").concat(entryName, ".js") : void 0
+    };
+    if (routes === null || routes === void 0 ? void 0 : routes.hasOwnProperty(entryName)) {
+      var routeOptions = isPlainObject(routes[entryName]) ? routes[entryName] : {
+        route: routes[entryName]
+      };
+      route = applyRouteOptions(route, routeOptions);
+    }
+    return Array.isArray(route) ? _to_consumable_array(previous).concat(_to_consumable_array(route)) : _to_consumable_array(previous).concat([
+      route
+    ]);
+  }, []);
+  htmlRoutes = applyBaseUrl(baseUrl, htmlRoutes);
+  return htmlRoutes;
+};
+var collectStaticRoutes = function(appContext, config) {
+  var appDirectory = appContext.appDirectory;
+  var configDir = config.source.configDir, _config_server = config.server, _config_server_publicRoutes = _config_server.publicRoutes, publicRoutes = _config_server_publicRoutes === void 0 ? {} : _config_server_publicRoutes;
+  var publicFolder = path.resolve(appDirectory, configDir || "", "public");
+  var ignoreFiles = [
+    ".gitkeep"
+  ];
+  return fs.existsSync(publicFolder) ? walkDirectory(publicFolder).filter(function(filePath) {
+    return !ignoreFiles.includes(path.basename(filePath));
+  }).map(function(filePath) {
+    var urlPath = "".concat(urlJoin(toPosix(filePath).slice(toPosix(publicFolder).length)));
+    return {
+      urlPath: publicRoutes[removeLeadingSlash(urlPath)] || urlPath,
+      isSPA: true,
+      isSSR: false,
+      entryPath: toPosix(path.relative(path.resolve(appDirectory, configDir || ""), filePath))
+    };
+  }) : [];
+};
+var getServerRoutes = function(entrypoints, param) {
+  var appContext = param.appContext, config = param.config;
+  return _to_consumable_array(collectHtmlRoutes(entrypoints, appContext, config)).concat(_to_consumable_array(collectStaticRoutes(appContext, config)));
+};
+var toPosix = function(pathStr) {
+  return pathStr.split(path.sep).join(path.posix.sep);
+};
+var getProdServerRoutes = function(distDirectory) {
+  var routeJSON = path.join(distDirectory, ROUTE_SPEC_FILE);
+  try {
+    var routes = fs.readJSONSync(routeJSON).routes;
+    return routes;
+  } catch (e) {
+    throw new Error("Failed to read routes from ".concat(routeJSON, ", please check if the file exists."));
+  }
+};
+export {
+  getProdServerRoutes,
+  getServerRoutes
+};

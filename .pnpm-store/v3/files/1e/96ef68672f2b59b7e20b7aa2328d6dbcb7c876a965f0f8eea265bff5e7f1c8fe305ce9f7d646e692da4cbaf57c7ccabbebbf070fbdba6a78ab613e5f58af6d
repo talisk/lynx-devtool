@@ -1,0 +1,164 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var vercel_exports = {};
+__export(vercel_exports, {
+  createVercelPreset: () => createVercelPreset
+});
+module.exports = __toCommonJS(vercel_exports);
+var import_node_path = __toESM(require("node:path"));
+var import_utils = require("@modern-js/utils");
+var import_routes = require("../../../utils/routes");
+var import_dependencies = require("../dependencies");
+var import_utils2 = require("../utils");
+const createVercelPreset = (appContext, modernConfig, needModernServer) => {
+  const { appDirectory, distDirectory, entrypoints, serverPlugins, moduleType } = appContext;
+  const isEsmProject = moduleType === "module";
+  const plugins = serverPlugins.map((plugin) => [
+    plugin.name,
+    plugin.options
+  ]);
+  const vercelOutput = import_node_path.default.join(appDirectory, ".vercel");
+  const outputDirectory = import_node_path.default.join(vercelOutput, "output");
+  const funcsDirectory = import_node_path.default.join(outputDirectory, "functions", "index.func");
+  const entryFilePath = import_node_path.default.join(funcsDirectory, "index.js");
+  const handlerFilePath = import_node_path.default.join(funcsDirectory, "vercel-handler.cjs");
+  return {
+    async prepare() {
+      await import_utils.fs.remove(vercelOutput);
+    },
+    async writeOutput() {
+      const config = {
+        version: 3,
+        routes: [
+          {
+            src: "/static/(.*)",
+            headers: {
+              "cache-control": "s-maxage=31536000, immutable"
+            },
+            continue: true
+          },
+          {
+            handle: "filesystem"
+          }
+        ]
+      };
+      if (!needModernServer) {
+        const { source: { mainEntryName } } = modernConfig;
+        entrypoints.forEach((entry) => {
+          const isMain = (0, import_routes.isMainEntry)(entry.entryName, mainEntryName);
+          config.routes.push({
+            src: `/${isMain ? "" : entry.entryName}(?:/.*)?`,
+            headers: {
+              "cache-control": "s-maxage=0"
+            },
+            dest: `/html/${entry.entryName}/index.html`
+          });
+        });
+      } else {
+        config.routes.push({
+          src: "/(.*)",
+          dest: `/index`
+        });
+      }
+      await import_utils.fs.ensureDir(outputDirectory);
+      await import_utils.fs.writeJSON(import_node_path.default.join(outputDirectory, "config.json"), config, {
+        spaces: 2
+      });
+      const staticDirectory = import_node_path.default.join(outputDirectory, "static/static");
+      await import_utils.fs.copy(import_node_path.default.join(distDirectory, "static"), staticDirectory);
+      if (!needModernServer) {
+        const destHtmlDirectory = import_node_path.default.join(distDirectory, "html");
+        const outputHtmlDirectory = import_node_path.default.join(import_node_path.default.join(outputDirectory, "static"), "html");
+        await import_utils.fs.copy(destHtmlDirectory, outputHtmlDirectory);
+      } else {
+        await import_utils.fs.ensureDir(funcsDirectory);
+        await import_utils.fs.copy(distDirectory, funcsDirectory, {
+          filter: (src) => {
+            const distStaticDirectory = import_node_path.default.join(distDirectory, "static");
+            return !src.includes(distStaticDirectory);
+          }
+        });
+        await import_utils.fs.writeJSON(import_node_path.default.join(funcsDirectory, ".vc-config.json"), {
+          runtime: "nodejs16.x",
+          handler: "index.js",
+          launcherType: "Nodejs",
+          shouldAddHelpers: false,
+          supportsResponseStreaming: true
+        });
+      }
+    },
+    async genEntry() {
+      var _modernConfig_bff;
+      if (!needModernServer) {
+        return;
+      }
+      const serverConfig = {
+        bff: {
+          prefix: modernConfig === null || modernConfig === void 0 ? void 0 : (_modernConfig_bff = modernConfig.bff) === null || _modernConfig_bff === void 0 ? void 0 : _modernConfig_bff.prefix
+        },
+        output: {
+          distPath: {
+            root: "."
+          }
+        }
+      };
+      const pluginImportCode = (0, import_utils2.genPluginImportsCode)(plugins || []);
+      const dynamicProdOptions = {
+        config: serverConfig,
+        serverConfigFile: import_utils.DEFAULT_SERVER_CONFIG
+      };
+      const pluginsCode = (0, import_utils2.getPluginsCode)(plugins || []);
+      const serverAppContext = (0, import_utils2.serverAppContenxtTemplate)(appContext);
+      let handlerCode = (await import_utils.fs.readFile(import_node_path.default.join(__dirname, "./vercel-handler.js"))).toString();
+      handlerCode = handlerCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", `"${import_utils.ROUTE_SPEC_FILE}"`).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+      await import_utils.fs.writeFile(handlerFilePath, handlerCode);
+      if (isEsmProject) {
+        await import_utils.fs.copy(import_node_path.default.join(__dirname, "./vercel-entry.mjs"), entryFilePath);
+      } else {
+        await import_utils.fs.copy(import_node_path.default.join(__dirname, "./vercel-entry.js"), entryFilePath);
+      }
+    },
+    async end() {
+      if (!needModernServer) {
+        return;
+      }
+      await (0, import_dependencies.handleDependencies)({
+        appDir: appDirectory,
+        serverRootDir: funcsDirectory,
+        includeEntries: [
+          require.resolve("@modern-js/prod-server")
+        ]
+      });
+    }
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createVercelPreset
+});

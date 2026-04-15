@@ -1,0 +1,5 @@
+import type { RouteObject } from '@modern-js/runtime-utils/router';
+import type { RuntimeContext } from '../../core';
+declare const modifyRoutes: import("@modern-js/plugin").Waterfall<RouteObject[]>;
+declare const beforeCreateRoutes: import("@modern-js/plugin").AsyncInterruptWorkflow<RuntimeContext, void>;
+export { modifyRoutes, beforeCreateRoutes };

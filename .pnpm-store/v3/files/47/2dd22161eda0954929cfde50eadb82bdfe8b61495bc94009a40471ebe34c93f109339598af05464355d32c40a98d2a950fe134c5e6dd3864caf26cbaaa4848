@@ -1,0 +1,131 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var create_exports = {};
+__export(create_exports, {
+  createCli: () => createCli
+});
+module.exports = __toCommonJS(create_exports);
+var import_utils = require("@modern-js/utils");
+var import_commander = require("@modern-js/utils/commander");
+var import_manager = require("../../manager");
+var import_api = require("../api");
+var import_context = require("../context");
+var import_createLoadedConfig = require("./config/createLoadedConfig");
+var import_createResolvedConfig = require("./config/createResolvedConfig");
+var import_checkIsDuplicationPlugin = require("./utils/checkIsDuplicationPlugin");
+var import_commander2 = require("./utils/commander");
+var import_createFileWatcher = require("./utils/createFileWatcher");
+var import_initAppDir = require("./utils/initAppDir");
+var import_loadEnv = require("./utils/loadEnv");
+const createCli = () => {
+  let initOptions;
+  const pluginManager = (0, import_manager.createPluginManager)();
+  async function init(options) {
+    var _context_hooks;
+    pluginManager.clear();
+    initOptions = options;
+    const { metaName = "MODERN", configFile, command, version, packageJsonConfig, internalPlugins, handleSetupResult } = options;
+    const appDirectory = await (0, import_initAppDir.initAppDir)(options === null || options === void 0 ? void 0 : options.cwd);
+    (0, import_commander2.initCommandsMap)();
+    (0, import_commander2.setProgramVersion)(version);
+    (0, import_loadEnv.loadEnv)(appDirectory, process.env[`${metaName.toUpperCase()}_ENV`]);
+    const loaded = await (0, import_createLoadedConfig.createLoadedConfig)(appDirectory, configFile, packageJsonConfig);
+    const allPlugins = [
+      ...internalPlugins || [],
+      ...loaded.config.plugins || []
+    ];
+    (0, import_checkIsDuplicationPlugin.checkIsDuplicationPlugin)(allPlugins.map((plugin) => plugin.name), loaded.config.autoLoadPlugins);
+    pluginManager.addPlugins(allPlugins);
+    const plugins = await pluginManager.getPlugins();
+    const context = await (0, import_context.createContext)({
+      appContext: (0, import_context.initAppContext)({
+        packageName: loaded.packageName,
+        configFile: loaded.configFile,
+        command,
+        appDirectory,
+        plugins
+      }),
+      config: loaded.config,
+      normalizedConfig: {}
+    });
+    const pluginAPI = (0, import_api.initPluginAPI)({
+      context,
+      pluginManager
+    });
+    context.pluginAPI = pluginAPI;
+    for (const plugin of plugins) {
+      const setupResult = await plugin.setup(pluginAPI);
+      if (handleSetupResult) {
+        await handleSetupResult(setupResult, pluginAPI);
+      }
+    }
+    [
+      "SIGINT",
+      "SIGTERM",
+      "unhandledRejection",
+      "uncaughtException"
+    ].forEach((event) => {
+      process.on(event, async (err) => {
+        await context.hooks.onBeforeExit.call();
+        let hasError = false;
+        if (err instanceof Error) {
+          import_utils.logger.error(err.stack);
+          hasError = true;
+        } else if (err && (event === "unhandledRejection" || event === "uncaughtException")) {
+          console.trace("Unknown Error", err);
+          hasError = true;
+        }
+        process.nextTick(() => {
+          process.exit(hasError ? 1 : 0);
+        });
+      });
+    });
+    const extraConfigs = await context.hooks.config.call();
+    const normalizedConfig = await (0, import_createResolvedConfig.createResolveConfig)(loaded, extraConfigs);
+    const resolved = await context.hooks.modifyResolvedConfig.call(normalizedConfig);
+    context.normalizedConfig = resolved || normalizedConfig;
+    await pluginAPI.updateAppContext(context);
+    await context.hooks.onPrepare.call();
+    await ((_context_hooks = context.hooks) === null || _context_hooks === void 0 ? void 0 : _context_hooks.onAfterPrepare.call());
+    return {
+      appContext: context
+    };
+  }
+  async function run(options) {
+    var _program_commands;
+    const { appContext } = await init(options);
+    await appContext.hooks.addCommand.call({
+      program: import_commander.program
+    });
+    await (0, import_createFileWatcher.createFileWatcher)(appContext);
+    import_commander.program.parse(process.argv);
+    if (!((_program_commands = import_commander.program.commands) === null || _program_commands === void 0 ? void 0 : _program_commands.length)) {
+      import_utils.logger.warn("No command found, please make sure you have registered plugins correctly.");
+    }
+  }
+  return {
+    init,
+    run,
+    getPrevInitOptions: () => initOptions
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createCli
+});

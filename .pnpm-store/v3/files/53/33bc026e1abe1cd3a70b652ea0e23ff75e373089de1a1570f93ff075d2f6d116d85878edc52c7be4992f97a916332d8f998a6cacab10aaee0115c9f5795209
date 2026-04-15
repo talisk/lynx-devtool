@@ -1,0 +1,8 @@
+import type { BaseBuildConfig, BuildCommandOptions, BuildPreset, ModuleContext, ModuleUserConfig, PartialBaseBuildConfig, PartialBuildConfig } from '../types';
+export declare const presetToConfig: (preset?: BuildPreset) => Promise<PartialBaseBuildConfig[] | undefined>;
+export declare const mergeConfig: (low?: PartialBaseBuildConfig[], high?: PartialBuildConfig) => PartialBaseBuildConfig[];
+export declare const normalizeBuildConfig: (resolvedConfig: ModuleUserConfig, context: ModuleContext, buildCmdOptions: BuildCommandOptions) => Promise<BaseBuildConfig[]>;
+export declare const transformToAbsPath: (baseConfig: BaseBuildConfig, options: {
+    context: ModuleContext;
+    buildCmdOptions: BuildCommandOptions;
+}) => Promise<BaseBuildConfig>;

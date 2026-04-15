@@ -1,0 +1,2 @@
+import type { Loader } from 'esbuild';
+export declare const loaderMap: Record<string, Loader>;

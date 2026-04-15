@@ -1,0 +1,29 @@
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { createPublicPattern } from "./createCopyPattern";
+var builderPluginAdapterCopy = function(options) {
+  return {
+    name: "builder-plugin-adapter-copy",
+    setup: function setup(api) {
+      var modernConfig = options.normalizedConfig, appContext = options.appContext;
+      api.modifyBundlerChain(function(chain, param) {
+        var CHAIN_ID = param.CHAIN_ID;
+        if (chain.plugins.has(CHAIN_ID.PLUGIN.COPY)) {
+          var defaultCopyPattern = createPublicPattern(appContext, modernConfig, chain);
+          chain.plugin(CHAIN_ID.PLUGIN.COPY).tap(function(args) {
+            var _args_;
+            return [
+              {
+                patterns: _to_consumable_array(((_args_ = args[0]) === null || _args_ === void 0 ? void 0 : _args_.patterns) || []).concat([
+                  defaultCopyPattern
+                ])
+              }
+            ];
+          });
+        }
+      });
+    }
+  };
+};
+export {
+  builderPluginAdapterCopy
+};

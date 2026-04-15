@@ -1,0 +1,102 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { fs, JS_EXTENSIONS, MAIN_ENTRY_NAME, ensureAbsolutePath, findExists } from "@modern-js/utils";
+import { getFileSystemEntry } from "./getFileSystemEntry";
+import { isSubDirOrEqual } from "./utils";
+var ensureExtensions = function(file) {
+  if (!path.extname(file)) {
+    return findExists(JS_EXTENSIONS.map(function(ext) {
+      return "".concat(file).concat(ext);
+    })) || file;
+  }
+  return file;
+};
+var isDirectory = function(file) {
+  return !path.extname(file);
+};
+var ifAlreadyExists = function(entrypoints, checked) {
+  return entrypoints.some(function(entrypoint) {
+    if (ensureExtensions(entrypoint.entry) === ensureExtensions(checked.entry)) {
+      checked.entryName = entrypoint.entryName;
+      return true;
+    }
+    if (isSubDirOrEqual(entrypoint.entry, checked.entry) || isSubDirOrEqual(checked.entry, entrypoint.entry)) {
+      throw new Error("Entry configuration conflicts\n Your configuration: ".concat(checked.entry, ".\n Default entrypoint: ").concat(entrypoint.entry, "\n Please reset source.entries or set source.disableDefaultEntries to disable the default entry rules."));
+    }
+    return false;
+  });
+};
+var getBundleEntry = function() {
+  var _ref = _async_to_generator(function(hooks, appContext, config) {
+    var appDirectory, packageName, _config_source, disableDefaultEntries, entries, entriesDir, mainEntryName, defaults, _tmp, entriesDirAbs, found;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          appDirectory = appContext.appDirectory, packageName = appContext.packageName;
+          _config_source = config.source, disableDefaultEntries = _config_source.disableDefaultEntries, entries = _config_source.entries, entriesDir = _config_source.entriesDir, mainEntryName = _config_source.mainEntryName;
+          if (!disableDefaultEntries)
+            return [
+              3,
+              1
+            ];
+          _tmp = [];
+          return [
+            3,
+            3
+          ];
+        case 1:
+          return [
+            4,
+            getFileSystemEntry(hooks, appContext, config)
+          ];
+        case 2:
+          _tmp = _state.sent();
+          _state.label = 3;
+        case 3:
+          defaults = _tmp;
+          if (entries) {
+            Object.keys(entries).forEach(function(name) {
+              var value = entries[name];
+              var entryName = typeof value === "string" ? value : value.entry;
+              var isAutoMount = typeof value === "string" ? true : !value.disableMount;
+              var entrypoint = {
+                entryName: name,
+                isMainEntry: false,
+                entry: ensureAbsolutePath(appDirectory, entryName),
+                absoluteEntryDir: isDirectory(ensureAbsolutePath(appDirectory, entryName)) ? ensureAbsolutePath(appDirectory, entryName) : path.dirname(ensureAbsolutePath(appDirectory, entryName)),
+                isAutoMount,
+                customBootstrap: typeof value === "string" ? false : value.customBootstrap && ensureAbsolutePath(appDirectory, value.customBootstrap),
+                fileSystemRoutes: fs.statSync(ensureAbsolutePath(appDirectory, entryName)).isDirectory() ? {} : void 0,
+                isCustomSourceEntry: true
+              };
+              if (!ifAlreadyExists(defaults, entrypoint)) {
+                defaults.push(entrypoint);
+              }
+            });
+          }
+          if (!disableDefaultEntries) {
+            entriesDirAbs = ensureAbsolutePath(appDirectory, entriesDir || "");
+            found = defaults.find(function(param) {
+              var entryName = param.entryName, entry = param.entry, _param_nestedRoutesEntry = param.nestedRoutesEntry, nestedRoutesEntry = _param_nestedRoutesEntry === void 0 ? "" : _param_nestedRoutesEntry;
+              return entryName === packageName || path.dirname(entry) === entriesDirAbs || path.dirname(nestedRoutesEntry) === entriesDirAbs;
+            });
+            if (found) {
+              found.entryName = mainEntryName || MAIN_ENTRY_NAME;
+              found.isMainEntry = true;
+            }
+          }
+          return [
+            2,
+            defaults
+          ];
+      }
+    });
+  });
+  return function getBundleEntry2(hooks, appContext, config) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  getBundleEntry
+};

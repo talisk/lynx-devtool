@@ -1,0 +1,27 @@
+{
+    "name": "@types/electron-prompt",
+    "version": "1.6.5",
+    "description": "TypeScript definitions for electron-prompt",
+    "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/electron-prompt",
+    "license": "MIT",
+    "contributors": [
+        {
+            "name": "Florian Imdahl",
+            "githubUsername": "ffflorian",
+            "url": "https://github.com/ffflorian"
+        }
+    ],
+    "main": "",
+    "types": "index.d.ts",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
+        "directory": "types/electron-prompt"
+    },
+    "scripts": {},
+    "dependencies": {
+        "electron": "latest"
+    },
+    "typesPublisherContentHash": "ee9c4d7daaecae6f190f0e10091254f4331e50aca864234cd02987fd5031843d",
+    "typeScriptVersion": "4.5"
+}

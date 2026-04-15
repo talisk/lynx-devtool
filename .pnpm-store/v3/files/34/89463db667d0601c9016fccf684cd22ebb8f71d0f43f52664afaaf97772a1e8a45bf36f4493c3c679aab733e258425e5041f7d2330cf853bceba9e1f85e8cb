@@ -1,0 +1,17 @@
+/// <reference types="node" />
+/// <reference types="node" />
+/// <reference types="node" />
+import { EventEmitter } from "events";
+import { ClientOptions } from "./ClientOptions";
+import { Socket } from "net";
+import Parser from "./parser";
+export default class Connection extends EventEmitter {
+    options: ClientOptions;
+    socket: Socket;
+    parser: Parser;
+    handshakeOK: boolean;
+    constructor(options?: ClientOptions);
+    connect(connectKey?: string): Promise<Connection>;
+    write(data: Buffer, callback?: (err?: Error) => void): this;
+    kill(): Promise<void>;
+}

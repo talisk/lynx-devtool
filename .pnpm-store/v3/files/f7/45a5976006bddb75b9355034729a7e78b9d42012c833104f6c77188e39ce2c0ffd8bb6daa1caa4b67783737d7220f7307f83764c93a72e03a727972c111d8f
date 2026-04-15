@@ -1,0 +1,4 @@
+import type { CLIPluginAPI } from '@modern-js/plugin-v2';
+import type { AppTools } from '../types';
+import type { InspectOptions } from '../utils/types';
+export declare const inspect: (api: CLIPluginAPI<AppTools<'shared'>>, options: InspectOptions) => Promise<import("@rsbuild/core").InspectConfigResult<"rspack">>;

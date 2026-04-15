@@ -1,0 +1,18 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const BaseDevice_1 = require("../BaseDevice");
+const type_1 = require("../../utils/type");
+class MacDevice extends BaseDevice_1.BaseDevice {
+    constructor(driver) {
+        super(driver, {
+            serial: "Mac",
+            title: "Mac",
+            os: type_1.DeviceOS.Mac,
+        });
+    }
+    getHost() {
+        return "127.0.0.1";
+    }
+}
+exports.default = MacDevice;
+//# sourceMappingURL=MacDevice.js.map

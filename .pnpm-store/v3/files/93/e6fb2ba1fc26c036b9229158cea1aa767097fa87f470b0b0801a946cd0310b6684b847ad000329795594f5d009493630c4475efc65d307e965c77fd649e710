@@ -1,0 +1,103 @@
+"use strict";
+// The require scope
+var __webpack_require__ = {};
+/************************************************************************/ // webpack/runtime/define_property_getters
+(()=>{
+    __webpack_require__.d = function(exports1, definition) {
+        for(var key in definition)if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports1, key)) Object.defineProperty(exports1, key, {
+            enumerable: true,
+            get: definition[key]
+        });
+    };
+})();
+// webpack/runtime/has_own_property
+(()=>{
+    __webpack_require__.o = function(obj, prop) {
+        return Object.prototype.hasOwnProperty.call(obj, prop);
+    };
+})();
+// webpack/runtime/make_namespace_object
+(()=>{
+    // define __esModule on exports
+    __webpack_require__.r = function(exports1) {
+        if ('undefined' != typeof Symbol && Symbol.toStringTag) Object.defineProperty(exports1, Symbol.toStringTag, {
+            value: 'Module'
+        });
+        Object.defineProperty(exports1, '__esModule', {
+            value: true
+        });
+    };
+})();
+/************************************************************************/ var __webpack_exports__ = {};
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+    PLUGIN_STYLED_COMPONENTS_NAME: ()=>/* binding */ PLUGIN_STYLED_COMPONENTS_NAME,
+    pluginStyledComponents: ()=>/* binding */ pluginStyledComponents
+});
+const external_node_module_namespaceObject = require("node:module");
+const external_reduce_configs_namespaceObject = require("reduce-configs");
+const src_require = (0, external_node_module_namespaceObject.createRequire)(/*#__PURE__*/ function() {
+    return 'undefined' == typeof document ? new (module.require('url'.replace('', ''))).URL('file:' + __filename).href : document.currentScript && document.currentScript.src || new URL('main.js', document.baseURI).href;
+}());
+function isServerTarget(target) {
+    return Array.isArray(target) ? target.includes('node') : 'node' === target;
+}
+const getDefaultStyledComponentsConfig = (isProd, ssr)=>({
+        ssr,
+        // "pure" is used to improve dead code elimination in production.
+        // we don't need to enable it in development because it will slow down the build process.
+        pure: isProd,
+        displayName: true,
+        transpileTemplateLiterals: true
+    });
+const PLUGIN_STYLED_COMPONENTS_NAME = 'rsbuild:styled-components';
+const pluginStyledComponents = (pluginOptions = {})=>({
+        name: PLUGIN_STYLED_COMPONENTS_NAME,
+        setup (api) {
+            if ('webpack' === api.context.bundlerType) return;
+            const getMergedOptions = (useSSR, config)=>{
+                const isProd = 'production' === config.mode;
+                return (0, external_reduce_configs_namespaceObject.reduceConfigs)({
+                    initial: getDefaultStyledComponentsConfig(isProd, useSSR),
+                    config: pluginOptions
+                });
+            };
+            api.modifyEnvironmentConfig((userConfig, { mergeEnvironmentConfig })=>{
+                var _userConfig_output;
+                const rsbuildConfig = api.getRsbuildConfig();
+                const targets = rsbuildConfig.environments ? Object.values(rsbuildConfig.environments).map((e)=>{
+                    var _e_output, _userConfig_output;
+                    return (null === (_e_output = e.output) || void 0 === _e_output ? void 0 : _e_output.target) || (null === (_userConfig_output = userConfig.output) || void 0 === _userConfig_output ? void 0 : _userConfig_output.target) || 'web';
+                }) : [
+                    (null === (_userConfig_output = userConfig.output) || void 0 === _userConfig_output ? void 0 : _userConfig_output.target) || 'web'
+                ];
+                const useSSR = isServerTarget(targets);
+                const mergedOptions = getMergedOptions(useSSR, userConfig);
+                if (!mergedOptions) return userConfig;
+                const extraConfig = {
+                    tools: {
+                        swc: {
+                            jsc: {
+                                experimental: {
+                                    plugins: [
+                                        [
+                                            src_require.resolve('@swc/plugin-styled-components'),
+                                            mergedOptions
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                };
+                return mergeEnvironmentConfig(extraConfig, userConfig);
+            });
+        }
+    });
+var __webpack_export_target__ = exports;
+for(var i in __webpack_exports__)__webpack_export_target__[i] = __webpack_exports__[i];
+if (__webpack_exports__.__esModule) Object.defineProperty(__webpack_export_target__, '__esModule', {
+    value: true
+});

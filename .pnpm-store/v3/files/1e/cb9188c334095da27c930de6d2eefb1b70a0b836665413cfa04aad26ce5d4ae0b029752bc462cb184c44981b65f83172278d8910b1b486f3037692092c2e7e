@@ -1,0 +1,681 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DebugRouterConnector = void 0;
+const events_1 = require("events");
+const AndroidDeviceManager_1 = require("../device/android/AndroidDeviceManager");
+const AndroidDevice_1 = __importDefault(require("../device/android/AndroidDevice"));
+const NetworkDeviceManager_1 = __importDefault(require("../device/network/NetworkDeviceManager"));
+const DesktopDeviceManager_1 = __importDefault(require("../device/desktop/DesktopDeviceManager"));
+const iOSDeviceManager_1 = __importDefault(require("../device/ios/iOSDeviceManager"));
+const HarmonyDeviceManager_1 = __importDefault(require("../device/Harmony/HarmonyDeviceManager"));
+const WebSocketServer_1 = require("../websocket/WebSocketServer");
+const detect_port_1 = __importDefault(require("detect-port"));
+const ip_1 = require("ip");
+const logger_1 = require("../utils/logger");
+const DriverReportService_1 = require("../report/interface/DriverReportService");
+const MultiOpenCallBack_1 = require("./MultiOpenCallBack");
+const fs_1 = __importDefault(require("fs"));
+const fslock = __importStar(require("../utils/file_lock"));
+const DriverClient_1 = require("./DriverClient");
+const file_lock_1 = require("../utils/file_lock");
+const MonitorUtils_1 = require("./MonitorUtils");
+const DEFAULT_DEV_SERVE_PORT = 19783;
+class DebugRouterConnector {
+    constructor(option = {
+        manualConnect: false,
+        enableWebSocket: false,
+        enableAndroid: true,
+        enableIOS: true,
+        enableHarmony: true,
+        enableDesktop: false,
+        enableNetworkDevice: false,
+        websocketOption: {},
+        reportService: null,
+    }) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        this.events = new events_1.EventEmitter();
+        this.reportService = null;
+        this.devices = new Map();
+        this.usbClients = new Map();
+        this.nextClientId = 0;
+        this.multiOpenCallback = new MultiOpenCallBack_1.DefaultMultiOpenCallback();
+        this.monitoring = false;
+        this.wssPort = DEFAULT_DEV_SERVE_PORT;
+        this.wss = null;
+        this.currentStatus = MultiOpenCallBack_1.MultiOpenStatus.unInit;
+        (0, DriverReportService_1.setDriverReportService)((_a = option.reportService) !== null && _a !== void 0 ? _a : null);
+        (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.init(option.manualConnect);
+        const msg = "DebugRouterOption:" + JSON.stringify(option);
+        logger_1.defaultLogger.debug(msg);
+        (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("DebugRouterConnectorInit", {}, { option: msg });
+        if (!option.manualConnect) {
+            (_d = (0, DriverReportService_1.getDriverReportService)()) === null || _d === void 0 ? void 0 : _d.report("DriverInitOfNoManualConnect", {}, { option: msg });
+        }
+        this.prepareDriverDataDir();
+        this.startMonitorMultiOpen();
+        this.manualConnect = option.manualConnect;
+        this.enableWebSocket = option.enableWebSocket;
+        this.roomId = (_e = option.websocketOption) === null || _e === void 0 ? void 0 : _e.roomId;
+        this.enableAndroid = (_f = option.enableAndroid) !== null && _f !== void 0 ? _f : true;
+        this.adbOption = option.adbHostPort;
+        this.enableIOS =
+            process.platform !== "darwin" ? false : (_g = option.enableIOS) !== null && _g !== void 0 ? _g : true;
+        this.enableHarmony = (_h = option.enableHarmony) !== null && _h !== void 0 ? _h : true;
+        this.hdcOption = option.hdcHostPort;
+        this.enableDesktop = (_j = option.enableDesktop) !== null && _j !== void 0 ? _j : false;
+        this.enableNetworkDevice = (_k = option.enableNetworkDevice) !== null && _k !== void 0 ? _k : false;
+        if (this.enableNetworkDevice) {
+            this.networkDeviceOpt = option.networkDeviceOpt;
+        }
+        this.usbConnectOpt = (_l = option.usbConnectOpt) !== null && _l !== void 0 ? _l : {
+            retryTime: 3000,
+        };
+        if (this.usbConnectOpt.retryTime < 3000) {
+            this.usbConnectOpt.retryTime = 3000;
+        }
+        this.setOptionByEnv();
+        this.devicesManager = new Set();
+        this.driverClient = new DriverClient_1.DriverClient(this.createClientId());
+        if (this.enableAndroid) {
+            this.devicesManager.add(new AndroidDeviceManager_1.AndroidDeviceManager(this, this.adbOption));
+        }
+        if (this.enableIOS) {
+            this.devicesManager.add(new iOSDeviceManager_1.default(this));
+        }
+        if (this.enableHarmony) {
+            this.devicesManager.add(new HarmonyDeviceManager_1.default(this, this.hdcOption));
+        }
+        if (this.enableDesktop) {
+            this.devicesManager.add(new DesktopDeviceManager_1.default(this));
+        }
+        if (this.enableNetworkDevice && this.networkDeviceOpt) {
+            if (this.networkDeviceOpt) {
+                this.devicesManager.add(new NetworkDeviceManager_1.default(this, this.networkDeviceOpt));
+            }
+            else {
+                (_m = (0, DriverReportService_1.getDriverReportService)()) === null || _m === void 0 ? void 0 : _m.report("network_connect_error", null, {
+                    msg: "networkDeviceOpt == undefined",
+                    stage: "device",
+                });
+                logger_1.defaultLogger.error("networkDeviceOpt == undefined");
+            }
+        }
+        if (!this.manualConnect) {
+            this.connectDevices();
+        }
+    }
+    setMultiOpenCallback(callback) {
+        this.multiOpenCallback = callback;
+    }
+    prepareDriverDataDir() {
+        var _a;
+        fslock.clearLockFileWhenProcessExit();
+        try {
+            if (!fs_1.default.existsSync(fslock.driver_dir)) {
+                fs_1.default.mkdirSync(fslock.driver_dir);
+                return;
+            }
+        }
+        catch (e) {
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("multi_open_error", null, {
+                error: `prepareDriverDataDir err: ${e === null || e === void 0 ? void 0 : e.message}`,
+            });
+        }
+        fslock.clearLockFile();
+    }
+    startMonitorMultiOpen() {
+        if (process.env.DriverCloseMultiOpen === "true") {
+            logger_1.defaultLogger.warn("DriverCloseMultiOpen === true");
+            return;
+        }
+        logger_1.defaultLogger.info("startMonitorMultiOpen");
+        this.monitorLatestDriverProcessFileSafely();
+        setInterval(() => {
+            this.monitorLatestDriverProcessFileSafely();
+        }, 500);
+    }
+    monitorLatestDriverProcessFile() {
+        if (this.monitoring) {
+            logger_1.defaultLogger.debug("has monitored, just return");
+            return;
+        }
+        logger_1.defaultLogger.debug("start monitor...");
+        this.monitoring = true;
+        fslock.lock((acquiredLock) => {
+            var _a, _b;
+            if (!acquiredLock) {
+                logger_1.defaultLogger.debug("doesn't get lock");
+                this.monitoring = false;
+                return;
+            }
+            logger_1.defaultLogger.debug("get lock");
+            try {
+                if (this.currentStatus === MultiOpenCallBack_1.MultiOpenStatus.unInit) {
+                    this.updateLatestProcess();
+                }
+                else {
+                    const data = fs_1.default.readFileSync(`${fslock.driver_dir}/LatestDriverProcess`, "utf-8");
+                    logger_1.defaultLogger.debug("LastDriverProcessID:" + data);
+                    if (data !== `${process.pid}`) {
+                        if (this.currentStatus === MultiOpenCallBack_1.MultiOpenStatus.attached) {
+                            this.disableAllClients();
+                            this.currentStatus = MultiOpenCallBack_1.MultiOpenStatus.unattached;
+                            this.multiOpenCallback.statusChanged(MultiOpenCallBack_1.MultiOpenStatus.unattached);
+                        }
+                        else {
+                            logger_1.defaultLogger.debug("current connector has unattached");
+                        }
+                    }
+                    else {
+                        logger_1.defaultLogger.debug("current connector has attached");
+                    }
+                }
+            }
+            catch (err) {
+                if (((_a = err === null || err === void 0 ? void 0 : err.message) === null || _a === void 0 ? void 0 : _a.indexOf("ENOENT")) !== -1) {
+                    this.updateLatestProcess();
+                }
+                else {
+                    logger_1.defaultLogger.debug(err === null || err === void 0 ? void 0 : err.message);
+                    (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("multi_open_error", null, {
+                        error: `readFileSync: ${err === null || err === void 0 ? void 0 : err.message}`,
+                    });
+                }
+            }
+            fslock.unlock((err) => {
+                var _a, _b;
+                if (err === null) {
+                    logger_1.defaultLogger.debug("unlock ok");
+                }
+                else if (((_a = err === null || err === void 0 ? void 0 : err.message) === null || _a === void 0 ? void 0 : _a.indexOf("ENOENT")) !== -1) {
+                    fslock.resetLockStatus();
+                    logger_1.defaultLogger.debug("unlock ok");
+                }
+                else {
+                    (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("multi_open_error", null, {
+                        error: `fslock.unlock error: ${err === null || err === void 0 ? void 0 : err.message}`,
+                    });
+                    logger_1.defaultLogger.debug("unlock failed");
+                }
+                this.monitoring = false;
+            });
+        });
+    }
+    updateLatestProcess() {
+        if (!fs_1.default.existsSync(file_lock_1.lockDir)) {
+            logger_1.defaultLogger.debug("updateLatestProcess: lockfile is removed!");
+            return;
+        }
+        logger_1.defaultLogger.info("MultiOpen: switch to attached");
+        fs_1.default.writeFileSync(`${fslock.driver_dir}/LatestDriverProcess`, `${process.pid}`, "utf-8");
+        this.currentStatus = MultiOpenCallBack_1.MultiOpenStatus.attached;
+        this.multiOpenCallback.statusChanged(MultiOpenCallBack_1.MultiOpenStatus.attached);
+    }
+    monitorLatestDriverProcessFileSafely() {
+        var _a;
+        try {
+            this.monitorLatestDriverProcessFile();
+        }
+        catch (err) {
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("multi_open_error", null, {
+                error: `monitorLatestDriverProcessFileSafely error: ${err === null || err === void 0 ? void 0 : err.message}`,
+            });
+        }
+    }
+    disableAllClients() {
+        logger_1.defaultLogger.info("disableAllClients");
+        this.devices.forEach((device) => {
+            device.stopWatchClient();
+        });
+        this.getAllAppClients().forEach((client) => {
+            client.close();
+        });
+    }
+    startWatchAllClients(force = true) {
+        logger_1.defaultLogger.debug("startWatchAllClients");
+        if (!force && this.currentStatus === MultiOpenCallBack_1.MultiOpenStatus.attached) {
+            logger_1.defaultLogger.debug("startWatchAllClients: has already attached");
+            return;
+        }
+        this.currentStatus = MultiOpenCallBack_1.MultiOpenStatus.unInit;
+        fslock.clearLockFile();
+        this.monitorLatestDriverProcessFile();
+        this.devices.forEach((device) => {
+            if (device instanceof AndroidDevice_1.default) {
+                device.forwards().then(() => {
+                    device.startWatchClient();
+                });
+            }
+            else {
+                device.startWatchClient();
+            }
+        });
+    }
+    createClientId() {
+        if (this.nextClientId > 4294967294)
+            this.nextClientId = 0;
+        return ++this.nextClientId;
+    }
+    connectDevices(timeout = -1, serial = null, isAutoListenClients = true) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.startDeviceListeners();
+            return this.getDevices(timeout, serial);
+        });
+    }
+    connectUsbClients(deviceId, timeout = -1, waitTimeout = true, clientName = null) {
+        return __awaiter(this, void 0, void 0, function* () {
+            logger_1.defaultLogger.debug("connectUsbClients of :" +
+                deviceId +
+                " waitTimeout:" +
+                waitTimeout +
+                " timeout:" +
+                timeout);
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                const device = this.devices.get(deviceId);
+                if (device) {
+                    device.startWatchClient();
+                    let clients;
+                    if (waitTimeout) {
+                        clients = yield this.getDeviceUsbClients(deviceId, timeout, clientName);
+                    }
+                    else {
+                        clients = yield this.waitDeviceUsbCliens(deviceId, timeout);
+                    }
+                    device.stopWatchClient();
+                    const clients_infos = clients.map((client) => {
+                        return client.info;
+                    });
+                    logger_1.defaultLogger.debug("connectUsbClients: clients:" + JSON.stringify(clients_infos));
+                    resolve(clients);
+                }
+                else {
+                    logger_1.defaultLogger.debug("connectUsbClients: resolve device == null");
+                    resolve([]);
+                }
+            }));
+        });
+    }
+    selecteUsbClient(id) {
+        if (this.usbClients.has(id)) {
+            this.selectedClient = this.usbClients.get(id);
+        }
+    }
+    addDeviceManager(manager) {
+        this.devicesManager.add(manager);
+    }
+    startDeviceListeners() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const asyncDeviceListenersPromises = [];
+            for (const deviceManager of this.devicesManager) {
+                asyncDeviceListenersPromises.push(deviceManager.watchDevices().catch((e) => {
+                    var _a;
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("device_connect_error", null, {
+                        msg: "watchDevices error:" + (e === null || e === void 0 ? void 0 : e.message),
+                        stage: "device",
+                    });
+                    throw e;
+                }));
+            }
+            yield Promise.all(asyncDeviceListenersPromises);
+        });
+    }
+    on(event, callback) {
+        this.events.on(event, callback);
+    }
+    off(event, callback) {
+        this.events.off(event, callback);
+    }
+    emit(event, payload) {
+        this.events.emit(event, payload);
+    }
+    registerDevice(device) {
+        const { serial } = device.info;
+        const existing = this.devices.get(serial);
+        if (existing) {
+            logger_1.defaultLogger.debug("registerDevice: has exists:" + device.serial);
+            return;
+        }
+        logger_1.defaultLogger.debug("register new device:" + device.serial);
+        this.devices.set(device.info.serial, device);
+        if (!this.manualConnect &&
+            this.currentStatus === MultiOpenCallBack_1.MultiOpenStatus.attached) {
+            device.startWatchClient();
+        }
+        this.emit("device-connected", device);
+        (0, MonitorUtils_1.setDeviceTimeMap)(device);
+    }
+    unregisterDevice(serial) {
+        const device = this.devices.get(serial);
+        if (!device) {
+            logger_1.defaultLogger.debug("unregisterDevice warning: no existed device:" + serial);
+            return;
+        }
+        logger_1.defaultLogger.debug("unregisterDevice:" + serial);
+        this.devices.delete(serial);
+        device.disConnect();
+        this.emit("device-disconnected", device);
+        (0, MonitorUtils_1.monitorUnregisterDevice)(device, this.usbConnectOpt.retryTime);
+    }
+    regiserUsbClient(client) {
+        logger_1.defaultLogger.debug("regiserUsbClient:" + " info:" + JSON.stringify(client.info));
+        const existing = this.usbClients.get(client.clientId());
+        if (existing) {
+            logger_1.defaultLogger.debug("regiserUsbClient: has exist:" + client.clientId);
+            return;
+        }
+        this.usbClients.set(client.clientId(), client);
+        this.emit("client-connected", client);
+        this.emit("app-client-connected", client);
+        this.handleUsbClienChange();
+        (0, MonitorUtils_1.setClientTimeMap)(client);
+    }
+    unregiserUsbClient(id) {
+        const existing = this.usbClients.get(id);
+        if (!existing) {
+            logger_1.defaultLogger.debug("unregiserUsbClient unknown id:" + id);
+            return;
+        }
+        logger_1.defaultLogger.debug("unregiserUsbClient:" + JSON.stringify(existing.info));
+        if (this.selectedClient && this.selectedClient.info.id === id) {
+            this.selectedClient = undefined;
+        }
+        this.usbClients.delete(id);
+        this.emit("client-disconnected", id);
+        this.emit("app-client-disconnected", id);
+        this.handleUsbClienChange();
+        (0, MonitorUtils_1.monitorUnregisterClient)(existing, this.usbConnectOpt.retryTime);
+    }
+    getDevices(timeout = -1, serial = null) {
+        return new Promise((resolve) => {
+            if (timeout < 0) {
+                resolve(this.findDevice(serial));
+            }
+            else {
+                const deviceCallback = (device) => {
+                    if (device.serial === serial) {
+                        resolve([device]);
+                        this.off("device-connected", deviceCallback);
+                    }
+                };
+                if (serial !== null) {
+                    const targetDevices = this.findDevice(serial);
+                    if (targetDevices.length > 0) {
+                        resolve(targetDevices);
+                        return;
+                    }
+                    this.on("device-connected", deviceCallback);
+                }
+                setTimeout(() => {
+                    this.off("device-connected", deviceCallback);
+                    resolve(this.findDevice(serial));
+                }, timeout);
+            }
+        });
+    }
+    findDevice(serial) {
+        let targetDevices = Array.from(this.devices.values());
+        if (serial === null) {
+            return targetDevices;
+        }
+        targetDevices = targetDevices.filter((device) => {
+            return device.serial === serial;
+        });
+        return targetDevices;
+    }
+    getAllUsbClients() {
+        const clients = new Array();
+        this.usbClients.forEach((value, key) => {
+            clients.push(value);
+        });
+        return clients;
+    }
+    getDeviceUsbClients(deviceId, timeout = -1, clientName = null) {
+        return new Promise((resolve) => {
+            if (!this.devices.has(deviceId)) {
+                logger_1.defaultLogger.debug("getDeviceUsbClients: has" + deviceId);
+                resolve([]);
+            }
+            if (timeout < 0) {
+                let clients = Array.from(this.usbClients.values());
+                clients = clients.filter((client) => {
+                    return client.deviceId() === deviceId;
+                });
+                resolve(this.findUsbClient(clientName, clients));
+            }
+            else {
+                const clientCallback = (client) => {
+                    if (client.deviceId() !== deviceId) {
+                        return;
+                    }
+                    if (this.isTargetClient(client, clientName)) {
+                        resolve([client]);
+                        this.off("client-connected", clientCallback);
+                    }
+                };
+                if (clientName != null) {
+                    const targetClients = this.findUsbClient(clientName, Array.from(this.usbClients.values()));
+                    if (targetClients.length > 0) {
+                        resolve(targetClients);
+                        return;
+                    }
+                    this.on("client-connected", clientCallback);
+                }
+                setTimeout(() => {
+                    this.off("client-connected", clientCallback);
+                    let clients = Array.from(this.usbClients.values());
+                    clients = clients.filter((client) => {
+                        return client.deviceId() === deviceId;
+                    });
+                    resolve(this.findUsbClient(clientName, clients));
+                }, timeout);
+            }
+        });
+    }
+    findUsbClient(clientName, clients) {
+        if (clientName === null) {
+            return clients;
+        }
+        const targetClients = clients.filter((client) => {
+            return this.isTargetClient(client, clientName);
+        });
+        return targetClients;
+    }
+    isTargetClient(client, clientName) {
+        var _a, _b, _c, _d, _e, _f, _g;
+        if (clientName == null) {
+            return false;
+        }
+        if (((_b = (_a = client === null || client === void 0 ? void 0 : client.info) === null || _a === void 0 ? void 0 : _a.query) === null || _b === void 0 ? void 0 : _b.os) === "Android" &&
+            ((_c = client.info.query.raw_info) === null || _c === void 0 ? void 0 : _c.AppProcessName) === clientName) {
+            return true;
+        }
+        if (((_f = (_e = (_d = client === null || client === void 0 ? void 0 : client.info) === null || _d === void 0 ? void 0 : _d.query) === null || _e === void 0 ? void 0 : _e.device_model) === null || _f === void 0 ? void 0 : _f.indexOf("iPhone")) !== -1 &&
+            ((_g = client.info.query.raw_info) === null || _g === void 0 ? void 0 : _g.App) === clientName) {
+            return true;
+        }
+        return false;
+    }
+    waitDeviceUsbCliens(deviceId, timeout = -1) {
+        return new Promise((resolve) => {
+            if (!this.devices.has(deviceId)) {
+                resolve([]);
+            }
+            if (timeout < 0) {
+                let clients = Array.from(this.usbClients.values());
+                clients = clients.filter((client) => {
+                    return client.deviceId() === deviceId;
+                });
+                resolve(Array.from(clients.values()));
+            }
+            else {
+                const handle = (client) => {
+                    if (client.deviceId() === deviceId) {
+                        resolve([client]);
+                    }
+                };
+                this.on("client-connected", handle);
+                setTimeout(() => {
+                    let clients = Array.from(this.usbClients.values());
+                    clients = clients.filter((client) => {
+                        return client.deviceId() === deviceId;
+                    });
+                    this.off("client-connected", handle);
+                    resolve(Array.from(clients.values()));
+                }, timeout);
+            }
+        });
+    }
+    handleUsbMessage(id, message) {
+        var _a, _b;
+        if (this.wss) {
+            const response = JSON.parse(message);
+            if (response.data && response.data["sender"]) {
+                response.data["sender"] = id;
+            }
+            if (((_a = response.data) === null || _a === void 0 ? void 0 : _a.data) &&
+                ((_b = response.data) === null || _b === void 0 ? void 0 : _b.data.hasOwnProperty("client_id"))) {
+                response.data.data["client_id"] = id;
+            }
+            this.wss.sendMessageToWeb(JSON.stringify(response));
+        }
+    }
+    handleWsMessage(id, message) {
+        var _a, _b, _c, _d;
+        const client = this.usbClients.get(id);
+        if (client) {
+            const data = JSON.parse(message);
+            if (((_a = data === null || data === void 0 ? void 0 : data.data) === null || _a === void 0 ? void 0 : _a.type) === "UsbConnect" ||
+                ((_b = data === null || data === void 0 ? void 0 : data.data) === null || _b === void 0 ? void 0 : _b.type) === "UsbConnectAck")
+                return;
+            if ((_d = (_c = data === null || data === void 0 ? void 0 : data.data) === null || _c === void 0 ? void 0 : _c.data) === null || _d === void 0 ? void 0 : _d.client_id) {
+                data.data.data.client_id = -1;
+            }
+            client.sendMessage(data);
+        }
+    }
+    handleUsbClienChange() {
+        if (this.wss) {
+            this.wss.sendClientList();
+        }
+    }
+    handleUsbDeviceChange() {
+        if (this.wss) {
+            this.wss.sendClientList();
+        }
+    }
+    getAllAppClients() {
+        const clients = [];
+        this.getAllUsbClients().forEach((client) => {
+            clients.push(client);
+        });
+        if (this.enableWebSocket && this.wss) {
+            this.wss
+                .getAllWebsocketAppClients()
+                .forEach((client) => {
+                clients.push(client);
+            });
+        }
+        return clients;
+    }
+    sendMessageToWeb(message) {
+        if (!this.enableWebSocket) {
+            logger_1.defaultLogger.warn("enableWebSocket isn't opened!");
+            return;
+        }
+        if (this.wss === null) {
+            logger_1.defaultLogger.warn("websocket server hasn't started up");
+            return;
+        }
+        this.wss.sendMessageToWeb(message);
+    }
+    sendMessageToApp(id, message) {
+        var _a;
+        if (!this.enableWebSocket) {
+            logger_1.defaultLogger.warn("enableWebSocket isn't opened!");
+            return;
+        }
+        if (this.wss === null) {
+            logger_1.defaultLogger.warn("websocket server hasn't started up");
+            return;
+        }
+        (_a = this.wss) === null || _a === void 0 ? void 0 : _a.sendMessageToApp(id, message);
+    }
+    startWSServer() {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+                var _a;
+                if (this.enableWebSocket) {
+                    const port = this.wssPort;
+                    this.wssPort = yield (0, detect_port_1.default)(port);
+                    this.wssHost = `${(0, ip_1.address)()}:${this.wssPort}`;
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("websocket_server_init", null, {
+                        port: "wssPort:" + this.wssHost,
+                    });
+                    this.wss = new WebSocketServer_1.WebSocketController(this, {
+                        port: this.wssPort,
+                        host: this.wssHost,
+                        roomId: this.roomId,
+                        callback: resolve,
+                    });
+                }
+                else {
+                    resolve();
+                }
+            }));
+        });
+    }
+    setOptionByEnv() {
+        if (process.env.DriverEnableAndroid === "false") {
+            this.enableAndroid = false;
+            logger_1.defaultLogger.warn("set DriverEnableAndroid === false");
+        }
+        if (process.env.DriverEnableIOS === "false") {
+            this.enableIOS = false;
+            logger_1.defaultLogger.warn("set DriverEnableIOS === false");
+        }
+        if (process.env.DriverEnableDesktop === "false") {
+            this.enableDesktop = false;
+            logger_1.defaultLogger.warn("set DriverEnableDesktop === false");
+        }
+    }
+    getDriverClient() {
+        return this.driverClient;
+    }
+}
+exports.DebugRouterConnector = DebugRouterConnector;
+//# sourceMappingURL=DebugRouterConnector.js.map

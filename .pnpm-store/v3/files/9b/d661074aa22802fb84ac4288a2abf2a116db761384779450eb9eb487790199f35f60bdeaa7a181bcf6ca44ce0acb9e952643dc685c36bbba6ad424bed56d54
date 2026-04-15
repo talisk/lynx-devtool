@@ -1,0 +1,13 @@
+import type { RawSourceMap } from '@ampproject/remapping';
+import type { SourceMap } from '../types';
+interface Options {
+    needSourceMap: boolean;
+}
+export declare function normalizeSourceMap(map: string | RawSourceMap | undefined, opts?: Options): SourceMap | undefined;
+export type MergeMapResult = {
+    toString: () => string;
+    toMap: () => SourceMap;
+    toComment: () => string;
+};
+export declare function mergeMaps(mapList: SourceMap[]): MergeMapResult;
+export {};

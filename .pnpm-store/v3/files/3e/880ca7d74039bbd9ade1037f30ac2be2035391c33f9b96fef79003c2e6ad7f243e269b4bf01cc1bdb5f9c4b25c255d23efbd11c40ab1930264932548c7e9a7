@@ -1,0 +1,452 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { getModifyHtmlPartials } from "../plugins/analyze/getHtmlTemplate";
+import { transformHookParams, transformHookResult, transformHookRunner } from "./utils";
+function getHookRunners(context) {
+  var hooks = context.hooks;
+  return {
+    /**
+    * app tools hooks
+    */
+    beforeConfig: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.onBeforeConfig.call()
+        ];
+      });
+    }),
+    afterPrepare: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.onAfterPrepare.call()
+        ];
+      });
+    }),
+    deploy: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.deploy.call()
+        ];
+      });
+    }),
+    _internalRuntimePlugins: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks._internalRuntimePlugins.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    _internalServerPlugins: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks._internalServerPlugins.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    checkEntryPoint: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.checkEntryPoint.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    modifyEntrypoints: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.modifyEntrypoints.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    modifyFileSystemRoutes: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.modifyFileSystemRoutes.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    modifyServerRoutes: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.modifyServerRoutes.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    generateEntryCode: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.generateEntryCode.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforeGenerateRoutes: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onBeforeGenerateRoutes.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforePrintInstructions: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onBeforePrintInstructions.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    // garfish plugin hooks
+    appendEntryCode: function() {
+      var _ref = _async_to_generator(function(params) {
+        var result;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              return [
+                4,
+                hooks === null || hooks === void 0 ? void 0 : hooks.appendEntryCode.call(params)
+              ];
+            case 1:
+              result = _state.sent();
+              return [
+                2,
+                result
+              ];
+          }
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    /**
+    * common hooks
+    */
+    config: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.config.call()
+        ];
+      });
+    }),
+    resolvedConfig: function(params) {
+      return hooks.modifyResolvedConfig.call(params);
+    },
+    htmlPartials: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              return [
+                4,
+                hooks.modifyHtmlPartials.call({
+                  entrypoint: params.entrypoint,
+                  partials: getModifyHtmlPartials(params.partials)
+                })
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2,
+                {
+                  partials: params.partials
+                }
+              ];
+          }
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    commands: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.addCommand.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    watchFiles: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.addWatchFiles.call()
+        ];
+      });
+    }),
+    prepare: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.onPrepare.call()
+        ];
+      });
+    }),
+    fileChange: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onFileChanged.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforeCreateCompiler: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onBeforeCreateCompiler.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    afterCreateCompiler: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onAfterCreateCompiler.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforeBuild: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onBeforeBuild.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    afterBuild: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onAfterBuild.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforeDev: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.onBeforeDev.call()
+        ];
+      });
+    }),
+    afterDev: function() {
+      var _ref = _async_to_generator(function(params) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onAfterDev.call(params)
+          ];
+        });
+      });
+      return function(params) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforeDeploy: function() {
+      var _ref = _async_to_generator(function(options) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onBeforeDeploy.call(options)
+          ];
+        });
+      });
+      return function(options) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    afterDeploy: function() {
+      var _ref = _async_to_generator(function(options) {
+        return _ts_generator(this, function(_state) {
+          return [
+            2,
+            hooks.onAfterDeploy.call(options)
+          ];
+        });
+      });
+      return function(options) {
+        return _ref.apply(this, arguments);
+      };
+    }(),
+    beforeExit: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.onBeforeExit.call()
+        ];
+      });
+    }),
+    beforeRestart: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.onBeforeRestart.call()
+        ];
+      });
+    }),
+    /**
+    * @deprecated
+    */
+    registerDev: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.registerDev.call()
+        ];
+      });
+    }),
+    /**
+    * @deprecated
+    */
+    registerBuildPlatform: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.registerBuildPlatform.call()
+        ];
+      });
+    }),
+    /**
+    * @deprecated
+    */
+    addRuntimeExports: /* @__PURE__ */ _async_to_generator(function() {
+      return _ts_generator(this, function(_state) {
+        return [
+          2,
+          hooks.addRuntimeExports.call()
+        ];
+      });
+    })
+  };
+}
+function handleSetupResult(setupResult, api) {
+  if (!setupResult) {
+    return;
+  }
+  Object.keys(setupResult).forEach(function(key) {
+    var fn = setupResult[key];
+    if (typeof fn === "function") {
+      var newAPI = transformHookRunner(key);
+      if (api[newAPI]) {
+        api[newAPI](function() {
+          var _ref = _async_to_generator(function(params) {
+            var _tmp;
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  _tmp = [
+                    key
+                  ];
+                  return [
+                    4,
+                    fn(transformHookParams(key, params))
+                  ];
+                case 1:
+                  return [
+                    2,
+                    transformHookResult.apply(void 0, _tmp.concat([
+                      _state.sent()
+                    ]))
+                  ];
+              }
+            });
+          });
+          return function(params) {
+            return _ref.apply(this, arguments);
+          };
+        }());
+      }
+    }
+  });
+}
+export {
+  getHookRunners,
+  handleSetupResult
+};

@@ -1,0 +1,26 @@
+export var ECustomDataType;
+(function (ECustomDataType) {
+    ECustomDataType["ClientList"] = "ClientList";
+    ECustomDataType["SessionList"] = "SessionList";
+    ECustomDataType["CDP"] = "CDP";
+    ECustomDataType["D2RStopAtEntry"] = "D2RStopAtEntry";
+    ECustomDataType["R2DStopAtEntry"] = "R2DStopAtEntry";
+    ECustomDataType["D2RStopLepusAtEntry"] = "D2RStopLepusAtEntry";
+    ECustomDataType["R2DStopLepusAtEntry"] = "R2DStopLepusAtEntry";
+    ECustomDataType["OpenCard"] = "OpenCard";
+    ECustomDataType["CardGenerated"] = "CardGenerated";
+    ECustomDataType["UsbConnect"] = "UsbConnect";
+    ECustomDataType["UsbConnectAck"] = "UsbConnectAck";
+    ECustomDataType["HMR"] = "HMR";
+    ECustomDataType["RemoteCall"] = "RemoteCall";
+})(ECustomDataType || (ECustomDataType = {}));
+export function isTypedCustomData(payload, type) {
+    return payload && payload.type && payload.type === type;
+}
+export function createCustomData(type, data) {
+    return {
+        type,
+        data,
+    };
+}
+//# sourceMappingURL=custom.js.map

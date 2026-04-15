@@ -1,0 +1,32 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { logger, prettyInstructions } from "@modern-js/utils";
+var printInstructions = function() {
+  var _ref = _async_to_generator(function(hooks, appContext, config) {
+    var message, instructions;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          message = prettyInstructions(appContext, config);
+          return [
+            4,
+            hooks.onBeforePrintInstructions.call({
+              instructions: message
+            })
+          ];
+        case 1:
+          instructions = _state.sent().instructions;
+          logger.log(instructions);
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function printInstructions2(hooks, appContext, config) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  printInstructions
+};

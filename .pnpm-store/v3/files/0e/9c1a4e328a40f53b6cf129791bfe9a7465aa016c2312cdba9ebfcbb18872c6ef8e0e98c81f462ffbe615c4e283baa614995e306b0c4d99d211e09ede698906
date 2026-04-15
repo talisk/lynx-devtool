@@ -1,0 +1,167 @@
+import { createMemoryStorage } from "@modern-js/runtime-utils/storer";
+import { X_RENDER_CACHE } from "../../constants";
+import { createTransformStream, getPathname } from "../../utils";
+const ZERO_RENDER_LEVEL = /"renderLevel":0/;
+const NO_SSR_CACHE = /<meta\s+[^>]*name=["']no-ssr-cache["'][^>]*>/i;
+async function processCache({ request, key, requestHandler, requestHandlerOptions, ttl, container, cacheStatus }) {
+  const response = await requestHandler(request, requestHandlerOptions);
+  const { onError } = requestHandlerOptions;
+  const decoder = new TextDecoder();
+  if (response.body) {
+    const stream = createTransformStream();
+    const reader = response.body.getReader();
+    const writer = stream.writable.getWriter();
+    let html = "";
+    const push = () => reader.read().then(({ done, value }) => {
+      if (done) {
+        const match = ZERO_RENDER_LEVEL.test(html) || NO_SSR_CACHE.test(html);
+        if (match) {
+          writer.close();
+          return;
+        }
+        const current = Date.now();
+        const cache = {
+          val: html,
+          cursor: current
+        };
+        container.set(key, JSON.stringify(cache), {
+          ttl
+        }).catch(() => {
+          if (onError) {
+            onError(`[render-cache] set cache failed, key: ${key}, value: ${JSON.stringify(cache)}`);
+          } else {
+            console.error(`[render-cache] set cache failed, key: ${key}, value: ${JSON.stringify(cache)}`);
+          }
+        });
+        writer.close();
+        return;
+      }
+      const content = decoder.decode(value);
+      html += content;
+      writer.write(value);
+      push();
+    });
+    push();
+    cacheStatus && response.headers.set(X_RENDER_CACHE, cacheStatus);
+    return new Response(stream.readable, {
+      status: response.status,
+      headers: response.headers
+    });
+  }
+  return response;
+}
+const CACHE_NAMESPACE = "__ssr__cache";
+const storage = createMemoryStorage(CACHE_NAMESPACE);
+function computedKey(req, cacheControl) {
+  const pathname = getPathname(req);
+  const { customKey } = cacheControl;
+  const defaultKey = pathname.replace(/.+\/+$/, "");
+  if (customKey) {
+    if (typeof customKey === "string") {
+      return customKey;
+    } else {
+      return customKey(defaultKey);
+    }
+  } else {
+    return defaultKey;
+  }
+}
+function matchCacheControl(cacheOption, req) {
+  if (!cacheOption || !req) {
+    return void 0;
+  } else if (isCacheControl(cacheOption)) {
+    return cacheOption;
+  } else if (isCacheOptionProvider(cacheOption)) {
+    return cacheOption(req);
+  } else {
+    const url = req.url;
+    const options = Object.entries(cacheOption);
+    for (const [key, option] of options) {
+      if (key === "*" || new RegExp(key).test(url)) {
+        if (typeof option === "function") {
+          return option(req);
+        } else {
+          return option;
+        }
+      }
+    }
+    return void 0;
+  }
+  function isCacheOptionProvider(option) {
+    return typeof option === "function";
+  }
+  function isCacheControl(option) {
+    return typeof option === "object" && option !== null && "maxAge" in option;
+  }
+}
+async function getCacheResult(request, options) {
+  const { cacheControl, container = storage, requestHandler, requestHandlerOptions } = options;
+  const { onError } = requestHandlerOptions;
+  const key = computedKey(request, cacheControl);
+  let value;
+  try {
+    value = await container.get(key);
+  } catch (_) {
+    if (onError) {
+      onError(`[render-cache] get cache failed, key: ${key}`);
+    } else {
+      console.error(`[render-cache] get cache failed, key: ${key}`);
+    }
+    value = void 0;
+  }
+  const { maxAge, staleWhileRevalidate } = cacheControl;
+  const ttl = maxAge + staleWhileRevalidate;
+  if (value) {
+    const cache = JSON.parse(value);
+    const interval = Date.now() - cache.cursor;
+    if (interval <= maxAge) {
+      const cacheStatus = "hit";
+      return new Response(cache.val, {
+        headers: {
+          [X_RENDER_CACHE]: cacheStatus
+        }
+      });
+    } else if (interval <= staleWhileRevalidate + maxAge) {
+      processCache({
+        key,
+        request,
+        requestHandler,
+        requestHandlerOptions,
+        ttl,
+        container
+      }).then(async (response) => {
+        await response.text();
+      });
+      const cacheStatus = "stale";
+      return new Response(cache.val, {
+        headers: {
+          [X_RENDER_CACHE]: cacheStatus
+        }
+      });
+    } else {
+      return processCache({
+        key,
+        request,
+        requestHandler,
+        requestHandlerOptions,
+        ttl,
+        container,
+        cacheStatus: "expired"
+      });
+    }
+  } else {
+    return processCache({
+      key,
+      request,
+      requestHandler,
+      requestHandlerOptions,
+      ttl,
+      container,
+      cacheStatus: "miss"
+    });
+  }
+}
+export {
+  getCacheResult,
+  matchCacheControl
+};

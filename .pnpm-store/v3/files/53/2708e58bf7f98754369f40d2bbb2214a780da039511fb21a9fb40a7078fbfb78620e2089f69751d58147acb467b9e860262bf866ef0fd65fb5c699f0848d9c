@@ -1,0 +1,18 @@
+/// <reference types="node" />
+import type { ICompiler } from '../../types';
+export declare const asset: {
+    name: string;
+    apply(compiler: ICompiler): void;
+};
+/**
+ *
+ * @param this Compiler
+ * @param assetPath Absolute path of the asset
+ * @param rebaseFrom Absolute path of the file which use asset
+ * @param calledOnLoad called in load hooks
+ * @returns dataurl or path
+ */
+export declare function getAssetContents(this: ICompiler, assetPath: string, rebaseFrom: string, calledOnLoad?: boolean): Promise<{
+    contents: string | Buffer;
+    loader: "text" | "copy" | "jsx";
+}>;

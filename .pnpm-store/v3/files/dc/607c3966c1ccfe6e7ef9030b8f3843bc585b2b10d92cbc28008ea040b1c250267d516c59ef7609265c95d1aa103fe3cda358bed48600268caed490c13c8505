@@ -1,0 +1,32 @@
+import type { ExecaError } from '@modern-js/utils';
+import type { BuildType, Format, Target } from './types';
+export declare const padSpaceWith: (str: string, targetL: number, opts?: {
+    endStr?: string | undefined;
+    style?: ((s: string) => string) | undefined;
+}) => string;
+export declare class InternalBuildError extends Error {
+    buildType: BuildType;
+    target: Target;
+    format: Format;
+    constructor(e: Error, opts: {
+        buildType: BuildType;
+        format: Format;
+        target: Target;
+    });
+    toString(): string;
+    formatError(): string[];
+}
+export declare class InternalDTSError extends Error {
+    buildType: BuildType;
+    private e;
+    constructor(e: Error | ExecaError, opts: {
+        buildType: BuildType;
+    });
+    toString(): string;
+    formatError(): string[];
+}
+export declare class ModuleBuildError extends Error {
+    constructor(e: InternalBuildError | InternalDTSError);
+}
+export declare const isInternalError: (e: unknown) => e is InternalBuildError | InternalDTSError;
+export declare const isExecaError: (e: any) => e is ExecaError<string>;

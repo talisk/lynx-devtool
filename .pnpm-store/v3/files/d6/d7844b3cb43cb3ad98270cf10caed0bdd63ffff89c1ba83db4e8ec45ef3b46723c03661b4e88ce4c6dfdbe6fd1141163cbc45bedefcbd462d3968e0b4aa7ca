@@ -1,0 +1,217 @@
+export const ids = [
+    '863'
+];
+export const modules = {
+    "./src/progress/ProgressPlugin.ts": function(__unused_webpack_module, __webpack_exports__, __webpack_require__) {
+        __webpack_require__.d(__webpack_exports__, {
+            ProgressPlugin: ()=>ProgressPlugin
+        });
+        var core_ = __webpack_require__("@rsbuild/core"), external_picocolors_ = __webpack_require__("picocolors"), external_webpack_ = __webpack_require__("webpack"), external_node_console_ = __webpack_require__("node:console"), cli_truncate = __webpack_require__("../../../node_modules/.pnpm/cli-truncate@2.1.0/node_modules/cli-truncate/index.js"), cli_truncate_default = __webpack_require__.n(cli_truncate), build = __webpack_require__("../../../node_modules/.pnpm/patch-console@1.0.0/node_modules/patch-console/build/index.js"), build_default = __webpack_require__.n(build);
+        let clamp = (x, min, max)=>Math.min(max, Math.max(min, x)), defaultOption = {
+            total: 100,
+            current: 0,
+            color: 'green',
+            bgColor: 'gray',
+            char: '━',
+            width: 25,
+            buildIcon: '◯',
+            errorIcon: '✖',
+            errorInfo: 'compile failed',
+            message: '',
+            done: !1,
+            spaceWidth: 1,
+            messageWidth: 25,
+            messageColor: 'gray',
+            id: '',
+            maxIdLen: 16,
+            hasErrors: !1
+        }, padding = (id, maxLen)=>{
+            let left = Math.floor((maxLen - id.length) / 2), right = maxLen - left - id.length;
+            return ' '.repeat(left) + id + ' '.repeat(right);
+        }, renderBar = (option)=>{
+            let mergedOptions = {
+                ...defaultOption,
+                ...option
+            }, { total, done, buildIcon, errorIcon, errorInfo, width, current, color, bgColor, char, message, messageWidth, spaceWidth, messageColor, maxIdLen, hasErrors } = mergedOptions, space = ' '.repeat(spaceWidth), percent = clamp(Math.floor(current / total * 100), 0, 100), barColor = external_picocolors_.default[color], backgroundColor = external_picocolors_.default[bgColor], doneColor = hasErrors ? external_picocolors_.default.red : barColor, idColor = done ? doneColor : barColor, id = mergedOptions.id ? idColor(padding(mergedOptions.id, maxIdLen)) : '', { columns: terminalWidth = 70 } = process.stdout;
+            if (done) {
+                if (hasErrors) {
+                    let message = external_picocolors_.default.bold(doneColor(errorInfo));
+                    return terminalWidth >= 40 ? [
+                        idColor(errorIcon),
+                        id,
+                        doneColor(`${space}${message}`)
+                    ].join('') : [
+                        id,
+                        doneColor(`${message}`)
+                    ].join('');
+                }
+                return '';
+            }
+            let msgStr = external_picocolors_.default[messageColor](cli_truncate_default()(message, messageWidth, {
+                position: 'start'
+            })), left = clamp(Math.floor(percent * width / 100), 0, width), right = clamp(width - left, 0, width), barStr = `${barColor(char.repeat(left))}${backgroundColor(char.repeat(right))}`, percentStr = `${percent.toString().padStart(3)}%`;
+            return terminalWidth >= 70 ? [
+                idColor(buildIcon),
+                id,
+                space,
+                barStr,
+                space,
+                percentStr,
+                space,
+                msgStr
+            ].join('') : terminalWidth >= 40 ? [
+                idColor(buildIcon),
+                id,
+                space,
+                barStr,
+                space,
+                percentStr
+            ].join('') : [
+                idColor(buildIcon),
+                id,
+                space,
+                percentStr
+            ].join('');
+        };
+        var ansi_escapes = __webpack_require__("../../../node_modules/.pnpm/ansi-escapes@4.3.2/node_modules/ansi-escapes/index.js"), ansi_escapes_default = __webpack_require__.n(ansi_escapes);
+        let create = (stream)=>{
+            let previousLineCount = 0, previousOutput = '', render = (str)=>{
+                let output = `${str}\n`;
+                if (output !== previousOutput) previousOutput = output, stream.write(ansi_escapes_default().eraseLines(previousLineCount) + output), previousLineCount = output.split('\n').length;
+            };
+            return render.clear = ()=>{
+                stream.write(ansi_escapes_default().eraseLines(previousLineCount)), previousOutput = '', previousLineCount = 0;
+            }, render.done = ()=>{
+                previousOutput = '', previousLineCount = 0;
+            }, render;
+        };
+        function _define_property(obj, key, value) {
+            return key in obj ? Object.defineProperty(obj, key, {
+                value: value,
+                enumerable: !0,
+                configurable: !0,
+                writable: !0
+            }) : obj[key] = value, obj;
+        }
+        let colorList = [
+            'green',
+            'cyan',
+            'yellow',
+            'blue',
+            'magenta'
+        ], getProgressColor = (index)=>colorList[index % colorList.length], bus = new class Bus {
+            update(state) {
+                let index = this.states.findIndex((i)=>i.id === state.id);
+                if (-1 === index) {
+                    this.states.push(state);
+                    return;
+                }
+                this.states[index] = state;
+            }
+            writeToStd(type = 'stdout', data) {
+                this.log.clear(), data && ('stdout' === type ? process.stdout.write(data) : 'stderr' === type && process.stderr.write(data)), this.log(this.prevOutput);
+            }
+            render() {
+                let maxIdLen = Math.max(...this.states.map((i)=>{
+                    var _i_id;
+                    return (null === (_i_id = i.id) || void 0 === _i_id ? void 0 : _i_id.length) ?? 0;
+                })) + 2, { columns = 70 } = process.stdout;
+                this.prevOutput = this.states.map((i, k)=>{
+                    let bar = renderBar({
+                        maxIdLen,
+                        color: i.color ?? getProgressColor(k),
+                        ...i
+                    });
+                    return bar ? cli_truncate_default()(bar, columns, {
+                        position: 'end'
+                    }) : null;
+                }).filter((item)=>null !== item).join('\n'), this.writeToStd();
+            }
+            destroy() {
+                !this.destroyed && this.restore(), this.destroyed = !0;
+            }
+            clear() {
+                this.log.clear(), this.log.done();
+            }
+            constructor(){
+                _define_property(this, "states", []), _define_property(this, "log", void 0), _define_property(this, "restore", void 0), _define_property(this, "prevOutput", void 0), _define_property(this, "destroyed", !1), this.prevOutput = '', this.log = create(process.stdout), console.Console = external_node_console_.Console, this.restore = build_default()((type, data)=>{
+                    this.writeToStd(type, data);
+                });
+            }
+        }(), createFriendlyPercentage = ()=>{
+            let prevPercentage = 0;
+            return (percentage)=>{
+                if (0 === percentage || 1 === percentage) return prevPercentage = 0, percentage;
+                if (percentage <= prevPercentage) {
+                    let step = 0;
+                    return prevPercentage < 0.3 ? step = 0.001 : prevPercentage < 0.6 ? step = 0.002 : prevPercentage < 0.8 ? step = 0.004 : prevPercentage < 0.99 && (step = 0.002), prevPercentage += step;
+                }
+                return prevPercentage = percentage, percentage;
+            };
+        };
+        function ProgressPlugin_define_property(obj, key, value) {
+            return key in obj ? Object.defineProperty(obj, key, {
+                value: value,
+                enumerable: !0,
+                configurable: !0,
+                writable: !0
+            }) : obj[key] = value, obj;
+        }
+        class ProgressPlugin extends external_webpack_.default.ProgressPlugin {
+            apply(compiler) {
+                super.apply(compiler);
+                let startTime = null;
+                compiler.hooks.compile.tap(this.name, ()=>{
+                    this.compileTime = null, startTime = process.hrtime();
+                }), compiler.hooks.done.tap(this.name, (stat)=>{
+                    if (startTime) {
+                        this.hasCompileErrors = stat.hasErrors();
+                        let hrtime = process.hrtime(startTime), seconds = hrtime[0] + hrtime[1] / 1e9;
+                        if (this.compileTime = this.prettyTime(seconds), startTime = null, !this.hasCompileErrors) {
+                            let suffix = this.id ? external_picocolors_.default.gray(` (${this.id})`) : '';
+                            core_.logger.ready(`Built in ${this.compileTime} ${suffix}`);
+                        }
+                    }
+                });
+            }
+            constructor(options){
+                let prevPercentage, { id = 'Rsbuild' } = options;
+                let nonTTYLogger = (prevPercentage = 0, {
+                    log: ({ id, done, current, hasErrors, compileTime })=>{
+                        let suffix = external_picocolors_.default.gray(`(${id})`);
+                        if (done) {
+                            if (100 === prevPercentage) return;
+                            prevPercentage = 100, hasErrors ? core_.logger.error(`Built failed in ${compileTime} ${suffix}`) : core_.logger.ready(`Built in ${compileTime} ${suffix}`);
+                        } else current - prevPercentage > 10 && (prevPercentage = current, core_.logger.info(`Build progress: ${current.toFixed(0)}% ${suffix}`));
+                    }
+                }), friendlyPercentage = createFriendlyPercentage();
+                super({
+                    activeModules: !1,
+                    entries: !0,
+                    modules: !0,
+                    modulesCount: 5000,
+                    profile: !1,
+                    dependencies: !0,
+                    dependenciesCount: 10000,
+                    percentBy: null,
+                    handler: (originalPercentage, message)=>{
+                        let percentage = friendlyPercentage(originalPercentage), done = 1 === percentage;
+                        process.stdout.isTTY ? (bus.update({
+                            id,
+                            current: 100 * percentage,
+                            message,
+                            done,
+                            hasErrors: this.hasCompileErrors
+                        }), bus.render()) : nonTTYLogger.log({
+                            id,
+                            done,
+                            current: 100 * percentage,
+                            hasErrors: this.hasCompileErrors,
+                            compileTime: this.compileTime
+                        });
+                    }
+                }), ProgressPlugin_define_property(this, "name", 'ProgressPlugin'), ProgressPlugin_define_property(this, "id", void 0), ProgressPlugin_define_property(this, "hasCompileErrors", !1), ProgressPlugin_define_property(this, "compileTime", null), ProgressPlugin_define_property(this, "prettyTime", void 0), this.id = id, this.prettyTime = options.prettyTime;
+            }
+        }
+    }
+};

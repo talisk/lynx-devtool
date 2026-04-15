@@ -1,0 +1,196 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __reExport = (target, mod, secondTarget) => (__copyProps(target, mod, "default"), secondTarget && __copyProps(secondTarget, mod, "default"));
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var src_exports = {};
+__export(src_exports, {
+  appTools: () => appTools,
+  default: () => src_default,
+  defineConfig: () => import_defineConfig.defineConfig,
+  defineLegacyConfig: () => import_defineConfig.defineLegacyConfig,
+  dev: () => import_dev.dev,
+  initAppContext: () => import_initAppContext.initAppContext,
+  mergeConfig: () => import_core.mergeConfig
+});
+module.exports = __toCommonJS(src_exports);
+var import_language_detector = require("@modern-js/plugin-i18n/language-detector");
+var import_plugin_v2 = require("@modern-js/plugin-v2");
+var import_uni_builder = require("@modern-js/uni-builder");
+var import_utils = require("@modern-js/utils");
+var import_commands = require("./commands");
+var import_compat = require("./compat");
+var import_constants = require("./constants");
+var import_locale = require("./locale");
+var import_analyze = __toESM(require("./plugins/analyze"));
+var import_deploy = __toESM(require("./plugins/deploy"));
+var import_initialize = __toESM(require("./plugins/initialize"));
+var import_serverBuild = __toESM(require("./plugins/serverBuild"));
+var import_generateWatchFiles = require("./utils/generateWatchFiles");
+var import_initAppContext = require("./utils/initAppContext");
+var import_restart = require("./utils/restart");
+__reExport(src_exports, require("./defineConfig"), module.exports);
+var import_defineConfig = require("./defineConfig");
+var import_core = require("@modern-js/core");
+var import_dev = require("./commands/dev");
+__reExport(src_exports, require("./types"), module.exports);
+const appTools = (options = {
+  // default webpack to be compatible with original projects
+  bundler: "webpack"
+}) => ({
+  name: "@modern-js/app-tools",
+  usePlugins: [
+    (0, import_compat.compatPlugin)(),
+    (0, import_initialize.default)({
+      bundler: (options === null || options === void 0 ? void 0 : options.bundler) && [
+        "rspack",
+        "experimental-rspack"
+      ].includes(options.bundler) ? "rspack" : "webpack"
+    }),
+    (0, import_analyze.default)({
+      bundler: (options === null || options === void 0 ? void 0 : options.bundler) && [
+        "rspack",
+        "experimental-rspack"
+      ].includes(options.bundler) ? "rspack" : "webpack"
+    }),
+    (0, import_serverBuild.default)(),
+    (0, import_deploy.default)()
+  ],
+  post: [
+    "@modern-js/plugin-initialize",
+    "@modern-js/plugin-analyze",
+    "@modern-js/plugin-ssr",
+    "@modern-js/plugin-document",
+    "@modern-js/plugin-state",
+    "@modern-js/plugin-router",
+    "@modern-js/plugin-router-v5",
+    "@modern-js/plugin-polyfill"
+  ],
+  registryHooks: {
+    onBeforeConfig: (0, import_plugin_v2.createAsyncHook)(),
+    onAfterPrepare: (0, import_plugin_v2.createAsyncHook)(),
+    deploy: (0, import_plugin_v2.createAsyncHook)(),
+    _internalRuntimePlugins: (0, import_plugin_v2.createAsyncHook)(),
+    _internalServerPlugins: (0, import_plugin_v2.createAsyncHook)(),
+    checkEntryPoint: (0, import_plugin_v2.createAsyncHook)(),
+    modifyEntrypoints: (0, import_plugin_v2.createAsyncHook)(),
+    modifyFileSystemRoutes: (0, import_plugin_v2.createAsyncHook)(),
+    modifyServerRoutes: (0, import_plugin_v2.createAsyncHook)(),
+    generateEntryCode: (0, import_plugin_v2.createAsyncHook)(),
+    onBeforeGenerateRoutes: (0, import_plugin_v2.createAsyncHook)(),
+    onBeforePrintInstructions: (0, import_plugin_v2.createAsyncHook)(),
+    registerDev: (0, import_plugin_v2.createCollectAsyncHook)(),
+    registerBuildPlatform: (0, import_plugin_v2.createCollectAsyncHook)(),
+    addRuntimeExports: (0, import_plugin_v2.createAsyncHook)()
+  },
+  setup: (api) => {
+    var _userConfig_output;
+    const context = api.getAppContext();
+    const userConfig = api.getConfig();
+    const locale = (0, import_language_detector.getLocaleLanguage)();
+    import_locale.i18n.changeLanguage({
+      locale
+    });
+    api.updateAppContext((0, import_initAppContext.initAppContext)({
+      appDirectory: context.appDirectory,
+      options: {},
+      serverConfigFile: import_constants.DEFAULT_SERVER_CONFIG_FILE,
+      runtimeConfigFile: import_constants.DEFAULT_RUNTIME_CONFIG_FILE,
+      tempDir: (_userConfig_output = userConfig.output) === null || _userConfig_output === void 0 ? void 0 : _userConfig_output.tempDir
+    }));
+    api.addCommand(async ({ program }) => {
+      await (0, import_commands.devCommand)(program, api);
+      await (0, import_commands.buildCommand)(program, api);
+      (0, import_commands.serverCommand)(program, api);
+      (0, import_commands.deployCommand)(program, api);
+      (0, import_commands.newCommand)(program, locale);
+      (0, import_commands.inspectCommand)(program, api);
+      (0, import_commands.upgradeCommand)(program);
+      (0, import_utils.deprecatedCommands)(program);
+    });
+    api.onPrepare(async () => {
+      const command = (0, import_utils.getCommand)();
+      if (command === "deploy") {
+        const isSkipBuild = [
+          "-s",
+          "--skip-build"
+        ].some((tag) => {
+          return (0, import_utils.getArgv)().includes(tag);
+        });
+        if (isSkipBuild) {
+          return;
+        }
+      }
+      if (command === "dev" || command === "start" || command === "build" || command === "deploy") {
+        const resolvedConfig = api.getNormalizedConfig();
+        if (resolvedConfig.output.cleanDistPath) {
+          const appContext = api.getAppContext();
+          await (0, import_utils.emptyDir)(appContext.distDirectory);
+        }
+      }
+    });
+    api.addWatchFiles(async () => {
+      const appContext = api.getAppContext();
+      const config = api.getNormalizedConfig();
+      const files = await (0, import_generateWatchFiles.generateWatchFiles)(appContext, config.source.configDir);
+      const watchFiles = (0, import_uni_builder.castArray)(config.dev.watchFiles);
+      watchFiles.forEach(({ type, paths }) => {
+        if (type === "reload-server") {
+          files.push(...Array.isArray(paths) ? paths : [
+            paths
+          ]);
+        }
+      });
+      return files;
+    });
+    api.onFileChanged(async (e) => {
+      const { filename, eventType, isPrivate } = e;
+      if (!isPrivate && (eventType === "change" || eventType === "unlink")) {
+        const { closeServer } = await import("./utils/createServer.js");
+        await closeServer();
+        await (0, import_restart.restart)(api.getHooks(), filename);
+      }
+    });
+    api.onBeforeRestart(() => {
+      (0, import_utils.cleanRequireCache)([
+        require.resolve("./plugins/analyze")
+      ]);
+    });
+  }
+});
+var src_default = appTools;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  appTools,
+  defineConfig,
+  defineLegacyConfig,
+  dev,
+  initAppContext,
+  mergeConfig,
+  ...require("./defineConfig"),
+  ...require("./types")
+});

@@ -1,0 +1,268 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name2 in all)
+    __defProp(target, name2, { get: all[name2], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var redirect_exports = {};
+__export(redirect_exports, {
+  redirect: () => redirect
+});
+module.exports = __toCommonJS(redirect_exports);
+var import_path = require("path");
+var import_napi = require("@ast-grep/napi");
+var import_utils = require("@modern-js/utils");
+var import_tsconfig_paths = require("@modern-js/utils/tsconfig-paths");
+var import_magic_string = __toESM(require("magic-string"));
+var import_file = require("../../constants/file");
+var import_utils2 = require("../../utils");
+var import_asset = require("./asset");
+var import_postcssTransformer = require("./style/postcssTransformer");
+var PathType;
+(function(PathType2) {
+  PathType2[PathType2["Absolute"] = 0] = "Absolute";
+  PathType2[PathType2["Relative"] = 1] = "Relative";
+  PathType2[PathType2["ModuleId"] = 2] = "ModuleId";
+})(PathType || (PathType = {}));
+function getTypeOfPath(path, compiler) {
+  const isSupportModuleIdAlias = Object.keys(compiler.config.resolve.alias).length > 0;
+  if ((0, import_path.isAbsolute)(path)) {
+    return 0;
+  }
+  if (!path.startsWith(".") && isSupportModuleIdAlias) {
+    return 2;
+  }
+  return 1;
+}
+async function redirectImport(compiler, code, modules, aliasRecord, filePath, outputDir, jsExtension, isModule, matchPath) {
+  const str = new import_magic_string.default(code);
+  const extensions = [
+    ".ts",
+    ".tsx",
+    ".js",
+    ".jsx"
+  ];
+  await Promise.all(modules.map(async (module2) => {
+    if (!module2.name) {
+      return;
+    }
+    const { start, end } = module2;
+    let { name: name2 } = module2;
+    const ext = (0, import_path.extname)(name2);
+    const { redirect: redirect2 } = compiler.config;
+    const { alias, style } = redirect2;
+    if (alias) {
+      let absoluteImportPath = matchPath ? matchPath(name2, void 0, void 0, extensions) : void 0;
+      for (const alias2 of Object.keys(aliasRecord)) {
+        if (name2.startsWith(`${alias2}/`)) {
+          absoluteImportPath = (0, import_path.join)(aliasRecord[alias2], name2.slice(alias2.length + 1));
+          break;
+        }
+        if (name2 === alias2) {
+          absoluteImportPath = aliasRecord[alias2];
+          break;
+        }
+      }
+      if (absoluteImportPath) {
+        if (getTypeOfPath(absoluteImportPath, compiler) === 2) {
+          str.overwrite(start, end, absoluteImportPath);
+          name2 = absoluteImportPath;
+        } else {
+          const relativePath = (0, import_path.relative)((0, import_path.dirname)(filePath), absoluteImportPath);
+          const relativeImportPath = (0, import_utils2.normalizeSlashes)(relativePath.startsWith("..") ? relativePath : `./${relativePath}`);
+          str.overwrite(start, end, relativeImportPath);
+          name2 = relativeImportPath;
+        }
+      }
+    }
+    if (redirect2.autoExtension) {
+      if (ext === "" && name2.startsWith(".") && (jsExtension !== ".js" || isModule)) {
+        str.overwrite(start, end, `${name2}${jsExtension}`);
+        return;
+      }
+      if ((0, import_utils2.isTsExt)(name2)) {
+        str.overwrite(start, end, name2.replace(/\.(m|c)?tsx?$/, jsExtension));
+        return;
+      }
+    }
+    if (style) {
+      const { originalFilePath, query } = (0, import_utils2.resolvePathAndQuery)(name2);
+      if (query.css_virtual) {
+        const replacedName = (0, import_path.basename)(originalFilePath, (0, import_path.extname)(originalFilePath)).replace(".", "_");
+        const base = `${replacedName}.css`;
+        const key = query.hash;
+        const contents = compiler.virtualModule.get(key);
+        const fileName = (0, import_path.join)(outputDir, base);
+        compiler.emitAsset(fileName, {
+          type: "asset",
+          contents,
+          fileName,
+          originalFileName: name2
+        });
+        const relativeImportPath = (0, import_utils2.normalizeSlashes)(`./${base}`);
+        str.overwrite(start, end, relativeImportPath);
+      }
+      if (!name2.startsWith(".")) {
+        return;
+      }
+      if (ext === ".less" || ext === ".sass" || ext === ".scss" || ext === ".css") {
+        var _compiler_config_style_autoModules;
+        if ((0, import_postcssTransformer.isCssModule)(name2, (_compiler_config_style_autoModules = compiler.config.style.autoModules) !== null && _compiler_config_style_autoModules !== void 0 ? _compiler_config_style_autoModules : true)) {
+          str.overwrite(start, end, `${name2.slice(0, -ext.length)}`);
+        } else {
+          str.overwrite(start, end, `${name2.slice(0, -ext.length)}.css`);
+        }
+        return;
+      }
+    }
+    if (redirect2.asset) {
+      if (import_file.assetExt.filter((ext2) => name2.endsWith(ext2)).length) {
+        const absPath = (0, import_path.resolve)((0, import_path.dirname)(filePath), name2);
+        const { contents: relativeImportPath, loader } = (
+          // HACK: set callOnLoad true to invoke svgr
+          await import_asset.getAssetContents.apply(compiler, [
+            absPath,
+            outputDir,
+            true
+          ])
+        );
+        if (loader === "jsx") {
+          const ext2 = (0, import_path.extname)(name2);
+          const outputName = `${name2.slice(0, -ext2.length)}.js`;
+          str.overwrite(start, end, outputName);
+        } else {
+          str.overwrite(start, end, `${relativeImportPath}`);
+        }
+      }
+    }
+  }));
+  return str;
+}
+const name = "redirect";
+const redirect = {
+  name,
+  apply(compiler) {
+    let matchPath;
+    if (import_utils.fs.existsSync(compiler.config.tsconfig)) {
+      const result = (0, import_tsconfig_paths.loadConfig)(compiler.config.tsconfig);
+      if (result.resultType === "success") {
+        const { absoluteBaseUrl, paths, mainFields, addMatchAll } = result;
+        matchPath = (0, import_tsconfig_paths.createMatchPath)(absoluteBaseUrl, paths, mainFields, addMatchAll);
+      }
+    }
+    compiler.hooks.transform.tapPromise({
+      name
+    }, async (args) => {
+      if (!(0, import_utils2.isJsExt)(args.path) && !(0, import_utils2.isJsLoader)(args.loader)) {
+        return args;
+      }
+      const { code, path: id } = args;
+      const { format, sourceDir, outDir, autoExtension } = compiler.config;
+      const { root } = compiler.context;
+      if (!code || format === "iife" || format === "umd") {
+        return args;
+      }
+      const alias = Object.keys(compiler.config.resolve.alias).length > 0 ? compiler.config.resolve.alias : compiler.config.alias;
+      const absoluteAlias = Object.entries(alias).reduce((result, [name2, target]) => {
+        if (getTypeOfPath(target, compiler) === 1) {
+          result[name2] = (0, import_path.resolve)(compiler.context.root, target);
+        } else {
+          result[name2] = target;
+        }
+        return result;
+      }, {});
+      try {
+        const sgNode = import_napi.js.parse(code).root();
+        const matcher = {
+          rule: {
+            kind: "string_fragment",
+            any: [
+              {
+                inside: {
+                  stopBy: "end",
+                  kind: "import_statement",
+                  field: "source"
+                }
+              },
+              {
+                inside: {
+                  stopBy: "end",
+                  kind: "export_statement",
+                  field: "source"
+                }
+              },
+              {
+                inside: {
+                  kind: "string",
+                  inside: {
+                    kind: "arguments",
+                    inside: {
+                      kind: "call_expression",
+                      has: {
+                        field: "function",
+                        regex: "^(import|require)$"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        };
+        const matchModule = sgNode.findAll(matcher).map((matchNode) => {
+          return {
+            name: matchNode.text(),
+            start: matchNode.range().start.index,
+            end: matchNode.range().end.index
+          };
+        });
+        if (matchModule.length > 0) {
+          const { jsExtension, isModule } = (0, import_utils2.getDefaultOutExtension)({
+            format,
+            root,
+            autoExtension
+          });
+          const outputPath = (0, import_path.resolve)(outDir, (0, import_path.relative)(sourceDir, id));
+          const str = await redirectImport(compiler, code, matchModule, absoluteAlias, id, (0, import_path.dirname)(outputPath), jsExtension, isModule, matchPath);
+          return {
+            ...args,
+            code: str.toString(),
+            map: str.generateMap({
+              hires: true,
+              includeContent: true
+            })
+          };
+        }
+      } catch (e) {
+        import_utils.logger.error("[parse error]", e);
+      }
+      return args;
+    });
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  redirect
+});

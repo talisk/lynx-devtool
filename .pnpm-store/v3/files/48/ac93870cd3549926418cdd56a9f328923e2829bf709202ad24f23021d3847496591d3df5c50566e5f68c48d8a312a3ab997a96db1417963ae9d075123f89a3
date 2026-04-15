@@ -1,0 +1,15 @@
+import { type Rspack } from '@rsbuild/core';
+import type { PluginAssetsRetryOptions, RuntimeRetryOptions } from './types.js';
+declare class AsyncChunkRetryPlugin implements Rspack.RspackPluginInstance {
+    readonly name = "ASYNC_CHUNK_RETRY_PLUGIN";
+    readonly options: PluginAssetsRetryOptions & {
+        isRspack: boolean;
+    };
+    readonly runtimeOptions: RuntimeRetryOptions;
+    constructor(options: PluginAssetsRetryOptions & {
+        isRspack: boolean;
+    });
+    getRawRuntimeRetryCode(): string;
+    apply(compiler: Rspack.Compiler): void;
+}
+export { AsyncChunkRetryPlugin };

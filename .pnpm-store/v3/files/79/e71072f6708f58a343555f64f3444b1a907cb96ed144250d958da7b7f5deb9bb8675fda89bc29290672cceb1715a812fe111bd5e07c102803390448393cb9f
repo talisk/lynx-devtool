@@ -1,0 +1,81 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var cli_exports = {};
+__export(cli_exports, {
+  moduleTools: () => moduleTools
+});
+module.exports = __toCommonJS(cli_exports);
+var import_utils = require("@modern-js/utils");
+var import_command = require("./command");
+var import_hooks = require("./hooks");
+var import_plugins = require("./plugins");
+var import_onExit = require("./utils/onExit");
+const moduleTools = () => ({
+  name: "@modern-js/module-tools",
+  registerHook: import_hooks.registerHook,
+  usePlugins: (0, import_plugins.getPlugins)(process.argv.slice(2)[0]),
+  setup
+});
+const setup = async (api) => {
+  const appContext = api.useAppContext();
+  api.setAppContext({
+    ...appContext,
+    toolsType: "module-tools"
+  });
+  const prepare = async () => {
+    const local = await Promise.resolve().then(() => __toESM(require("./locale")));
+    const { getLocaleLanguage } = await Promise.resolve().then(() => __toESM(require("@modern-js/plugin-i18n/language-detector")));
+    const locale = getLocaleLanguage();
+    local.i18n.changeLanguage({
+      locale
+    });
+    const appContext2 = api.useAppContext();
+    import_utils.dotenv.config();
+    await import_utils.fs.emptydir(appContext2.internalDirectory);
+    const hookRunners = api.useHookRunners();
+    await hookRunners.addRuntimeExports();
+    await (0, import_onExit.addExitListener)(async () => {
+      await hookRunners.afterDev();
+    });
+  };
+  return {
+    prepare,
+    async commands({ program }) {
+      await (0, import_command.buildCommand)(program, api);
+      await (0, import_command.devCommand)(program, api);
+      await (0, import_command.newCommand)(program);
+      await (0, import_command.upgradeCommand)(program);
+      (0, import_utils.deprecatedCommands)(program);
+    }
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  moduleTools
+});

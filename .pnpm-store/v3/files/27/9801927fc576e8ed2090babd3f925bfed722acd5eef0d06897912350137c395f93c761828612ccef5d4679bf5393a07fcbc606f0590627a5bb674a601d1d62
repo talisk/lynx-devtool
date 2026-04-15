@@ -1,0 +1,64 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var clear_exports = {};
+__export(clear_exports, {
+  clearBuildConfigPaths: () => clearBuildConfigPaths
+});
+module.exports = __toCommonJS(clear_exports);
+var import_path = require("path");
+var import_utils = require("@modern-js/utils");
+var import_debug = require("../debug");
+var import_locale = require("../locale");
+var import_utils2 = require("../utils");
+const clearBuildConfigPaths = async (configs, projectAbsRootPath) => {
+  for (const config of configs) {
+    if (projectAbsRootPath === config.outDir) {
+      import_utils.logger.warn(import_utils.chalk.bgYellowBright(import_locale.i18n.t(import_locale.localeKeys.warns.clearRootPath)));
+    } else {
+      await import_utils.fs.remove(config.outDir);
+    }
+    if (config.buildType === "bundleless" && config.dts) {
+      const { compilerOptions } = await (0, import_utils2.getProjectTsconfig)(config.tsconfig);
+      const { composite, incremental, rootDir, outDir, tsBuildInfoFile = ".tsbuildinfo" } = compilerOptions || {};
+      if (!composite && !incremental) {
+        return;
+      }
+      const tsconfigDir = (0, import_path.dirname)(config.tsconfig);
+      let tsbuildInfoFilePath = `${(0, import_path.basename)(config.tsconfig, ".json")}${tsBuildInfoFile}`;
+      if (outDir) {
+        if (rootDir) {
+          tsbuildInfoFilePath = (0, import_path.join)(outDir, (0, import_path.relative)((0, import_path.resolve)(tsconfigDir, rootDir), tsconfigDir), tsbuildInfoFilePath);
+        } else {
+          tsbuildInfoFilePath = (0, import_path.join)(outDir, tsbuildInfoFilePath);
+        }
+      }
+      const tsbuildInfoFileAbsPath = (0, import_path.resolve)(tsconfigDir, tsbuildInfoFilePath);
+      (0, import_debug.debug)("clear tsbuildinfo");
+      if (await import_utils.fs.pathExists(tsbuildInfoFileAbsPath)) {
+        await import_utils.fs.remove(tsbuildInfoFileAbsPath);
+      } else {
+        (0, import_debug.debug)(`${tsbuildInfoFileAbsPath} doesn't exist`);
+      }
+    }
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  clearBuildConfigPaths
+});

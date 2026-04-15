@@ -1,0 +1,89 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var write_file_exports = {};
+__export(write_file_exports, {
+  writeFile: () => writeFile
+});
+module.exports = __toCommonJS(write_file_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_convert_source_map = __toESM(require("convert-source-map"));
+const SOURCE_MAPPING_URL = "sourceMappingURL";
+let preOutputChunk = null;
+function appendSourceMapURLLink(options) {
+  return `${options.code}
+//# ${SOURCE_MAPPING_URL}=${options.filename}.map`;
+}
+function appendSourceMapInline(options) {
+  return `${options.code}
+//# ${SOURCE_MAPPING_URL}=data:application/json;charset=utf-8;base64,${options.map}`;
+}
+function chunkHasChanged(key, chunk) {
+  if (preOutputChunk) {
+    const preChunk = preOutputChunk.get(key);
+    if (preChunk && preChunk.contents === chunk.contents) {
+      return false;
+    }
+  }
+  return true;
+}
+const writeFile = async (compiler) => {
+  for (const [key, value] of compiler.outputChunk.entries()) {
+    if (!chunkHasChanged(key, value)) {
+      continue;
+    }
+    const absPath = import_path.default.resolve(compiler.config.outDir, key);
+    await import_utils.fs.ensureDir(import_path.default.dirname(absPath));
+    if (value.type === "chunk" && value.map) {
+      if (compiler.config.sourceMap === false || compiler.config.sourceMap === "external") {
+        await import_utils.fs.writeFile(absPath, value.contents);
+      } else if (compiler.config.sourceMap === true) {
+        await import_utils.fs.writeFile(absPath, appendSourceMapURLLink({
+          code: value.contents,
+          filename: import_path.default.basename(absPath)
+        }));
+      } else if (compiler.config.sourceMap === "inline") {
+        await import_utils.fs.writeFile(absPath, appendSourceMapInline({
+          code: value.contents,
+          map: import_convert_source_map.default.fromObject(value.map).toBase64()
+        }));
+      }
+      if (compiler.config.sourceMap === true || compiler.config.sourceMap === "external") {
+        await import_utils.fs.writeFile(`${absPath}.map`, JSON.stringify(value.map));
+      }
+    } else {
+      await import_utils.fs.writeFile(absPath, value.contents);
+    }
+  }
+  preOutputChunk = compiler.outputChunk;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  writeFile
+});

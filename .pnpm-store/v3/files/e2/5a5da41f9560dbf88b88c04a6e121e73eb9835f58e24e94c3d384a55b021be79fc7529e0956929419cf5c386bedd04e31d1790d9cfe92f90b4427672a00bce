@@ -1,0 +1,25 @@
+{
+  "name": "@modern-js/swc-plugins-linux-x64-musl",
+  "version": "0.6.11",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "x64"
+  ],
+  "main": "swc-plugins.linux-x64-musl.node",
+  "files": [
+    "swc-plugins.linux-x64-musl.node"
+  ],
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.12"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org",
+    "access": "public"
+  }
+}

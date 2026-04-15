@@ -1,0 +1,9 @@
+import type { ModuleContext } from '../types';
+import type { BaseBuildConfig, BuildCommandOptions, ModuleLegacyUserConfig, PartialBaseBuildConfig } from '../types';
+export declare const mergeDefaultBaseConfig: (pConfig: PartialBaseBuildConfig, options: {
+    context: ModuleContext;
+    buildCmdOptions: BuildCommandOptions;
+}) => Promise<BaseBuildConfig>;
+export declare const isLegacyUserConfig: (config: {
+    legacy?: boolean;
+}) => config is ModuleLegacyUserConfig;

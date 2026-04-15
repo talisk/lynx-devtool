@@ -1,0 +1,259 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { getLocaleLanguage } from "@modern-js/plugin-i18n/language-detector";
+import { createAsyncHook, createCollectAsyncHook } from "@modern-js/plugin-v2";
+import { castArray } from "@modern-js/uni-builder";
+import { cleanRequireCache, deprecatedCommands, emptyDir, getArgv, getCommand } from "@modern-js/utils";
+import { buildCommand, deployCommand, devCommand, inspectCommand, newCommand, serverCommand, upgradeCommand } from "./commands";
+import { compatPlugin } from "./compat";
+import { DEFAULT_RUNTIME_CONFIG_FILE, DEFAULT_SERVER_CONFIG_FILE } from "./constants";
+import { i18n } from "./locale";
+import analyzePlugin from "./plugins/analyze";
+import deployPlugin from "./plugins/deploy";
+import initializePlugin from "./plugins/initialize";
+import serverBuildPlugin from "./plugins/serverBuild";
+import { generateWatchFiles } from "./utils/generateWatchFiles";
+import { initAppContext } from "./utils/initAppContext";
+import { restart } from "./utils/restart";
+export * from "./defineConfig";
+var appTools = function() {
+  var options = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {
+    // default webpack to be compatible with original projects
+    bundler: "webpack"
+  };
+  return {
+    name: "@modern-js/app-tools",
+    usePlugins: [
+      compatPlugin(),
+      initializePlugin({
+        bundler: (options === null || options === void 0 ? void 0 : options.bundler) && [
+          "rspack",
+          "experimental-rspack"
+        ].includes(options.bundler) ? "rspack" : "webpack"
+      }),
+      analyzePlugin({
+        bundler: (options === null || options === void 0 ? void 0 : options.bundler) && [
+          "rspack",
+          "experimental-rspack"
+        ].includes(options.bundler) ? "rspack" : "webpack"
+      }),
+      serverBuildPlugin(),
+      deployPlugin()
+    ],
+    post: [
+      "@modern-js/plugin-initialize",
+      "@modern-js/plugin-analyze",
+      "@modern-js/plugin-ssr",
+      "@modern-js/plugin-document",
+      "@modern-js/plugin-state",
+      "@modern-js/plugin-router",
+      "@modern-js/plugin-router-v5",
+      "@modern-js/plugin-polyfill"
+    ],
+    registryHooks: {
+      onBeforeConfig: createAsyncHook(),
+      onAfterPrepare: createAsyncHook(),
+      deploy: createAsyncHook(),
+      _internalRuntimePlugins: createAsyncHook(),
+      _internalServerPlugins: createAsyncHook(),
+      checkEntryPoint: createAsyncHook(),
+      modifyEntrypoints: createAsyncHook(),
+      modifyFileSystemRoutes: createAsyncHook(),
+      modifyServerRoutes: createAsyncHook(),
+      generateEntryCode: createAsyncHook(),
+      onBeforeGenerateRoutes: createAsyncHook(),
+      onBeforePrintInstructions: createAsyncHook(),
+      registerDev: createCollectAsyncHook(),
+      registerBuildPlatform: createCollectAsyncHook(),
+      addRuntimeExports: createAsyncHook()
+    },
+    setup: function(api) {
+      var _userConfig_output;
+      var context = api.getAppContext();
+      var userConfig = api.getConfig();
+      var locale = getLocaleLanguage();
+      i18n.changeLanguage({
+        locale
+      });
+      api.updateAppContext(initAppContext({
+        appDirectory: context.appDirectory,
+        options: {},
+        serverConfigFile: DEFAULT_SERVER_CONFIG_FILE,
+        runtimeConfigFile: DEFAULT_RUNTIME_CONFIG_FILE,
+        tempDir: (_userConfig_output = userConfig.output) === null || _userConfig_output === void 0 ? void 0 : _userConfig_output.tempDir
+      }));
+      api.addCommand(function() {
+        var _ref = _async_to_generator(function(param) {
+          var program;
+          return _ts_generator(this, function(_state) {
+            switch (_state.label) {
+              case 0:
+                program = param.program;
+                return [
+                  4,
+                  devCommand(program, api)
+                ];
+              case 1:
+                _state.sent();
+                return [
+                  4,
+                  buildCommand(program, api)
+                ];
+              case 2:
+                _state.sent();
+                serverCommand(program, api);
+                deployCommand(program, api);
+                newCommand(program, locale);
+                inspectCommand(program, api);
+                upgradeCommand(program);
+                deprecatedCommands(program);
+                return [
+                  2
+                ];
+            }
+          });
+        });
+        return function(_) {
+          return _ref.apply(this, arguments);
+        };
+      }());
+      api.onPrepare(/* @__PURE__ */ _async_to_generator(function() {
+        var command, isSkipBuild, resolvedConfig, appContext;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              command = getCommand();
+              if (command === "deploy") {
+                isSkipBuild = [
+                  "-s",
+                  "--skip-build"
+                ].some(function(tag) {
+                  return getArgv().includes(tag);
+                });
+                if (isSkipBuild) {
+                  return [
+                    2
+                  ];
+                }
+              }
+              if (!(command === "dev" || command === "start" || command === "build" || command === "deploy"))
+                return [
+                  3,
+                  2
+                ];
+              resolvedConfig = api.getNormalizedConfig();
+              if (!resolvedConfig.output.cleanDistPath)
+                return [
+                  3,
+                  2
+                ];
+              appContext = api.getAppContext();
+              return [
+                4,
+                emptyDir(appContext.distDirectory)
+              ];
+            case 1:
+              _state.sent();
+              _state.label = 2;
+            case 2:
+              return [
+                2
+              ];
+          }
+        });
+      }));
+      api.addWatchFiles(/* @__PURE__ */ _async_to_generator(function() {
+        var appContext, config, files, watchFiles;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              appContext = api.getAppContext();
+              config = api.getNormalizedConfig();
+              return [
+                4,
+                generateWatchFiles(appContext, config.source.configDir)
+              ];
+            case 1:
+              files = _state.sent();
+              watchFiles = castArray(config.dev.watchFiles);
+              watchFiles.forEach(function(param) {
+                var type = param.type, paths = param.paths;
+                if (type === "reload-server") {
+                  var _files;
+                  (_files = files).push.apply(_files, _to_consumable_array(Array.isArray(paths) ? paths : [
+                    paths
+                  ]));
+                }
+              });
+              return [
+                2,
+                files
+              ];
+          }
+        });
+      }));
+      api.onFileChanged(function() {
+        var _ref = _async_to_generator(function(e) {
+          var filename, eventType, isPrivate, closeServer;
+          return _ts_generator(this, function(_state) {
+            switch (_state.label) {
+              case 0:
+                filename = e.filename, eventType = e.eventType, isPrivate = e.isPrivate;
+                if (!(!isPrivate && (eventType === "change" || eventType === "unlink")))
+                  return [
+                    3,
+                    4
+                  ];
+                return [
+                  4,
+                  import("./utils/createServer.js")
+                ];
+              case 1:
+                closeServer = _state.sent().closeServer;
+                return [
+                  4,
+                  closeServer()
+                ];
+              case 2:
+                _state.sent();
+                return [
+                  4,
+                  restart(api.getHooks(), filename)
+                ];
+              case 3:
+                _state.sent();
+                _state.label = 4;
+              case 4:
+                return [
+                  2
+                ];
+            }
+          });
+        });
+        return function(e) {
+          return _ref.apply(this, arguments);
+        };
+      }());
+      api.onBeforeRestart(function() {
+        cleanRequireCache([
+          require.resolve("./plugins/analyze")
+        ]);
+      });
+    }
+  };
+};
+import { defineConfig, defineLegacyConfig } from "./defineConfig";
+import { mergeConfig } from "@modern-js/core";
+import { dev } from "./commands/dev";
+export * from "./types";
+var src_default = appTools;
+export {
+  appTools,
+  src_default as default,
+  defineConfig,
+  defineLegacyConfig,
+  dev,
+  initAppContext,
+  mergeConfig
+};

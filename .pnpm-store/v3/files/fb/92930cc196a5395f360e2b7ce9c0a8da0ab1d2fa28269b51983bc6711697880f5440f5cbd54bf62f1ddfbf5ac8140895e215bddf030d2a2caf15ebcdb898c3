@@ -1,0 +1,11 @@
+import { logger, prettyInstructions } from "@modern-js/utils";
+const printInstructions = async (hooks, appContext, config) => {
+  const message = prettyInstructions(appContext, config);
+  const { instructions } = await hooks.onBeforePrintInstructions.call({
+    instructions: message
+  });
+  logger.log(instructions);
+};
+export {
+  printInstructions
+};

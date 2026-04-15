@@ -1,0 +1,85 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var createDevServer_exports = {};
+__export(createDevServer_exports, {
+  createDevServer: () => createDevServer
+});
+module.exports = __toCommonJS(createDevServer_exports);
+var import_node_path = __toESM(require("node:path"));
+var import_server_core = require("@modern-js/server-core");
+var import_node = require("@modern-js/server-core/node");
+var import_dev = require("./dev");
+var import_helpers = require("./helpers");
+async function createDevServer(options, applyPlugins) {
+  var _config_output_distPath;
+  const { config, pwd, serverConfigFile, serverConfigPath, builder } = options;
+  const dev = (0, import_helpers.getDevOptions)(options);
+  const distDir = import_node_path.default.resolve(pwd, ((_config_output_distPath = config.output.distPath) === null || _config_output_distPath === void 0 ? void 0 : _config_output_distPath.root) || "dist");
+  const serverConfig = await (0, import_node.loadServerRuntimeConfig)(distDir, serverConfigFile, serverConfigPath);
+  const prodServerOptions = {
+    ...options,
+    pwd: distDir
+  };
+  if (serverConfig) {
+    prodServerOptions.serverConfig = serverConfig;
+  }
+  const server = (0, import_server_core.createServerBase)(prodServerOptions);
+  const devHttpsOption = typeof dev === "object" && dev.https;
+  let nodeServer;
+  if (devHttpsOption) {
+    const { genHttpsOptions } = await Promise.resolve().then(() => __toESM(require("./dev-tools/https")));
+    const httpsOptions = await genHttpsOptions(devHttpsOption, pwd);
+    nodeServer = await (0, import_node.createNodeServer)(server.handle.bind(server), httpsOptions);
+  } else {
+    nodeServer = await (0, import_node.createNodeServer)(server.handle.bind(server));
+  }
+  const builderDevServer = await (builder === null || builder === void 0 ? void 0 : builder.createDevServer({
+    runCompile: options.runCompile,
+    compiler: options.compilier
+  }));
+  server.addPlugins([
+    (0, import_dev.devPlugin)({
+      ...options,
+      builderDevServer
+    })
+  ]);
+  await applyPlugins(server, prodServerOptions, nodeServer);
+  await server.init();
+  const afterListen = async () => {
+    await (builderDevServer === null || builderDevServer === void 0 ? void 0 : builderDevServer.afterListen());
+  };
+  return {
+    server: nodeServer,
+    afterListen
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createDevServer
+});

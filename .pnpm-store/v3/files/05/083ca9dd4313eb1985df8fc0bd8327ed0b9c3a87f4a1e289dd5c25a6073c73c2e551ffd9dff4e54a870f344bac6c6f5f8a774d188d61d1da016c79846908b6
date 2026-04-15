@@ -1,0 +1,24 @@
+import { program } from "@modern-js/utils";
+const setProgramVersion = (version = "unknown") => {
+  const name = process.argv[1];
+  program.name(name).usage("<command> [options]").version(version);
+};
+function initCommandsMap() {
+  if (!program.hasOwnProperty("commandsMap")) {
+    Object.defineProperty(program, "commandsMap", {
+      get() {
+        const map = /* @__PURE__ */ new Map();
+        for (const command of program.commands) {
+          map.set(command._name, command);
+        }
+        return map;
+      },
+      configurable: false
+    });
+  }
+}
+export {
+  initCommandsMap,
+  program,
+  setProgramVersion
+};

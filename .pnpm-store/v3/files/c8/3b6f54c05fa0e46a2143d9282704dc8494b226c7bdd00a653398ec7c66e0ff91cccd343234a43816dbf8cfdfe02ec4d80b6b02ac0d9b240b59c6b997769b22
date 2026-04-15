@@ -1,0 +1,98 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var ssrData_exports = {};
+__export(ssrData_exports, {
+  SSRDataCollector: () => SSRDataCollector
+});
+module.exports = __toCommonJS(ssrData_exports);
+var import_class_private_field_get = require("@swc/helpers/_/_class_private_field_get");
+var import_class_private_field_init = require("@swc/helpers/_/_class_private_field_init");
+var import_class_private_field_set = require("@swc/helpers/_/_class_private_field_set");
+var import_class_private_method_get = require("@swc/helpers/_/_class_private_method_get");
+var import_class_private_method_init = require("@swc/helpers/_/_class_private_method_init");
+var import_node = require("@modern-js/runtime-utils/node");
+var import_constants = require("../../constants");
+var import_utils = require("../utils");
+var _options = /* @__PURE__ */ new WeakMap(), _getSSRData = /* @__PURE__ */ new WeakSet(), _getSSRDataScripts = /* @__PURE__ */ new WeakSet();
+class SSRDataCollector {
+  effect() {
+    const { routerContext, chunkSet } = (0, import_class_private_field_get._)(this, _options);
+    const ssrData = (0, import_class_private_method_get._)(this, _getSSRData, getSSRData).call(this);
+    const routerData = routerContext ? {
+      loaderData: routerContext.loaderData,
+      errors: (0, import_utils.serializeErrors)(routerContext.errors)
+    } : void 0;
+    const ssrDataScripts = (0, import_class_private_method_get._)(this, _getSSRDataScripts, getSSRDataScripts).call(this, ssrData, routerData);
+    chunkSet.ssrScripts = ssrDataScripts;
+  }
+  constructor(options) {
+    (0, import_class_private_method_init._)(this, _getSSRData);
+    (0, import_class_private_method_init._)(this, _getSSRDataScripts);
+    (0, import_class_private_field_init._)(this, _options, {
+      writable: true,
+      value: void 0
+    });
+    (0, import_class_private_field_set._)(this, _options, options);
+  }
+}
+function getSSRData() {
+  const { prefetchData, chunkSet, ssrConfig, ssrContext } = (0, import_class_private_field_get._)(this, _options);
+  const { reporter, request } = ssrContext;
+  const headers = typeof ssrConfig === "object" && ssrConfig.unsafeHeaders ? Object.fromEntries(Object.entries(request.headers).filter(([key, _]) => {
+    var _ssrConfig_unsafeHeaders_map, _ssrConfig_unsafeHeaders;
+    return (_ssrConfig_unsafeHeaders = ssrConfig.unsafeHeaders) === null || _ssrConfig_unsafeHeaders === void 0 ? void 0 : (_ssrConfig_unsafeHeaders_map = _ssrConfig_unsafeHeaders.map((header) => header.toLowerCase())) === null || _ssrConfig_unsafeHeaders_map === void 0 ? void 0 : _ssrConfig_unsafeHeaders_map.includes(key.toLowerCase());
+  })) : void 0;
+  return {
+    data: prefetchData,
+    context: {
+      request: {
+        params: request.params,
+        query: request.query,
+        pathname: request.pathname,
+        host: request.host,
+        url: request.url,
+        headers
+      },
+      reporter: {
+        sessionId: reporter === null || reporter === void 0 ? void 0 : reporter.sessionId
+      }
+    },
+    mode: "string",
+    renderLevel: chunkSet.renderLevel
+  };
+}
+function getSSRDataScripts(ssrData, routerData) {
+  const { nonce, useJsonScript = false } = (0, import_class_private_field_get._)(this, _options);
+  const serializeSSRData = (0, import_node.serializeJson)(ssrData);
+  const attrsStr = (0, import_utils.attributesToString)({
+    nonce
+  });
+  let ssrDataScripts = useJsonScript ? `<script type="application/json" id="${import_constants.SSR_DATA_JSON_ID}">${serializeSSRData}</script>` : `<script${attrsStr}>window._SSR_DATA = ${serializeSSRData}</script>`;
+  if (routerData) {
+    const serializedRouterData = (0, import_node.serializeJson)(routerData);
+    ssrDataScripts += useJsonScript ? `
+<script type="application/json" id="${import_constants.ROUTER_DATA_JSON_ID}">${serializedRouterData}</script>` : `
+<script${attrsStr}>window._ROUTER_DATA = ${serializedRouterData}</script>`;
+  }
+  return ssrDataScripts;
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  SSRDataCollector
+});

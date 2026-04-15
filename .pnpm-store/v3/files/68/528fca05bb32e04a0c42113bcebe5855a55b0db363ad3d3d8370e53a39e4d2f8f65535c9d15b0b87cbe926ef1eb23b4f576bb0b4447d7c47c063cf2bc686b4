@@ -1,0 +1,107 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var node_exports = {};
+__export(node_exports, {
+  createNodePreset: () => createNodePreset
+});
+module.exports = __toCommonJS(node_exports);
+var import_node_path = __toESM(require("node:path"));
+var import_utils = require("@modern-js/utils");
+var import_dependencies = require("../dependencies");
+var import_utils2 = require("../utils");
+const createNodePreset = (appContext, config) => {
+  const { appDirectory, distDirectory, serverPlugins, moduleType } = appContext;
+  const isEsmProject = moduleType === "module";
+  const plugins = serverPlugins.map((plugin) => [
+    plugin.name,
+    plugin.options
+  ]);
+  const outputDirectory = import_node_path.default.join(appDirectory, ".output");
+  const staticDirectory = import_node_path.default.join(outputDirectory, "static");
+  const entryFilePath = import_node_path.default.join(outputDirectory, "index.js");
+  return {
+    async prepare() {
+      await import_utils.fs.remove(outputDirectory);
+    },
+    async writeOutput() {
+      await import_utils.fs.copy(distDirectory, outputDirectory);
+    },
+    async genEntry() {
+      var _config_bff;
+      const serverConfig = {
+        server: {
+          port: 8080
+        },
+        bff: {
+          prefix: config === null || config === void 0 ? void 0 : (_config_bff = config.bff) === null || _config_bff === void 0 ? void 0 : _config_bff.prefix
+        },
+        output: {
+          distPath: {
+            root: "."
+          }
+        }
+      };
+      const pluginImportCode = (0, import_utils2.genPluginImportsCode)(plugins || []);
+      const dynamicProdOptions = {
+        config: serverConfig,
+        serverConfigFile: import_utils.DEFAULT_SERVER_CONFIG
+      };
+      const pluginsCode = (0, import_utils2.getPluginsCode)(plugins);
+      let entryCode = (await import_utils.fs.readFile(import_node_path.default.join(__dirname, "./node-entry.js"))).toString();
+      const serverAppContext = (0, import_utils2.serverAppContenxtTemplate)(appContext);
+      entryCode = entryCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", `"${import_utils.ROUTE_SPEC_FILE}"`).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+      if (isEsmProject) {
+        const cjsEntryFilePath = import_node_path.default.join(outputDirectory, "index.cjs");
+        await import_utils.fs.writeFile(cjsEntryFilePath, entryCode);
+        await import_utils.fs.writeFile(entryFilePath, `import('./index.cjs');`);
+      } else {
+        await import_utils.fs.writeFile(entryFilePath, entryCode);
+      }
+    },
+    async end() {
+      console.log("Static directory:", import_utils.chalk.blue(import_node_path.default.relative(appDirectory, staticDirectory)));
+      console.log(`You can preview this build by`, import_utils.chalk.blue(`node .output/index`));
+      const filter = (filePath) => {
+        return !filePath.startsWith(staticDirectory);
+      };
+      await (0, import_dependencies.handleDependencies)({
+        appDir: appDirectory,
+        serverRootDir: outputDirectory,
+        includeEntries: [
+          require.resolve("@modern-js/prod-server")
+        ],
+        entryFilter: filter
+      });
+    }
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createNodePreset
+});

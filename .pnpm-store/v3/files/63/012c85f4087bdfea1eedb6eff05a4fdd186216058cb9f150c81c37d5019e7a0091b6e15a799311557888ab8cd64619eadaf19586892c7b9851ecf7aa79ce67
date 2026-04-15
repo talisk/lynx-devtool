@@ -1,0 +1,10 @@
+import { createLoadedConfig } from "@modern-js/plugin-v2/cli";
+async function isAutoLoadPlugins(appDirectory, configFile = "modern.config.ts", packageJsonConfig = "ModernConfig") {
+  var _loaded_config;
+  const loaded = await createLoadedConfig(appDirectory, configFile, packageJsonConfig);
+  const autoLoadPlugins = (_loaded_config = loaded.config) === null || _loaded_config === void 0 ? void 0 : _loaded_config.autoLoadPlugins;
+  return autoLoadPlugins || false;
+}
+export {
+  isAutoLoadPlugins
+};

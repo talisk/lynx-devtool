@@ -1,0 +1,2 @@
+import type { ICompiler } from '../../types';
+export declare const initWatcher: (compiler: ICompiler) => void;

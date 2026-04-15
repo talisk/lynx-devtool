@@ -1,0 +1,59 @@
+import * as __WEBPACK_EXTERNAL_MODULE_node_module__ from "node:module";
+import * as __WEBPACK_EXTERNAL_MODULE_reduce_configs__ from "reduce-configs";
+const src_require = (0, __WEBPACK_EXTERNAL_MODULE_node_module__.createRequire)(import.meta.url);
+function isServerTarget(target) {
+    return Array.isArray(target) ? target.includes('node') : 'node' === target;
+}
+const getDefaultStyledComponentsConfig = (isProd, ssr)=>({
+        ssr,
+        // "pure" is used to improve dead code elimination in production.
+        // we don't need to enable it in development because it will slow down the build process.
+        pure: isProd,
+        displayName: true,
+        transpileTemplateLiterals: true
+    });
+const PLUGIN_STYLED_COMPONENTS_NAME = 'rsbuild:styled-components';
+const pluginStyledComponents = (pluginOptions = {})=>({
+        name: PLUGIN_STYLED_COMPONENTS_NAME,
+        setup (api) {
+            if ('webpack' === api.context.bundlerType) return;
+            const getMergedOptions = (useSSR, config)=>{
+                const isProd = 'production' === config.mode;
+                return (0, __WEBPACK_EXTERNAL_MODULE_reduce_configs__.reduceConfigs)({
+                    initial: getDefaultStyledComponentsConfig(isProd, useSSR),
+                    config: pluginOptions
+                });
+            };
+            api.modifyEnvironmentConfig((userConfig, { mergeEnvironmentConfig })=>{
+                var _userConfig_output;
+                const rsbuildConfig = api.getRsbuildConfig();
+                const targets = rsbuildConfig.environments ? Object.values(rsbuildConfig.environments).map((e)=>{
+                    var _e_output, _userConfig_output;
+                    return (null === (_e_output = e.output) || void 0 === _e_output ? void 0 : _e_output.target) || (null === (_userConfig_output = userConfig.output) || void 0 === _userConfig_output ? void 0 : _userConfig_output.target) || 'web';
+                }) : [
+                    (null === (_userConfig_output = userConfig.output) || void 0 === _userConfig_output ? void 0 : _userConfig_output.target) || 'web'
+                ];
+                const useSSR = isServerTarget(targets);
+                const mergedOptions = getMergedOptions(useSSR, userConfig);
+                if (!mergedOptions) return userConfig;
+                const extraConfig = {
+                    tools: {
+                        swc: {
+                            jsc: {
+                                experimental: {
+                                    plugins: [
+                                        [
+                                            src_require.resolve('@swc/plugin-styled-components'),
+                                            mergedOptions
+                                        ]
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                };
+                return mergeEnvironmentConfig(extraConfig, userConfig);
+            });
+        }
+    });
+export { PLUGIN_STYLED_COMPONENTS_NAME, pluginStyledComponents };

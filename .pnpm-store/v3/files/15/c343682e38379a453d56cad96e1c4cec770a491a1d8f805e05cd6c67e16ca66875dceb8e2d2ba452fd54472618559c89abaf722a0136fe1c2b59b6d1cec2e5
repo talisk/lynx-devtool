@@ -1,0 +1,334 @@
+"use strict";
+var __webpack_modules__ = {
+    "@babel/core": function(module1) {
+        module1.exports = require("@babel/core");
+    }
+};
+/************************************************************************/ // The module cache
+var __webpack_module_cache__ = {};
+// The require function
+function __webpack_require__(moduleId) {
+    // Check if module is in cache
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (void 0 !== cachedModule) return cachedModule.exports;
+    // Create a new module (and put it into the cache)
+    var module1 = __webpack_module_cache__[moduleId] = {
+        exports: {}
+    };
+    // Execute the module function
+    __webpack_modules__[moduleId](module1, module1.exports, __webpack_require__);
+    // Return the exports of the module
+    return module1.exports;
+}
+/************************************************************************/ // webpack/runtime/compat_get_default_export
+(()=>{
+    // getDefaultExport function for compatibility with non-ESM modules
+    __webpack_require__.n = function(module1) {
+        var getter = module1 && module1.__esModule ? function() {
+            return module1['default'];
+        } : function() {
+            return module1;
+        };
+        __webpack_require__.d(getter, {
+            a: getter
+        });
+        return getter;
+    };
+})();
+// webpack/runtime/create_fake_namespace_object
+(()=>{
+    var getProto = Object.getPrototypeOf ? function(obj) {
+        return Object.getPrototypeOf(obj);
+    } : function(obj) {
+        return obj.__proto__;
+    };
+    var leafPrototypes;
+    // create a fake namespace object
+    // mode & 1: value is a module id, require it
+    // mode & 2: merge all properties of value into the ns
+    // mode & 4: return value when already ns object
+    // mode & 16: return value when it's Promise-like
+    // mode & 8|1: behave like require
+    __webpack_require__.t = function(value, mode) {
+        if (1 & mode) value = this(value);
+        if (8 & mode) return value;
+        if ('object' == typeof value && value) {
+            if (4 & mode && value.__esModule) return value;
+            if (16 & mode && 'function' == typeof value.then) return value;
+        }
+        var ns = Object.create(null);
+        __webpack_require__.r(ns);
+        var def = {};
+        leafPrototypes = leafPrototypes || [
+            null,
+            getProto({}),
+            getProto([]),
+            getProto(getProto)
+        ];
+        for(var current = 2 & mode && value; 'object' == typeof current && !~leafPrototypes.indexOf(current); current = getProto(current))Object.getOwnPropertyNames(current).forEach(function(key) {
+            def[key] = function() {
+                return value[key];
+            };
+        });
+        def['default'] = function() {
+            return value;
+        };
+        __webpack_require__.d(ns, def);
+        return ns;
+    };
+})();
+// webpack/runtime/define_property_getters
+(()=>{
+    __webpack_require__.d = function(exports1, definition) {
+        for(var key in definition)if (__webpack_require__.o(definition, key) && !__webpack_require__.o(exports1, key)) Object.defineProperty(exports1, key, {
+            enumerable: true,
+            get: definition[key]
+        });
+    };
+})();
+// webpack/runtime/has_own_property
+(()=>{
+    __webpack_require__.o = function(obj, prop) {
+        return Object.prototype.hasOwnProperty.call(obj, prop);
+    };
+})();
+// webpack/runtime/make_namespace_object
+(()=>{
+    // define __esModule on exports
+    __webpack_require__.r = function(exports1) {
+        if ('undefined' != typeof Symbol && Symbol.toStringTag) Object.defineProperty(exports1, Symbol.toStringTag, {
+            value: 'Module'
+        });
+        Object.defineProperty(exports1, '__esModule', {
+            value: true
+        });
+    };
+})();
+/************************************************************************/ var __webpack_exports__ = {};
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+    pluginBabel: ()=>/* reexport */ pluginBabel,
+    getBabelUtils: ()=>/* reexport */ getBabelUtils,
+    modifyBabelLoaderOptions: ()=>/* reexport */ modifyBabelLoaderOptions,
+    PLUGIN_BABEL_NAME: ()=>/* reexport */ PLUGIN_BABEL_NAME,
+    getDefaultBabelOptions: ()=>/* reexport */ getDefaultBabelOptions
+});
+const external_node_fs_namespaceObject = require("node:fs");
+var external_node_fs_default = /*#__PURE__*/ __webpack_require__.n(external_node_fs_namespaceObject);
+const external_node_module_namespaceObject = require("node:module");
+const external_node_path_namespaceObject = require("node:path");
+var external_node_path_default = /*#__PURE__*/ __webpack_require__.n(external_node_path_namespaceObject);
+const external_node_url_namespaceObject = require("node:url");
+const external_deepmerge_namespaceObject = require("deepmerge");
+var external_deepmerge_default = /*#__PURE__*/ __webpack_require__.n(external_deepmerge_namespaceObject);
+const external_reduce_configs_namespaceObject = require("reduce-configs");
+const external_upath_namespaceObject = require("upath");
+var external_upath_default = /*#__PURE__*/ __webpack_require__.n(external_upath_namespaceObject);
+const BABEL_JS_RULE = 'babel-js';
+const castArray = (arr)=>{
+    if (void 0 === arr) return [];
+    return Array.isArray(arr) ? arr : [
+        arr
+    ];
+};
+const normalizeToPosixPath = (p)=>external_upath_default().normalizeSafe((0, external_node_path_namespaceObject.normalize)(p || '')).replace(/^([a-zA-Z]+):/, (_, m)=>`/${m.toLowerCase()}`);
+// compatible with Windows path
+const formatPath = (originPath)=>{
+    if ((0, external_node_path_namespaceObject.isAbsolute)(originPath)) return originPath.split(external_node_path_namespaceObject.sep).join('/');
+    return originPath;
+};
+const getPluginItemName = (item)=>{
+    if ('string' == typeof item) return formatPath(item);
+    if (Array.isArray(item) && 'string' == typeof item[0]) return formatPath(item[0]);
+    return null;
+};
+const addPlugins = (plugins, config)=>{
+    if (config.plugins) config.plugins.push(...plugins);
+    else config.plugins = plugins;
+};
+const addPresets = (presets, config)=>{
+    if (config.presets) config.presets.push(...presets);
+    else config.presets = presets;
+};
+const removePlugins = (plugins, config)=>{
+    if (!config.plugins) return;
+    const removeList = castArray(plugins);
+    config.plugins = config.plugins.filter((item)=>{
+        const name = getPluginItemName(item);
+        if (name) return !removeList.find((removeItem)=>name.includes(removeItem));
+        return true;
+    });
+};
+const removePresets = (presets, config)=>{
+    if (!config.presets) return;
+    const removeList = castArray(presets);
+    config.presets = config.presets.filter((item)=>{
+        const name = getPluginItemName(item);
+        if (name) return !removeList.find((removeItem)=>name.includes(removeItem));
+        return true;
+    });
+};
+const modifyPresetOptions = (presetName, options, presets = [])=>{
+    presets.forEach((preset, index)=>{
+        // 1. ['@babel/preset-env', ...]
+        if (Array.isArray(preset)) {
+            if ('string' == typeof preset[0] && normalizeToPosixPath(preset[0]).includes(presetName)) preset[1] = {
+                ...preset[1] || {},
+                ...options
+            };
+        } else if ('string' == typeof preset && normalizeToPosixPath(preset).includes(presetName)) // 2. '@babel/preset-env'
+        presets[index] = [
+            preset,
+            options
+        ];
+    });
+};
+const getBabelUtils = (config)=>{
+    const noop = ()=>{};
+    return {
+        addPlugins: (plugins)=>addPlugins(plugins, config),
+        addPresets: (presets)=>addPresets(presets, config),
+        removePlugins: (plugins)=>removePlugins(plugins, config),
+        removePresets: (presets)=>removePresets(presets, config),
+        // `addIncludes` and `addExcludes` are noop functions by default,
+        // It can be overridden by `extraBabelUtils`.
+        addIncludes: noop,
+        addExcludes: noop,
+        // Compat `presetEnvOptions` and `presetReactOptions` in Modern.js
+        modifyPresetEnvOptions: (options)=>modifyPresetOptions('@babel/preset-env', options, config.presets || []),
+        modifyPresetReactOptions: (options)=>modifyPresetOptions('@babel/preset-react', options, config.presets || [])
+    };
+};
+const applyUserBabelConfig = (defaultOptions, userBabelConfig, extraBabelUtils)=>{
+    if (userBabelConfig) {
+        const babelUtils = {
+            ...getBabelUtils(defaultOptions),
+            ...extraBabelUtils
+        };
+        return (0, external_reduce_configs_namespaceObject.reduceConfigsWithContext)({
+            initial: defaultOptions,
+            config: userBabelConfig,
+            ctx: babelUtils
+        });
+    }
+    return defaultOptions;
+};
+const modifyBabelLoaderOptions = ({ chain, CHAIN_ID, modifier })=>{
+    const ruleIds = [
+        CHAIN_ID.RULE.JS,
+        CHAIN_ID.RULE.JS_DATA_URI,
+        BABEL_JS_RULE
+    ];
+    for (const ruleId of ruleIds)if (chain.module.rules.has(ruleId)) {
+        const rule = chain.module.rule(ruleId);
+        if (rule.uses.has(CHAIN_ID.USE.BABEL)) rule.use(CHAIN_ID.USE.BABEL).tap(modifier);
+    }
+};
+const plugin_dirname = external_node_path_default().dirname((0, external_node_url_namespaceObject.fileURLToPath)(/*#__PURE__*/ function() {
+    return 'undefined' == typeof document ? new (module.require('url'.replace('', ''))).URL('file:' + __filename).href : document.currentScript && document.currentScript.src || new URL('main.js', document.baseURI).href;
+}()));
+const plugin_require = (0, external_node_module_namespaceObject.createRequire)(/*#__PURE__*/ function() {
+    return 'undefined' == typeof document ? new (module.require('url'.replace('', ''))).URL('file:' + __filename).href : document.currentScript && document.currentScript.src || new URL('main.js', document.baseURI).href;
+}());
+const PLUGIN_BABEL_NAME = 'rsbuild:babel';
+const SCRIPT_REGEX = /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/;
+/**
+ * The `@babel/preset-typescript` default options.
+ */ const DEFAULT_BABEL_PRESET_TYPESCRIPT_OPTIONS = {
+    allowNamespaces: true,
+    allExtensions: true,
+    allowDeclareFields: true,
+    // aligns Babel's behavior with TypeScript's default behavior.
+    // https://babeljs.io/docs/en/babel-preset-typescript#optimizeconstenums
+    optimizeConstEnums: true,
+    isTSX: true
+};
+function getCacheDirectory(context, cacheDirectory) {
+    if (cacheDirectory) return (0, external_node_path_namespaceObject.isAbsolute)(cacheDirectory) ? cacheDirectory : (0, external_node_path_namespaceObject.join)(context.rootPath, cacheDirectory);
+    return (0, external_node_path_namespaceObject.join)(context.cachePath);
+}
+async function getCacheIdentifier(options) {
+    let identifier = `${process.env.NODE_ENV}${JSON.stringify(options)}`;
+    const { version: coreVersion } = await Promise.resolve().then(__webpack_require__.t.bind(__webpack_require__, "@babel/core", 23));
+    const rawPkgJson = await external_node_fs_default().promises.readFile((0, external_node_path_namespaceObject.join)(plugin_dirname, '../compiled/babel-loader/package.json'), 'utf-8');
+    const loaderVersion = JSON.parse(rawPkgJson).version ?? '';
+    identifier += `@babel/core@${coreVersion}`;
+    identifier += `babel-loader@${loaderVersion}`;
+    return identifier;
+}
+const getDefaultBabelOptions = (config, context)=>{
+    const isLegacyDecorators = 'legacy' === config.source.decorators.version;
+    const options = {
+        babelrc: false,
+        configFile: false,
+        compact: 'production' === config.mode,
+        plugins: [
+            [
+                plugin_require.resolve('@babel/plugin-proposal-decorators'),
+                config.source.decorators
+            ],
+            // If you are using @babel/preset-env and legacy decorators, you must ensure the class elements transform is enabled regardless of your targets, because Babel only supports compiling legacy decorators when also compiling class properties:
+            // see https://babeljs.io/docs/babel-plugin-proposal-decorators#legacy
+            ...isLegacyDecorators ? [
+                plugin_require.resolve('@babel/plugin-transform-class-properties')
+            ] : []
+        ],
+        presets: [
+            // TODO: only apply preset-typescript for ts file (isTSX & allExtensions false)
+            [
+                plugin_require.resolve('@babel/preset-typescript'),
+                DEFAULT_BABEL_PRESET_TYPESCRIPT_OPTIONS
+            ]
+        ]
+    };
+    const { buildCache } = config.performance;
+    // Rspack does not yet support persistent cache
+    // so we use babel-loader's cache to improve rebuild performance
+    if (buildCache && 'rspack' === context.bundlerType) {
+        const cacheDirectory = getCacheDirectory(context, 'boolean' == typeof buildCache ? void 0 : buildCache.cacheDirectory);
+        // turn off compression to reduce overhead
+        options.cacheCompression = false;
+        options.cacheDirectory = (0, external_node_path_namespaceObject.join)(cacheDirectory, 'babel-loader');
+    }
+    return options;
+};
+const pluginBabel = (options = {})=>({
+        name: PLUGIN_BABEL_NAME,
+        setup (api) {
+            const getBabelOptions = async (environment)=>{
+                const { config } = environment;
+                const baseOptions = getDefaultBabelOptions(config, api.context);
+                const mergedOptions = applyUserBabelConfig(external_deepmerge_default()({}, baseOptions), options.babelLoaderOptions);
+                // calculate cacheIdentifier with the merged options
+                if (mergedOptions.cacheDirectory && !mergedOptions.cacheIdentifier) mergedOptions.cacheIdentifier = await getCacheIdentifier(mergedOptions);
+                return mergedOptions;
+            };
+            api.modifyBundlerChain({
+                order: 'pre',
+                handler: async (chain, { CHAIN_ID, environment })=>{
+                    const babelOptions = await getBabelOptions(environment);
+                    const babelLoader = external_node_path_default().resolve(plugin_dirname, '../compiled/babel-loader/index.js');
+                    const { include, exclude } = options;
+                    if (include || exclude) {
+                        const rule = chain.module.rule(BABEL_JS_RULE) // run babel loader before the builtin SWC loader
+                        // https://stackoverflow.com/questions/32234329/what-is-the-loader-order-for-webpack
+                        .after(CHAIN_ID.RULE.JS);
+                        if (include) for (const condition of castArray(include))rule.include.add(condition);
+                        if (exclude) for (const condition of castArray(exclude))rule.exclude.add(condition);
+                        rule.test(SCRIPT_REGEX).use(CHAIN_ID.USE.BABEL).loader(babelLoader).options(babelOptions);
+                    } else {
+                        // already set source.include / exclude in plugin-swc
+                        const rule = chain.module.rule(CHAIN_ID.RULE.JS);
+                        rule.test(SCRIPT_REGEX).use(CHAIN_ID.USE.BABEL).after(CHAIN_ID.USE.SWC).loader(babelLoader).options(babelOptions);
+                    }
+                }
+            });
+        }
+    });
+var __webpack_export_target__ = exports;
+for(var i in __webpack_exports__)__webpack_export_target__[i] = __webpack_exports__[i];
+if (__webpack_exports__.__esModule) Object.defineProperty(__webpack_export_target__, '__esModule', {
+    value: true
+});

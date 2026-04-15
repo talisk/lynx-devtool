@@ -1,0 +1,68 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var hooks_exports = {};
+__export(hooks_exports, {
+  createAsyncHook: () => createAsyncHook,
+  createCollectAsyncHook: () => createCollectAsyncHook
+});
+module.exports = __toCommonJS(hooks_exports);
+function createAsyncHook() {
+  const callbacks = [];
+  const tap = (cb) => {
+    callbacks.push(cb);
+  };
+  const call = async (...params) => {
+    for (const callback of callbacks) {
+      const result = await callback(...params);
+      if (result !== void 0) {
+        params[0] = result;
+      }
+    }
+    return params[0] || [];
+  };
+  return {
+    tap,
+    call
+  };
+}
+function createCollectAsyncHook() {
+  const callbacks = [];
+  const tap = (cb) => {
+    callbacks.push(cb);
+  };
+  const call = async (...params) => {
+    const results = [];
+    for (const callback of callbacks) {
+      const result = await callback(params);
+      if (result !== void 0) {
+        results.push(result);
+      }
+    }
+    return results;
+  };
+  return {
+    tap,
+    call
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createAsyncHook,
+  createCollectAsyncHook
+});

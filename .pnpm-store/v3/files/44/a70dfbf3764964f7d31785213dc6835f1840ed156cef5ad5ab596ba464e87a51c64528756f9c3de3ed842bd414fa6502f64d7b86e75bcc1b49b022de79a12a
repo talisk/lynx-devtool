@@ -1,0 +1,148 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var node_exports = {};
+__export(node_exports, {
+  createNodeServer: () => createNodeServer,
+  createWebRequest: () => createWebRequest,
+  sendResponse: () => sendResponse,
+  writeReadableStreamToWritable: () => import_polyfills.writeReadableStreamToWritable
+});
+module.exports = __toCommonJS(node_exports);
+var import_node_http = require("node:http");
+var import_helper = require("./helper");
+var import_install = require("./polyfills/install");
+var import_stream = require("./polyfills/stream");
+var import_polyfills = require("./polyfills");
+(0, import_install.installGlobals)();
+const createWebRequest = (req, res, body) => {
+  var _req_url;
+  const headerRecord = [];
+  const len = req.rawHeaders.length;
+  for (let i = 0; i < len; i += 2) {
+    headerRecord.push([
+      req.rawHeaders[i],
+      req.rawHeaders[i + 1]
+    ]);
+  }
+  const { method } = req;
+  const controller = new AbortController();
+  const init = {
+    method,
+    headers: headerRecord,
+    signal: controller.signal
+  };
+  res.on("close", () => controller.abort("res closed"));
+  if (body || !(method === "GET" || method === "HEAD") && ((_req_url = req.url) === null || _req_url === void 0 ? void 0 : _req_url.includes("__loader")) || req.headers["x-mf-micro"]) {
+    init.body = body !== null && body !== void 0 ? body : (0, import_stream.createReadableStreamFromReadable)(req);
+    init.duplex = "half";
+  }
+  const url = `http://${req.headers.host}${req.url}`;
+  const request = new Request(url, init);
+  return request;
+};
+const sendResponse = async (response, res) => {
+  var _response_headers_get;
+  res.statusMessage = response.statusText;
+  res.statusCode = response.status;
+  const cookies = [];
+  for (const [key, value] of response.headers.entries()) {
+    if (key === "set-cookie") {
+      cookies.push(value);
+    } else {
+      res.setHeader(key, value);
+    }
+  }
+  if (cookies.length > 0) {
+    res.setHeader("set-cookie", cookies);
+  }
+  if (((_response_headers_get = response.headers.get("Content-Type")) === null || _response_headers_get === void 0 ? void 0 : _response_headers_get.match(/text\/event-stream/i)) && res instanceof import_node_http.ServerResponse) {
+    res.flushHeaders();
+  }
+  if (response.body) {
+    await (0, import_stream.writeReadableStreamToWritable)(response.body, res);
+  } else {
+    res.end();
+  }
+};
+const handleResponseError = (e, res) => {
+  const err = e instanceof Error ? e : new Error("unknown error", {
+    cause: e
+  });
+  if (err.code === "ERR_STREAM_PREMATURE_CLOSE") {
+    console.info("The user aborted a request.");
+  } else {
+    console.error(e);
+    if (!res.headersSent) {
+      res.writeHead(500, {
+        "Content-Type": "text/plain"
+      });
+    }
+    res.end(`Error: ${err.message}`);
+    res.destroy(err);
+  }
+};
+const getRequestListener = (handler) => {
+  return async (req, res) => {
+    try {
+      const request = createWebRequest(req, res);
+      const response = await handler(request, {
+        node: {
+          req,
+          res
+        }
+      });
+      if (!response.res && !(0, import_helper.isResFinalized)(res)) {
+        await sendResponse(response, res);
+      }
+    } catch (error) {
+      return handleResponseError(error, res);
+    }
+  };
+};
+const createNodeServer = async (requestHandler, httpsOptions) => {
+  const requestListener = getRequestListener(requestHandler);
+  let nodeServer;
+  if (httpsOptions) {
+    const { createServer } = await import("node:https");
+    nodeServer = createServer(httpsOptions, requestListener);
+  } else {
+    const { createServer } = await import("node:http");
+    nodeServer = createServer(requestListener);
+  }
+  nodeServer.getRequestListener = () => requestListener;
+  nodeServer.getRequestHandler = () => requestHandler;
+  return nodeServer;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createNodeServer,
+  createWebRequest,
+  sendResponse,
+  writeReadableStreamToWritable
+});

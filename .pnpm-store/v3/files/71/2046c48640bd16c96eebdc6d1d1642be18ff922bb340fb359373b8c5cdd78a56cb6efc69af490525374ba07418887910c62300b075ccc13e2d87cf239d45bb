@@ -1,0 +1,79 @@
+{
+  "name": "@modern-js/plugin-changeset",
+  "description": "A Progressive React Framework for modern web development.",
+  "homepage": "https://modernjs.dev",
+  "bugs": "https://github.com/web-infra-dev/modern.js/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web-infra-dev/modern.js",
+    "directory": "packages/cli/plugin-changeset"
+  },
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "framework",
+    "modern",
+    "modern.js"
+  ],
+  "version": "2.63.2",
+  "jsnext:source": "./src/index.ts",
+  "types": "./dist/types/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "exports": {
+    ".": {
+      "node": {
+        "jsnext:source": "./src/index.ts",
+        "import": "./dist/esm/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "default": "./dist/cjs/index.js"
+    },
+    "./cli": {
+      "jsnext:source": "./src/index.ts",
+      "default": "./dist/cjs/index.js"
+    },
+    "./release-note": {
+      "jsnext:source": "./src/commands/releaseNote.ts",
+      "import": "./dist/esm/commands/releaseNote.js",
+      "require": "./dist/cjs/commands/releaseNote.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "release-note": [
+        "./dist/types/commands/releaseNote.d.ts"
+      ]
+    }
+  },
+  "dependencies": {
+    "@changesets/cli": "^2.26.2",
+    "@changesets/git": "^2.0.0",
+    "@changesets/read": "^0.5.9",
+    "@swc/helpers": "0.5.13",
+    "axios": "^1.7.4",
+    "resolve-from": "^5.0.0",
+    "@modern-js/plugin-i18n": "2.63.2",
+    "@modern-js/utils": "2.63.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29",
+    "@types/node": "^14",
+    "jest": "^29",
+    "typescript": "^5",
+    "@modern-js/core": "2.63.2",
+    "@scripts/build": "2.63.2",
+    "@scripts/jest-config": "2.63.2"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "new": "modern-lib new",
+    "dev": "modern-lib build --watch",
+    "build": "modern-lib build",
+    "test": "jest --passWithNoTests"
+  }
+}

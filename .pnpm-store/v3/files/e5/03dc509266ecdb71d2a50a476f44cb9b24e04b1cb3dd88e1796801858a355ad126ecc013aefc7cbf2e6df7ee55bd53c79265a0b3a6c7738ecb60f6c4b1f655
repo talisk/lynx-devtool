@@ -1,0 +1,8 @@
+import type { CLIPluginAPI } from '@modern-js/plugin-v2';
+import { type ApplyPlugins } from '@modern-js/server';
+import type { AppTools } from '../types';
+import type { DevOptions } from '../utils/types';
+export interface ExtraServerOptions {
+    applyPlugins?: ApplyPlugins;
+}
+export declare const dev: (api: CLIPluginAPI<AppTools<'shared'>>, options: DevOptions, devServerOptions?: ExtraServerOptions) => Promise<void>;

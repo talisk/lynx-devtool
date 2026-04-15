@@ -1,0 +1,8 @@
+import type { Entrypoint, ServerRoute } from '@modern-js/types';
+import type { AppNormalizedConfig } from '../../types';
+import type { AppToolsContext } from '../../types/new';
+export declare const getServerRoutes: (entrypoints: Entrypoint[], { appContext, config, }: {
+    appContext: AppToolsContext<'shared'>;
+    config: AppNormalizedConfig<'shared'>;
+}) => ServerRoute[];
+export declare const getProdServerRoutes: (distDirectory: string) => any;

@@ -1,0 +1,89 @@
+{
+  "name": "@modern-js-reduck/react",
+  "version": "1.1.13",
+  "files": [
+    "dist",
+    "type.d.ts"
+  ],
+  "jsnext:source": "./src/index.ts",
+  "types": "./type.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "jsnext:modern": "./dist/js/modern/index.js",
+  "description": "The meta-framework suite designed from scratch for frontend-focused modern web development.",
+  "homepage": "https://modernjs.dev",
+  "bugs": "https://github.com/modern-js-dev/reduck/issues",
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "framework",
+    "modern",
+    "modern.js",
+    "state",
+    "reduck"
+  ],
+  "exports": {
+    ".": {
+      "types": "./type.d.ts",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    }
+  },
+  "dependencies": {
+    "@swc/helpers": "0.5.1",
+    "hoist-non-react-statics": "3.3.2",
+    "invariant": "^2.2.4",
+    "@modern-js-reduck/store": "1.1.13",
+    "@modern-js-reduck/plugin-effects": "1.1.13",
+    "@modern-js-reduck/plugin-immutable": "1.1.13",
+    "@modern-js-reduck/plugin-devtools": "1.1.13",
+    "@modern-js-reduck/plugin-auto-actions": "1.1.13"
+  },
+  "devDependencies": {
+    "@modern-js/module-tools": "2.21.1",
+    "@modern-js/plugin-testing": "2.21.1",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^13.3.0",
+    "@testing-library/react-12": "npm:@testing-library/react@^12",
+    "@types/hoist-non-react-statics": "3.3.1",
+    "@types/invariant": "^2.2.34",
+    "@types/jest": "^27.5.1",
+    "@types/node": "^14",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "@types/testing-library__jest-dom": "^5.14.1",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0",
+    "react-17": "npm:react@^17",
+    "react-dom-17": "npm:react-dom@^17",
+    "redux": "^4.1.1",
+    "typescript": "^4",
+    "@modern-js-reduck/scripts": "0.0.0"
+  },
+  "modernSettings": {},
+  "sideEffects": false,
+  "peerDependencies": {
+    "@types/react": "^16.8 || ^17.0 || ^18.0",
+    "@types/react-dom": "^16.8 || ^17.0 || ^18.0",
+    "react": "^16.8 || ^17.0 || ^18.0",
+    "react-dom": "^16.8 || ^17.0 || ^18.0"
+  },
+  "peerDependenciesMeta": {
+    "@types/react": {
+      "optional": true
+    },
+    "@types/react-dom": {
+      "optional": true
+    }
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "modern-js-dev/reduck",
+  "scripts": {
+    "new": "modern new",
+    "build": "modern build",
+    "test": "modern test"
+  }
+}

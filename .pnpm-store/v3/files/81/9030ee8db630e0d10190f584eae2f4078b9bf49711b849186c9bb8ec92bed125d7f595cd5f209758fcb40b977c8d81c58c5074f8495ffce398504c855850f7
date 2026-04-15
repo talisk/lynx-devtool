@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DeviceWatchStatusSocket = void 0;
+const WatchStatus_1 = require("../WatchStatus");
+class DeviceWatchStatusSocket {
+    constructor(socket) {
+        this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+        this.rawSocket = socket;
+    }
+    getRawSocket() {
+        return this.rawSocket;
+    }
+}
+exports.DeviceWatchStatusSocket = DeviceWatchStatusSocket;
+//# sourceMappingURL=DeviceWatchStatusSocket.js.map

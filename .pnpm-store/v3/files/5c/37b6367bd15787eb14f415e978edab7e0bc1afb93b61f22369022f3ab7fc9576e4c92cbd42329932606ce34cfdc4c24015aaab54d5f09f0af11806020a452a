@@ -1,0 +1,10 @@
+import type { BuildType, GeneratorDtsConfig, ITsconfig, TsTarget } from '../types';
+export declare const getProjectTsconfig: (tsconfigPath: string, resolutionContext?: Record<string, boolean>) => Promise<ITsconfig>;
+export declare function detectTSVersion(appDirectory?: string): Promise<number | undefined>;
+export declare const getTscBinPath: (appDirectory: string) => Promise<string>;
+export declare const processDtsFilesAfterTsc: (config: GeneratorDtsConfig) => Promise<void>;
+export declare const printOrThrowDtsErrors: (error: unknown, options: {
+    abortOnError?: boolean;
+    buildType: BuildType;
+}) => Promise<void>;
+export declare const tsTargetAtOrAboveES2022: (target: TsTarget) => boolean;

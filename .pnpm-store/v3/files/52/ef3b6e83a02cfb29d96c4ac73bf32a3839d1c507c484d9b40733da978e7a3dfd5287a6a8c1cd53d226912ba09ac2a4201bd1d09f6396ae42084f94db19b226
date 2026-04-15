@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DriverClient = void 0;
+class DriverClient {
+    constructor(id) {
+        this.id = id;
+    }
+    clientId() {
+        return this.id;
+    }
+}
+exports.DriverClient = DriverClient;
+//# sourceMappingURL=DriverClient.js.map

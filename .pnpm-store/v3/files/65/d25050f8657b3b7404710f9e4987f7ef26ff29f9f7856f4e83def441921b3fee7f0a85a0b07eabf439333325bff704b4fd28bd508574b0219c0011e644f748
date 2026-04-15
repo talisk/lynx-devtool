@@ -1,0 +1,96 @@
+import { MAIN_ENTRY_NAME } from "@modern-js/utils/universal/constants";
+import { getLoaderCtx } from "../../helper";
+import { sortRoutes } from "../../utils";
+import { CustomServer, getServerMidFromUnstableMid, injectRoute } from "../customServer";
+import { initReporter } from "../monitors";
+export * from "./inject";
+const renderPlugin = () => ({
+  name: "@modern-js/plugin-render",
+  setup(api) {
+    return {
+      async prepare() {
+        var _config_render;
+        const { middlewares, routes, render, distDirectory: pwd, serverBase } = api.useAppContext();
+        const runner = api.useHookRunners();
+        const config = api.useConfigContext();
+        if (!routes) {
+          return;
+        }
+        const customServer = new CustomServer(runner, serverBase, pwd);
+        const serverMiddleware = ((_config_render = config.render) === null || _config_render === void 0 ? void 0 : _config_render.middleware) && getServerMidFromUnstableMid(config.render.middleware);
+        const pageRoutes = getPageRoutes(routes);
+        for (const route of pageRoutes) {
+          const { urlPath: originUrlPath, entryName = MAIN_ENTRY_NAME } = route;
+          const urlPath = originUrlPath.endsWith("/") ? `${originUrlPath}*` : `${originUrlPath}/*`;
+          middlewares.push({
+            name: "init-reporter",
+            handler: initReporter(entryName)
+          });
+          const customServerHookMiddleware = customServer.getHookMiddleware(entryName, routes);
+          middlewares.push({
+            name: "inject-route-info",
+            handler: injectRoute({
+              entryName
+            })
+          });
+          middlewares.push({
+            name: "custom-server-hook",
+            path: urlPath,
+            handler: customServerHookMiddleware
+          });
+          const customServerMiddleware = await customServer.getServerMiddleware(serverMiddleware);
+          customServerMiddleware && middlewares.push({
+            name: "custom-server-middleware",
+            path: urlPath,
+            handler: customServerMiddleware
+          });
+          render && middlewares.push({
+            name: `render`,
+            path: urlPath,
+            handler: createRenderHandler(render)
+          });
+        }
+      }
+    };
+  }
+});
+function getPageRoutes(routes) {
+  return routes.filter((route) => !route.isApi).sort(sortRoutes);
+}
+function createRenderHandler(render) {
+  return async (c, _) => {
+    var _c_env_node;
+    const logger = c.get("logger");
+    const reporter = c.get("reporter");
+    const monitors = c.get("monitors");
+    const templates = c.get("templates") || {};
+    const serverManifest = c.get("serverManifest") || {};
+    const locals = c.get("locals");
+    const metrics = c.get("metrics");
+    const matchPathname = c.get("matchPathname");
+    const loaderContext = getLoaderCtx(c);
+    const request = c.req.raw;
+    const nodeReq = (_c_env_node = c.env.node) === null || _c_env_node === void 0 ? void 0 : _c_env_node.req;
+    const res = await render(request, {
+      nodeReq,
+      monitors,
+      logger,
+      reporter,
+      templates,
+      metrics,
+      serverManifest,
+      loaderContext,
+      locals,
+      matchPathname
+    });
+    const { body, status, headers } = res;
+    const headersData = {};
+    headers.forEach((v, k) => {
+      headersData[k] = v;
+    });
+    return c.body(body, status, headersData);
+  };
+}
+export {
+  renderPlugin
+};

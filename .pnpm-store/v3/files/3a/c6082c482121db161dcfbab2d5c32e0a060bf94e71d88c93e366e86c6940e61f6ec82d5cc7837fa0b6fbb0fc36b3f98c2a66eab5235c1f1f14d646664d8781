@@ -1,0 +1,217 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+function _export(target, all) {
+  for (var name in all)
+    Object.defineProperty(target, name, {
+      enumerable: true,
+      get: all[name]
+    });
+}
+_export(exports, {
+  getDefaultPlugins: () => getDefaultPlugins,
+  createApp: () => createApp
+});
+const _interop_require_default = require("@swc/helpers/_/_interop_require_default");
+const _interop_require_wildcard = require("@swc/helpers/_/_interop_require_wildcard");
+const _jsxruntime = require("react/jsx-runtime");
+const _store = require("@modern-js-reduck/store");
+const _react = /* @__PURE__ */ _interop_require_wildcard._(require("react"));
+const _invariant = /* @__PURE__ */ _interop_require_default._(require("invariant"));
+const _plugineffects = /* @__PURE__ */ _interop_require_default._(require("@modern-js-reduck/plugin-effects"));
+const _pluginimmutable = /* @__PURE__ */ _interop_require_default._(require("@modern-js-reduck/plugin-immutable"));
+const _pluginautoactions = /* @__PURE__ */ _interop_require_default._(require("@modern-js-reduck/plugin-auto-actions"));
+const _plugindevtools = /* @__PURE__ */ _interop_require_default._(require("@modern-js-reduck/plugin-devtools"));
+const _useIsomorphicLayoutEffect = require("./utils/useIsomorphicLayoutEffect");
+const _batchManager = require("./batchManager");
+const { useSyncExternalStore } = _react.default;
+const isReact18 = useSyncExternalStore !== void 0;
+const shallowEqual = (a, b) => {
+  if (Object.prototype.toString.call(a) !== "[object Object]" || Object.prototype.toString.call(b) !== "[object Object]") {
+    return a === b;
+  }
+  if (Object.keys(a).length !== Object.keys(b).length) {
+    return false;
+  }
+  return Object.keys(a).every((key) => Object.prototype.hasOwnProperty.call(b, key) && a[key] === b[key]);
+};
+const getDefaultPlugins = (config) => {
+  const defaultConfig = {
+    devTools: true,
+    autoActions: true
+  };
+  const finalConfig = {
+    ...defaultConfig,
+    ...config
+  };
+  const plugins = [
+    _pluginimmutable.default,
+    _plugineffects.default
+  ];
+  if (finalConfig.autoActions) {
+    plugins.push(_pluginautoactions.default);
+  }
+  const devToolsOptions = finalConfig.devTools;
+  if (devToolsOptions) {
+    plugins.push((0, _plugindevtools.default)(typeof devToolsOptions === "object" ? devToolsOptions : void 0));
+  }
+  return plugins;
+};
+const createApp = (config = {}) => {
+  let configFromProvider;
+  const Context = /* @__PURE__ */ (0, _react.createContext)(null);
+  const defaultPlugins = getDefaultPlugins(config);
+  const Provider = (props) => {
+    const { children, store: storeFromProps, config: _config } = props;
+    configFromProvider = {
+      ...config,
+      ..._config
+    };
+    configFromProvider.plugins = configFromProvider.plugins || defaultPlugins;
+    const contextValue = (0, _react.useMemo)(() => {
+      const store = storeFromProps || (0, _store.createStore)(configFromProvider);
+      const batchManager = (0, _batchManager.createBatchManager)(store);
+      return {
+        store,
+        batchManager
+      };
+    }, [
+      storeFromProps,
+      _config
+    ]);
+    return /* @__PURE__ */ (0, _jsxruntime.jsx)(Context.Provider, {
+      value: contextValue,
+      children
+    });
+  };
+  const createUseModel = (store) => (..._args) => {
+    const args = _args.flat();
+    const initialValue = store.use(...args);
+    const lastValueRef = (0, _react.useRef)(initialValue);
+    const getSnapshot = (0, _react.useCallback)(() => {
+      const newValue = store.use(...args);
+      if (!shallowEqual(lastValueRef.current[0], newValue[0])) {
+        lastValueRef.current = newValue;
+        return newValue;
+      } else {
+        return lastValueRef.current;
+      }
+    }, [
+      store,
+      ...args
+    ]);
+    const selectedState = useSyncExternalStore(
+      initialValue[2],
+      getSnapshot,
+      // The third parameter is required in SSR.
+      // The initial state should be set when createStore in hydration stage,
+      // so we can use the same getSnapshot to get state.
+      getSnapshot
+    );
+    return selectedState;
+  };
+  const legacy_createUseModel = (store, batchManager) => (..._args) => {
+    const args = _args.flat();
+    const deps = args.filter((item) => _store.utils.isModel(item));
+    const initialValue = (0, _react.useMemo)(() => store.use(...args), [
+      store,
+      ...deps
+    ]);
+    const [modelValue, setModelValue] = (0, _react.useState)(initialValue);
+    const lastValueRef = (0, _react.useRef)(initialValue);
+    const checkForUpdates = (sync = false) => {
+      const newValue = store.use(...args);
+      if (!shallowEqual(lastValueRef.current[0], newValue[0])) {
+        if (sync) {
+          setModelValue(newValue);
+          lastValueRef.current = newValue;
+        } else {
+          batchManager.pushUpdate(() => {
+            setModelValue(newValue);
+            lastValueRef.current = newValue;
+          });
+        }
+      }
+    };
+    (0, _useIsomorphicLayoutEffect.useIsomorphicLayoutEffect)(() => {
+      const subscribe = initialValue[2];
+      const unsubscribe = subscribe(checkForUpdates);
+      batchManager.addModels(...deps);
+      checkForUpdates(true);
+      return () => {
+        unsubscribe();
+        batchManager.removeModels(...deps);
+      };
+    }, [
+      ...deps,
+      initialValue,
+      batchManager
+    ]);
+    return modelValue;
+  };
+  const useModel = (...args) => {
+    const context = (0, _react.useContext)(Context);
+    (0, _invariant.default)(Boolean(context), `You should wrap your Component with Reduck Provider.`);
+    const { store, batchManager } = context;
+    const _useModel = (0, _react.useMemo)(() => {
+      return isReact18 ? createUseModel(store) : legacy_createUseModel(store, batchManager);
+    }, [
+      store
+    ]);
+    return _useModel(...args);
+  };
+  const useStaticModel = (...args) => {
+    const context = (0, _react.useContext)(Context);
+    (0, _invariant.default)(Boolean(context), "You should wrap your Component with Reduck Provider.");
+    const { store } = context;
+    const [state, actions, subscribe] = (0, _react.useMemo)(() => store.use(...args), []);
+    const value = (0, _react.useRef)([
+      // deep clone state in case mutate origin state accidentally.
+      JSON.parse(JSON.stringify(state)),
+      actions,
+      subscribe
+    ]);
+    (0, _useIsomorphicLayoutEffect.useIsomorphicLayoutEffect)(() => {
+      if (Object.prototype.toString.call(state) === "[object Object]") {
+        return subscribe(() => {
+          const [newState, newActions] = store.use(...args);
+          Object.assign(value.current[0], newState);
+          Object.assign(value.current[1], newActions);
+        });
+      }
+      return () => {
+      };
+    }, []);
+    return value.current;
+  };
+  const useLocalModel = (...args) => {
+    const [store, batchManager] = (0, _react.useMemo)(() => {
+      const finalConfig = configFromProvider;
+      const localStoreConfig = {
+        enhancers: (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.enhancers) || [],
+        middlewares: (finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.middlewares) || [],
+        plugins: finalConfig === null || finalConfig === void 0 ? void 0 : finalConfig.plugins
+      };
+      const reduckStore = (0, _store.createStore)(localStoreConfig);
+      return [
+        reduckStore,
+        (0, _batchManager.createBatchManager)(reduckStore)
+      ];
+    }, []);
+    return (0, _react.useMemo)(() => {
+      return isReact18 ? createUseModel(store) : legacy_createUseModel(store, batchManager);
+    }, [])(...args);
+  };
+  const useStore = () => {
+    const { store } = (0, _react.useContext)(Context);
+    return store;
+  };
+  return {
+    Provider,
+    useStore,
+    useModel,
+    useStaticModel,
+    useLocalModel
+  };
+};

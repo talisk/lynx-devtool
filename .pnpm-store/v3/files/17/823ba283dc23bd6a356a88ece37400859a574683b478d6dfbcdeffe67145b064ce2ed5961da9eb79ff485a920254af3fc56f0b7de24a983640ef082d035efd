@@ -1,0 +1,13 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getDriverReportService = exports.setDriverReportService = void 0;
+let reportService = null;
+function setDriverReportService(service) {
+    reportService = service;
+}
+exports.setDriverReportService = setDriverReportService;
+function getDriverReportService() {
+    return reportService;
+}
+exports.getDriverReportService = getDriverReportService;
+//# sourceMappingURL=DriverReportService.js.map

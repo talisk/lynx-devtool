@@ -1,0 +1,6 @@
+import type { Plugin } from 'postcss';
+import type { ICompiler } from '../../../types';
+export declare const postcssUrlPlugin: (options: {
+    entryPath: string;
+    compilation: ICompiler;
+}) => Plugin;

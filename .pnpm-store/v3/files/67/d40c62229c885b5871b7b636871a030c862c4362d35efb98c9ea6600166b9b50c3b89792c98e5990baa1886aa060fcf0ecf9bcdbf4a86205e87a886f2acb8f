@@ -1,0 +1,144 @@
+import { ChunkExtractor } from "@loadable/server";
+import { attributesToString, checkIsNode } from "../utils";
+const extname = (uri) => {
+  if (typeof uri !== "string" || !uri.includes(".")) {
+    return "";
+  }
+  return `.${uri === null || uri === void 0 ? void 0 : uri.split(".").pop()}` || "";
+};
+const generateChunks = (chunks, ext) => chunks.filter((chunk) => Boolean(chunk.url)).filter((chunk) => extname(chunk.url).slice(1) === ext);
+const checkIsInline = (chunk, enableInline) => {
+  if (process.env.NODE_ENV === "production") {
+    if (enableInline instanceof RegExp) {
+      return enableInline.test(chunk.url);
+    } else {
+      return Boolean(enableInline);
+    }
+  } else {
+    return false;
+  }
+};
+const readAsset = async (chunk) => {
+  const fs = await import("fs/promises");
+  const path = await import("path");
+  const filepath = path.resolve(__dirname, chunk.filename);
+  return fs.readFile(filepath, "utf-8");
+};
+class LoadableCollector {
+  get existsAssets() {
+    var _routeManifest_routeAssets_entryName, _routeManifest_routeAssets;
+    const { routeManifest, entryName } = this.options;
+    return routeManifest === null || routeManifest === void 0 ? void 0 : (_routeManifest_routeAssets = routeManifest.routeAssets) === null || _routeManifest_routeAssets === void 0 ? void 0 : (_routeManifest_routeAssets_entryName = _routeManifest_routeAssets[entryName]) === null || _routeManifest_routeAssets_entryName === void 0 ? void 0 : _routeManifest_routeAssets_entryName.assets;
+  }
+  collect(comopnent) {
+    const { stats, entryName } = this.options;
+    if (!stats) {
+      return comopnent;
+    }
+    this.extractor = new ChunkExtractor({
+      stats,
+      entrypoints: [
+        entryName
+      ]
+    });
+    return this.extractor.collectChunks(comopnent);
+  }
+  async effect() {
+    if (!this.extractor) {
+      return;
+    }
+    const { extractor } = this;
+    const chunks = extractor.getChunkAssets(extractor.chunks);
+    const scriptChunks = generateChunks(chunks, "js");
+    const styleChunks = generateChunks(chunks, "css");
+    this.emitLoadableScripts(extractor);
+    await this.emitScriptAssets(scriptChunks);
+    await this.emitStyleAssets(styleChunks);
+  }
+  emitLoadableScripts(extractor) {
+    const check = (scripts2) => (scripts2 || "").includes("__LOADABLE_REQUIRED_CHUNKS___ext");
+    const scripts = extractor.getScriptTags();
+    if (!check(scripts)) {
+      return;
+    }
+    const { chunkSet } = this.options;
+    const s = scripts.split("</script>").slice(0, 2).map((i) => `${i}</script>`).join("");
+    chunkSet.jsChunk += s;
+  }
+  async emitScriptAssets(chunks) {
+    const { template, nonce, chunkSet, config } = this.options;
+    const { scriptLoading = "defer", enableInlineScripts } = config;
+    const scriptLoadingAtr = {
+      defer: scriptLoading === "defer" ? true : void 0,
+      type: scriptLoading === "module" ? "module" : void 0,
+      async: scriptLoading === "async" ? true : void 0
+    };
+    const attributes = attributesToString(this.generateAttributes({
+      nonce,
+      ...scriptLoadingAtr
+    }));
+    const jsScriptRegExp = /<script .*?src="([^"]+)".*?>/g;
+    const matchs = template.matchAll(jsScriptRegExp);
+    const existedScript = [];
+    for (const match of matchs) {
+      existedScript.push(match[1]);
+    }
+    const scripts = await Promise.all(chunks.filter((chunk) => {
+      var _this_existsAssets;
+      return !existedScript.includes(chunk.url) && !((_this_existsAssets = this.existsAssets) === null || _this_existsAssets === void 0 ? void 0 : _this_existsAssets.includes(chunk.path));
+    }).map(async (chunk) => {
+      const script = `<script${attributes} src="${chunk.url}"></script>`;
+      if (checkIsNode() && checkIsInline(chunk, enableInlineScripts)) {
+        return readAsset(chunk).then((content) => `<script>${content}</script>`).catch((_) => {
+          return script;
+        });
+      } else {
+        return script;
+      }
+    }));
+    chunkSet.jsChunk += scripts.filter((script) => Boolean(script)).join("");
+  }
+  async emitStyleAssets(chunks) {
+    const { template, chunkSet, config } = this.options;
+    const { enableInlineStyles } = config;
+    const atrributes = attributesToString(this.generateAttributes());
+    const linkRegExp = /<link .*?href="([^"]+)".*?>/g;
+    const matchs = template.matchAll(linkRegExp);
+    const existedLinks = [];
+    for (const match of matchs) {
+      existedLinks.push(match[1]);
+    }
+    const css = await Promise.all(chunks.filter((chunk) => {
+      var _this_existsAssets;
+      return !existedLinks.includes(chunk.url) && !((_this_existsAssets = this.existsAssets) === null || _this_existsAssets === void 0 ? void 0 : _this_existsAssets.includes(chunk.path));
+    }).map(async (chunk) => {
+      const link = `<link${atrributes} href="${chunk.url}" rel="stylesheet" />`;
+      if (checkIsNode() && checkIsInline(chunk, enableInlineStyles)) {
+        return readAsset(chunk).then((content) => `<style>${content}</style>`).catch((_) => {
+          return link;
+        });
+      } else {
+        return link;
+      }
+    }));
+    chunkSet.cssChunk += css.filter((css2) => Boolean(css2)).join("");
+  }
+  generateAttributes(extraAtr = {}) {
+    const { config } = this.options;
+    const { crossorigin } = config;
+    const attributes = {};
+    if (crossorigin) {
+      attributes.crossorigin = crossorigin === true ? "anonymous" : crossorigin;
+    }
+    return {
+      ...attributes,
+      ...extraAtr
+    };
+  }
+  constructor(options) {
+    this.options = options;
+  }
+}
+export {
+  LoadableCollector
+};

@@ -1,0 +1,182 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _define_property } from "@swc/helpers/_/_define_property";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { isReact18 as checkIsReact18, cleanRequireCache, createRuntimeExportsUtils } from "@modern-js/utils";
+import { documentPlugin } from "../document/cli";
+import { routerPlugin } from "../router/cli";
+import { statePlugin } from "../state/cli";
+import { builderPluginAlias } from "./alias";
+import { generateCode } from "./code";
+import { ENTRY_BOOTSTRAP_FILE_NAME, ENTRY_POINT_FILE_NAME } from "./constants";
+import { isRuntimeEntry } from "./entry";
+import { ssrPlugin } from "./ssr";
+import { isRuntimeEntry as isRuntimeEntry2 } from "./entry";
+var runtimePlugin = function(params) {
+  return {
+    name: "@modern-js/runtime",
+    post: [
+      "@modern-js/plugin-ssr",
+      "@modern-js/plugin-state",
+      "@modern-js/plugin-router",
+      "@modern-js/plugin-document",
+      "@modern-js/plugin-design-token"
+    ],
+    // the order of runtime plugins is affected by runtime hooks, mainly `init` and `hoc` hooks
+    usePlugins: (params === null || params === void 0 ? void 0 : params.plugins) || [
+      ssrPlugin(),
+      routerPlugin(),
+      statePlugin(),
+      documentPlugin()
+    ],
+    setup: function(api) {
+      return {
+        checkEntryPoint: function checkEntryPoint(param) {
+          var path2 = param.path, entry = param.entry;
+          return {
+            path: path2,
+            entry: entry || isRuntimeEntry(path2)
+          };
+        },
+        modifyEntrypoints: function modifyEntrypoints(param) {
+          var entrypoints = param.entrypoints;
+          var internalDirectory = api.useAppContext().internalDirectory;
+          var _api_useResolvedConfigContext = api.useResolvedConfigContext(), enableAsyncEntry = _api_useResolvedConfigContext.source.enableAsyncEntry;
+          var newEntryPoints = entrypoints.map(function(entrypoint) {
+            if (entrypoint.isAutoMount) {
+              entrypoint.internalEntry = path.resolve(internalDirectory, "./".concat(entrypoint.entryName, "/").concat(enableAsyncEntry ? ENTRY_BOOTSTRAP_FILE_NAME : ENTRY_POINT_FILE_NAME));
+            }
+            return entrypoint;
+          });
+          return {
+            entrypoints: newEntryPoints
+          };
+        },
+        generateEntryCode: function generateEntryCode(param) {
+          var entrypoints = param.entrypoints;
+          return _async_to_generator(function() {
+            var appContext, resolvedConfig, runners;
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  appContext = api.useAppContext();
+                  resolvedConfig = api.useResolvedConfigContext();
+                  runners = api.useHookRunners();
+                  return [
+                    4,
+                    generateCode(entrypoints, appContext, resolvedConfig, runners._internalRuntimePlugins)
+                  ];
+                case 1:
+                  _state.sent();
+                  return [
+                    2
+                  ];
+              }
+            });
+          })();
+        },
+        /* Note that the execution time of the config hook is before prepare.
+        /* This means that the entry information cannot be obtained in the config hook.
+        /* Therefore, aliases cannot be set directly in the config.
+        */
+        prepare: function prepare() {
+          var _api_useAppContext = api.useAppContext(), builder = _api_useAppContext.builder, entrypoints = _api_useAppContext.entrypoints, internalDirectory = _api_useAppContext.internalDirectory, metaName = _api_useAppContext.metaName;
+          builder === null || builder === void 0 ? void 0 : builder.addPlugins([
+            builderPluginAlias({
+              entrypoints,
+              internalDirectory,
+              metaName
+            })
+          ]);
+        },
+        config: function config() {
+          var _api_useAppContext = api.useAppContext(), appDirectory = _api_useAppContext.appDirectory, metaName = _api_useAppContext.metaName, internalDirectory = _api_useAppContext.internalDirectory;
+          var isReact18 = checkIsReact18(appDirectory);
+          process.env.IS_REACT18 = isReact18.toString();
+          var pluginsExportsUtils = createRuntimeExportsUtils(internalDirectory, "plugins");
+          var _obj;
+          return {
+            runtime: {},
+            runtimeByEntries: {},
+            source: {
+              alias: (_obj = {
+                /**
+                * twin.macro inserts styled-components into the code during the compilation process
+                * But it will not be installed under the user project.
+                * So need to add alias
+                */
+                "styled-components": require.resolve("styled-components")
+              }, /**
+              * Compatible with the reference path of the old version of the plugin.
+              */
+              _define_property(_obj, "@".concat(metaName, "/runtime/plugins"), pluginsExportsUtils.getPath()), _define_property(_obj, "@meta/runtime/browser$", require.resolve("@modern-js/runtime/browser")), _define_property(_obj, "@meta/runtime/react$", require.resolve("@modern-js/runtime/react")), _define_property(_obj, "@meta/runtime/context$", require.resolve("@modern-js/runtime/context")), _define_property(_obj, "@meta/runtime$", require.resolve("@modern-js/runtime")), _obj),
+              globalVars: {
+                "process.env.IS_REACT18": process.env.IS_REACT18
+              }
+            },
+            tools: {
+              styledComponents: {
+                // https://github.com/styled-components/babel-plugin-styled-components/issues/287
+                topLevelImportPaths: [
+                  "@modern-js/runtime/styled"
+                ]
+              },
+              bundlerChain: function(chain) {
+                chain.module.rule("modern-entry").test(/\.jsx?$/).include.add(path.resolve(appDirectory, "node_modules", ".".concat(metaName))).end().sideEffects(true);
+              },
+              /**
+              * Add IgnorePlugin to fix react-dom/client import error when use react17
+              */
+              webpackChain: function(chain, param) {
+                var webpack = param.webpack;
+                if (!isReact18) {
+                  chain.plugin("ignore-plugin").use(webpack.IgnorePlugin, [
+                    {
+                      resourceRegExp: /^react-dom\/client$/,
+                      contextRegExp: /./
+                    }
+                  ]);
+                }
+              },
+              rspack: function(_config, param) {
+                var appendPlugins = param.appendPlugins, rspack = param.rspack;
+                if (!isReact18) {
+                  appendPlugins([
+                    new rspack.IgnorePlugin({
+                      resourceRegExp: /^react-dom\/client$/,
+                      contextRegExp: /./
+                    })
+                  ]);
+                }
+              }
+            }
+          };
+        },
+        beforeRestart: function beforeRestart() {
+          return _async_to_generator(function() {
+            return _ts_generator(this, function(_state) {
+              cleanRequireCache([
+                require.resolve("../state/cli"),
+                require.resolve("../router/cli"),
+                require.resolve("./ssr")
+              ]);
+              return [
+                2
+              ];
+            });
+          })();
+        }
+      };
+    }
+  };
+};
+var cli_default = runtimePlugin;
+export {
+  cli_default as default,
+  documentPlugin,
+  isRuntimeEntry2 as isRuntimeEntry,
+  routerPlugin,
+  runtimePlugin,
+  ssrPlugin,
+  statePlugin
+};

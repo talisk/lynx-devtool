@@ -1,0 +1,329 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const net = __importStar(require("net"));
+const bufferpack = __importStar(require("bufferpack"));
+const usbmux_1 = require("../../third_party/usbmux/lib/usbmux");
+const utils_1 = require("./utils");
+const type_1 = require("../utils/type");
+const USBConnection_1 = require("./USBConnection");
+const logger_1 = require("../utils/logger");
+const DriverReportService_1 = require("../report/interface/DriverReportService");
+class ClientAdapter {
+    constructor(driver, listener, port, device, device_id, type, device_host) {
+        this.driver = driver;
+        this.listener = listener;
+        this.port = port;
+        this.device = device;
+        this.device_id = device_id;
+        this.type = type;
+        this.device_host = device_host;
+        this.initialBufferCapacity = 1024 * 1024 * 2;
+        this.usbmuxdPacketHeaderLength = 20;
+        this.bufferCapacity = this.initialBufferCapacity;
+        this.buffer = null;
+        this.offset = 0;
+        this.end = 0;
+        this.tcpClient = new net.Socket();
+        this.isConnected = false;
+        this.connection = null;
+        this.id = 0;
+    }
+    handleData(client, data) {
+        var _a;
+        try {
+            this.handleUnpackMessage(data);
+        }
+        catch (error) {
+            const msg = "pack data error:" + (error === null || error === void 0 ? void 0 : error.message) + " " + this.port;
+            logger_1.defaultLogger.debug(msg);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("handle_unpack_message_error", null, {
+                msg: msg,
+                type: "all_devices",
+                stage: "handle_data",
+            });
+            client.end();
+        }
+    }
+    handleOff(client) {
+        this.isConnected = false;
+        client.destroy();
+        if (this.listener === null) {
+            logger_1.defaultLogger.debug("handleOff: this.listener == null");
+            return;
+        }
+        this.listener.onConnectionDeleted(this.id);
+    }
+    handleUnpackMessage(data) {
+        if (!data) {
+            return;
+        }
+        if (this.buffer === null) {
+            this.buffer = Buffer.allocUnsafe(this.initialBufferCapacity);
+        }
+        if (this.bufferCapacity - this.end < data.length) {
+            if (this.bufferCapacity - (this.end - this.offset) >= data.length) {
+                this.buffer.copy(this.buffer, 0, this.offset, this.end);
+            }
+            else {
+                this.bufferCapacity *= 2;
+                while (this.bufferCapacity < this.end - this.offset + data.length)
+                    this.bufferCapacity *= 2;
+                const newBuffer = Buffer.allocUnsafe(this.bufferCapacity);
+                this.buffer.copy(newBuffer, 0, this.offset, this.end);
+                this.buffer = newBuffer;
+            }
+            this.end = this.end - this.offset;
+            this.offset = 0;
+        }
+        data.copy(this.buffer, this.end);
+        this.end += data.length;
+        while (true) {
+            const length = this.end - this.offset;
+            if (length < this.usbmuxdPacketHeaderLength) {
+                break;
+            }
+            const header = bufferpack.unpack("! I I I I I", this.buffer, this.offset);
+            if (!header) {
+                break;
+            }
+            const size = header[4];
+            if (size + this.usbmuxdPacketHeaderLength <= length) {
+                const receivedBuffer = this.buffer.toString("utf8", this.offset + this.usbmuxdPacketHeaderLength, this.offset + this.usbmuxdPacketHeaderLength + size);
+                this.handleMessage(receivedBuffer);
+                this.offset += this.usbmuxdPacketHeaderLength + size;
+                if (this.offset == this.end) {
+                    this.offset = 0;
+                    this.end = 0;
+                }
+            }
+            else {
+                break;
+            }
+        }
+    }
+    onConnect() {
+        const initialize = {
+            event: "Initialize",
+            data: -1,
+        };
+        try {
+            if (this.tcpClient.writable && !this.tcpClient.destroyed) {
+                logger_1.defaultLogger.debug("send Initialize:" + this.port);
+                this.tcpClient.write((0, utils_1.packMessage)(initialize));
+            }
+        }
+        catch (err) {
+            logger_1.defaultLogger.debug("send Initialize error:" + JSON.stringify(err));
+        }
+    }
+    handleMessage(message) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (process.env.PrintAllUSBMessage === "enable") {
+                logger_1.defaultLogger.info("[Receive]:" + message);
+            }
+            if (!this.isConnected) {
+                yield this.handleConnection(message);
+                return;
+            }
+            this.driver.emit("usb-client-message", { id: this.id, message });
+            if (this.driver.enableWebSocket) {
+                this.driver.handleUsbMessage(this.id, message);
+            }
+            const response = JSON.parse(message);
+            const data = response.data;
+            let callback = null;
+            if ((0, type_1.isTypedSocketMessage)(response, type_1.SocketEvent.Customized)) {
+                if (!(0, type_1.isCustomizedEventType)(response, type_1.CustomizedEventType.CDP) &&
+                    !(0, type_1.isCustomizedEventType)(response, type_1.CustomizedEventType.App)) {
+                    if ((0, type_1.isCustomizedEventType)(response, type_1.CustomizedEventType.SessionList)) {
+                        this.handleSessionList(data.data);
+                        return;
+                    }
+                    if (this.connection) {
+                        callback = this.connection.matchPendingRequest(data.type);
+                    }
+                }
+                else {
+                    const cdpMessage = JSON.parse(data.data.message);
+                    if ((cdpMessage === null || cdpMessage === void 0 ? void 0 : cdpMessage.id) && this.connection) {
+                        callback = this.connection.matchPendingRequest(cdpMessage.id.toString());
+                    }
+                    else if (cdpMessage === null || cdpMessage === void 0 ? void 0 : cdpMessage.method) {
+                        this.handleClientEvent(data.data.message, (_a = data.data) === null || _a === void 0 ? void 0 : _a.session_id);
+                    }
+                }
+            }
+            if (callback) {
+                callback.resolve(response);
+            }
+        });
+    }
+    handleConnection(message) {
+        var _a, _b, _c, _d, _e;
+        return __awaiter(this, void 0, void 0, function* () {
+            const response = JSON.parse(message);
+            if ((0, type_1.isTypedSocketMessage)(response, type_1.SocketEvent.Register)) {
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("register_msg", null, {
+                    msg: message,
+                    port: this.port,
+                });
+                const result = (_b = response.data) === null || _b === void 0 ? void 0 : _b.info;
+                const app = (_c = result["App"]) !== null && _c !== void 0 ? _c : "Unknow";
+                const sdk_version = (_d = result["sdkVersion"]) !== null && _d !== void 0 ? _d : "0.0.0";
+                let deviceModel = (_e = result["deviceModel"]) !== null && _e !== void 0 ? _e : "";
+                if (this.type === "Mac" && deviceModel === "iPhone") {
+                    deviceModel = deviceModel + "_FromMac";
+                }
+                const ClientQuery = {
+                    app,
+                    os: this.type,
+                    device: this.device,
+                    device_model: deviceModel,
+                    device_id: this.device_id,
+                    sdk_version,
+                    raw_info: result,
+                };
+                if (this.listener === null) {
+                    logger_1.defaultLogger.debug("handleConnection: this.listener = null:" +
+                        JSON.stringify(ClientQuery));
+                    return;
+                }
+                this.connection = new USBConnection_1.USBConnection(this.tcpClient);
+                this.id = this.listener.onConnectionCreated(this.connection, this.port, ClientQuery);
+                this.isConnected = true;
+            }
+        });
+    }
+    handleClientEvent(message, session_id) {
+        const response = JSON.parse(message);
+        if (response.method && this.connection) {
+            this.connection.handleClientEvent(response.method, response.params, {
+                session_id: session_id !== undefined ? session_id : -1,
+            });
+        }
+    }
+    handleSessionList(sessionList) {
+        if (this.connection) {
+            this.connection.handleSessionList(sessionList);
+        }
+    }
+    connect() {
+        var _a;
+        if (this.isConnected || this.tcpClient.connecting)
+            return;
+        const platform = this.type;
+        if (platform === "iOS") {
+            (0, usbmux_1.getTunnel)(this.port, { udid: this.device_id })
+                .then((tunnel) => {
+                this.tcpClient = tunnel;
+                this.tcpClient.on("data", (data) => {
+                    this.handleData(this.tcpClient, data);
+                });
+                this.tcpClient.on("close", () => {
+                    logger_1.defaultLogger.debug("ios device close:" + this.port);
+                    this.handleOff(this.tcpClient);
+                });
+                this.tcpClient.on("usbmux_error", (err) => {
+                    var _a;
+                    const msg = "ios device error:" + (err === null || err === void 0 ? void 0 : err.message) + " " + this.port;
+                    logger_1.defaultLogger.debug(msg);
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                        msg: msg,
+                        stage: "client",
+                    });
+                    this.handleOff(this.tcpClient);
+                });
+                this.onConnect();
+            })
+                .catch((err) => {
+                var _a;
+                const msg = "ios connect error:" + this.port + " error:" + (err === null || err === void 0 ? void 0 : err.message);
+                logger_1.defaultLogger.debug(msg);
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                    msg: msg,
+                    stage: "client",
+                });
+            });
+        }
+        else {
+            try {
+                this.tcpClient = new net.Socket();
+                this.tcpClient.on("data", (data) => {
+                    this.handleData(this.tcpClient, data);
+                });
+                this.tcpClient.on("error", (err) => {
+                    var _a;
+                    const msg = platform + " device error:" + (err === null || err === void 0 ? void 0 : err.message) + " " + this.port;
+                    logger_1.defaultLogger.debug(msg);
+                    const error_title = platform + "_connect_error";
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report(error_title, null, {
+                        msg: msg,
+                        stage: "client",
+                    });
+                    this.handleOff(this.tcpClient);
+                });
+                this.tcpClient.on("close", (hadError) => {
+                    logger_1.defaultLogger.debug(platform + " device close:" + this.port + " hadError:" + hadError);
+                    this.handleOff(this.tcpClient);
+                });
+                this.tcpClient.on("connect", () => {
+                    logger_1.defaultLogger.debug(platform + " device onConnect:" + this.port);
+                    this.onConnect();
+                });
+                const host = this.device_host;
+                this.tcpClient.connect({ host: host, port: this.port });
+            }
+            catch (err) {
+                const msg = platform + " connect error:" + this.port + " error:" + (err === null || err === void 0 ? void 0 : err.message);
+                logger_1.defaultLogger.debug(msg);
+                const error_title = platform + "_connect_error";
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report(error_title, null, {
+                    msg: msg,
+                    stage: "client",
+                });
+            }
+        }
+    }
+    destroy() {
+        logger_1.defaultLogger.debug("ClientAdapter destroy");
+        this.listener = null;
+        this.tcpClient.destroy();
+        this.buffer = null;
+        this.connection = null;
+    }
+}
+exports.default = ClientAdapter;
+//# sourceMappingURL=ClientAdapter.js.map

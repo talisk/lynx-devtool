@@ -1,0 +1,4 @@
+import type { Project } from '../project.js';
+import type { IMonorepoBaseData } from './getBaseData.js';
+export type GetProjectsFunc = (rootPath: string) => Promise<Project[]> | Project[];
+export declare const getMonorepoSubProjects: (monorepoBaseData: IMonorepoBaseData) => Promise<Project[]>;

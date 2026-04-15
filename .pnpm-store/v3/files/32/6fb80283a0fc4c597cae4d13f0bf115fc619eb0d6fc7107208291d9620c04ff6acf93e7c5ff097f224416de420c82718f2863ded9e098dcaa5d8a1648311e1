@@ -1,0 +1,134 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { createServerBase } from "@modern-js/server-core";
+import { createNodeServer, loadServerRuntimeConfig } from "@modern-js/server-core/node";
+import { devPlugin } from "./dev";
+import { getDevOptions } from "./helpers";
+function createDevServer(options, applyPlugins) {
+  return _createDevServer.apply(this, arguments);
+}
+function _createDevServer() {
+  _createDevServer = _async_to_generator(function(options, applyPlugins) {
+    var _config_output_distPath, config, pwd, serverConfigFile, serverConfigPath, builder, dev, distDir, serverConfig, prodServerOptions, server, devHttpsOption, nodeServer, genHttpsOptions, httpsOptions, builderDevServer, afterListen;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          config = options.config, pwd = options.pwd, serverConfigFile = options.serverConfigFile, serverConfigPath = options.serverConfigPath, builder = options.builder;
+          dev = getDevOptions(options);
+          distDir = path.resolve(pwd, ((_config_output_distPath = config.output.distPath) === null || _config_output_distPath === void 0 ? void 0 : _config_output_distPath.root) || "dist");
+          return [
+            4,
+            loadServerRuntimeConfig(distDir, serverConfigFile, serverConfigPath)
+          ];
+        case 1:
+          serverConfig = _state.sent();
+          prodServerOptions = _object_spread_props(_object_spread({}, options), {
+            pwd: distDir
+          });
+          if (serverConfig) {
+            prodServerOptions.serverConfig = serverConfig;
+          }
+          server = createServerBase(prodServerOptions);
+          devHttpsOption = (typeof dev === "undefined" ? "undefined" : _type_of(dev)) === "object" && dev.https;
+          if (!devHttpsOption)
+            return [
+              3,
+              5
+            ];
+          return [
+            4,
+            import("./dev-tools/https")
+          ];
+        case 2:
+          genHttpsOptions = _state.sent().genHttpsOptions;
+          return [
+            4,
+            genHttpsOptions(devHttpsOption, pwd)
+          ];
+        case 3:
+          httpsOptions = _state.sent();
+          return [
+            4,
+            createNodeServer(server.handle.bind(server), httpsOptions)
+          ];
+        case 4:
+          nodeServer = _state.sent();
+          return [
+            3,
+            7
+          ];
+        case 5:
+          return [
+            4,
+            createNodeServer(server.handle.bind(server))
+          ];
+        case 6:
+          nodeServer = _state.sent();
+          _state.label = 7;
+        case 7:
+          return [
+            4,
+            builder === null || builder === void 0 ? void 0 : builder.createDevServer({
+              runCompile: options.runCompile,
+              compiler: options.compilier
+            })
+          ];
+        case 8:
+          builderDevServer = _state.sent();
+          server.addPlugins([
+            devPlugin(_object_spread_props(_object_spread({}, options), {
+              builderDevServer
+            }))
+          ]);
+          return [
+            4,
+            applyPlugins(server, prodServerOptions, nodeServer)
+          ];
+        case 9:
+          _state.sent();
+          return [
+            4,
+            server.init()
+          ];
+        case 10:
+          _state.sent();
+          afterListen = function() {
+            var _ref = _async_to_generator(function() {
+              return _ts_generator(this, function(_state2) {
+                switch (_state2.label) {
+                  case 0:
+                    return [
+                      4,
+                      builderDevServer === null || builderDevServer === void 0 ? void 0 : builderDevServer.afterListen()
+                    ];
+                  case 1:
+                    _state2.sent();
+                    return [
+                      2
+                    ];
+                }
+              });
+            });
+            return function afterListen2() {
+              return _ref.apply(this, arguments);
+            };
+          }();
+          return [
+            2,
+            {
+              server: nodeServer,
+              afterListen
+            }
+          ];
+      }
+    });
+  });
+  return _createDevServer.apply(this, arguments);
+}
+export {
+  createDevServer
+};

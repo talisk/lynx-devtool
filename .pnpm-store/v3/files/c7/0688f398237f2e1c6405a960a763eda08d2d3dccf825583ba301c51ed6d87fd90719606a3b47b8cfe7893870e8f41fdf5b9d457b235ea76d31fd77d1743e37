@@ -1,0 +1,412 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import * as path from "path";
+import { fs, createDebugger, getArgv, isApiOnly, isDevCommand, minimist } from "@modern-js/utils";
+import { createBuilderGenerator } from "../../builder";
+import { initialNormalizedConfig } from "../../config";
+import { emitResolvedConfig } from "../../utils/config";
+import { getSelectedEntries } from "../../utils/getSelectedEntries";
+import { printInstructions } from "../../utils/printInstructions";
+import { generateRoutes } from "../../utils/routes";
+import { checkIsBuildCommands, checkIsServeCommand } from "./utils";
+var debug = createDebugger("plugin-analyze");
+function analyze_default(param) {
+  var bundler = param.bundler;
+  return {
+    name: "@modern-js/plugin-analyze",
+    post: [
+      "@modern-js/runtime"
+    ],
+    setup: function(api) {
+      var pagesDir = [];
+      var nestedRouteEntries = [];
+      api.onPrepare(/* @__PURE__ */ _async_to_generator(function() {
+        var _resolvedConfig_source, appContext, resolvedConfig, hooks, apiOnly, _ref, getProdServerRoutes, routes, _routes, _routes1, _ref1, modifiedRoutes, _ref2, getBundleEntry, getServerRoutes, getHtmlTemplate, entrypoints, _, _1, _tmp, routes1, _routes2, _routes3, initialRoutes, _ref3, modifiedRoutes1, _ref4, partialsByEntrypoint, htmlTemplates, checkedEntries, entry, normalizedConfig, createBuilderForModern, builder;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              appContext = api.getAppContext();
+              resolvedConfig = api.getNormalizedConfig();
+              hooks = api.getHooks();
+              try {
+                if (checkIsBuildCommands()) {
+                  fs.emptydirSync(appContext.internalDirectory);
+                }
+              } catch (e) {
+              }
+              return [
+                4,
+                isApiOnly(appContext.appDirectory, (_resolvedConfig_source = resolvedConfig.source) === null || _resolvedConfig_source === void 0 ? void 0 : _resolvedConfig_source.entriesDir, appContext.apiDirectory)
+              ];
+            case 1:
+              apiOnly = _state.sent();
+              return [
+                4,
+                hooks.addRuntimeExports.call()
+              ];
+            case 2:
+              _state.sent();
+              return [
+                4,
+                Promise.all([
+                  import("./getServerRoutes.js")
+                ])
+              ];
+            case 3:
+              _ref = _sliced_to_array.apply(void 0, [
+                _state.sent(),
+                1
+              ]), getProdServerRoutes = _ref[0].getProdServerRoutes;
+              if (!apiOnly)
+                return [
+                  3,
+                  7
+                ];
+              routes = [];
+              if (!checkIsServeCommand())
+                return [
+                  3,
+                  4
+                ];
+              (_routes = routes).push.apply(_routes, _to_consumable_array(getProdServerRoutes(appContext.distDirectory)));
+              return [
+                3,
+                6
+              ];
+            case 4:
+              return [
+                4,
+                hooks.modifyServerRoutes.call({
+                  routes: []
+                })
+              ];
+            case 5:
+              _ref1 = _state.sent(), modifiedRoutes = _ref1.routes;
+              (_routes1 = routes).push.apply(_routes1, _to_consumable_array(modifiedRoutes));
+              _state.label = 6;
+            case 6:
+              debug("server routes: %o", routes);
+              api.updateAppContext({
+                apiOnly,
+                serverRoutes: routes
+              });
+              return [
+                2
+              ];
+            case 7:
+              return [
+                4,
+                Promise.all([
+                  import("./getBundleEntry.js"),
+                  import("./getServerRoutes.js"),
+                  import("./getHtmlTemplate.js")
+                ])
+              ];
+            case 8:
+              _ref2 = _sliced_to_array.apply(void 0, [
+                _state.sent(),
+                3
+              ]), getBundleEntry = _ref2[0].getBundleEntry, getServerRoutes = _ref2[1].getServerRoutes, getHtmlTemplate = _ref2[2].getHtmlTemplate;
+              _1 = (_ = hooks.modifyEntrypoints).call;
+              _tmp = {};
+              return [
+                4,
+                getBundleEntry(hooks, appContext, resolvedConfig)
+              ];
+            case 9:
+              return [
+                4,
+                _1.apply(_, [
+                  (_tmp.entrypoints = _state.sent(), _tmp)
+                ])
+              ];
+            case 10:
+              entrypoints = _state.sent().entrypoints;
+              debug("entrypoints: %o", entrypoints);
+              routes1 = [];
+              if (!checkIsServeCommand())
+                return [
+                  3,
+                  11
+                ];
+              (_routes2 = routes1).push.apply(_routes2, _to_consumable_array(getProdServerRoutes(appContext.distDirectory)));
+              return [
+                3,
+                13
+              ];
+            case 11:
+              initialRoutes = getServerRoutes(entrypoints, {
+                appContext,
+                config: resolvedConfig
+              });
+              return [
+                4,
+                hooks.modifyServerRoutes.call({
+                  routes: initialRoutes
+                })
+              ];
+            case 12:
+              _ref3 = _state.sent(), modifiedRoutes1 = _ref3.routes;
+              (_routes3 = routes1).push.apply(_routes3, _to_consumable_array(modifiedRoutes1));
+              _state.label = 13;
+            case 13:
+              debug("server routes: %o", routes1);
+              appContext = _object_spread_props(_object_spread({}, api.getAppContext()), {
+                entrypoints,
+                serverRoutes: routes1
+              });
+              api.updateAppContext(appContext);
+              nestedRouteEntries = entrypoints.map(function(point) {
+                return point.nestedRoutesEntry;
+              }).filter(Boolean);
+              pagesDir = entrypoints.map(function(point) {
+                return point.entry;
+              }).filter(function(entry2) {
+                return entry2 && !path.extname(entry2);
+              }).concat(nestedRouteEntries);
+              return [
+                4,
+                getHtmlTemplate(entrypoints, hooks, {
+                  appContext,
+                  config: resolvedConfig
+                })
+              ];
+            case 14:
+              _ref4 = _state.sent(), partialsByEntrypoint = _ref4.partialsByEntrypoint, htmlTemplates = _ref4.htmlTemplates;
+              debug("html templates: %o", htmlTemplates);
+              api.updateAppContext({
+                partialsByEntrypoint
+              });
+              checkedEntries = entrypoints.map(function(point) {
+                return point.entryName;
+              });
+              if (!isDevCommand())
+                return [
+                  3,
+                  16
+                ];
+              entry = minimist(getArgv()).entry;
+              return [
+                4,
+                getSelectedEntries(typeof entry === "string" ? entry.split(",") : entry, entrypoints)
+              ];
+            case 15:
+              checkedEntries = _state.sent();
+              _state.label = 16;
+            case 16:
+              appContext = _object_spread_props(_object_spread({}, api.getAppContext()), {
+                entrypoints,
+                checkedEntries,
+                apiOnly,
+                serverRoutes: routes1,
+                htmlTemplates
+              });
+              api.updateAppContext(appContext);
+              if (!checkIsBuildCommands())
+                return [
+                  3,
+                  20
+                ];
+              return [
+                4,
+                hooks.generateEntryCode.call({
+                  entrypoints
+                })
+              ];
+            case 17:
+              _state.sent();
+              normalizedConfig = api.getNormalizedConfig();
+              return [
+                4,
+                createBuilderGenerator(bundler)
+              ];
+            case 18:
+              createBuilderForModern = _state.sent();
+              return [
+                4,
+                createBuilderForModern({
+                  normalizedConfig,
+                  appContext
+                })
+              ];
+            case 19:
+              builder = _state.sent();
+              builder.onBeforeBuild(function() {
+                var _ref5 = _async_to_generator(function(param2) {
+                  var bundlerConfigs, isFirstCompile, environments, isWatch;
+                  return _ts_generator(this, function(_state2) {
+                    switch (_state2.label) {
+                      case 0:
+                        bundlerConfigs = param2.bundlerConfigs, isFirstCompile = param2.isFirstCompile, environments = param2.environments, isWatch = param2.isWatch;
+                        if (!isFirstCompile) {
+                          return [
+                            2
+                          ];
+                        }
+                        return [
+                          4,
+                          generateRoutes(appContext)
+                        ];
+                      case 1:
+                        _state2.sent();
+                        return [
+                          4,
+                          hooks.onBeforeBuild.call({
+                            isFirstCompile,
+                            isWatch,
+                            environments,
+                            bundlerConfigs
+                          })
+                        ];
+                      case 2:
+                        _state2.sent();
+                        return [
+                          2
+                        ];
+                    }
+                  });
+                });
+                return function(_2) {
+                  return _ref5.apply(this, arguments);
+                };
+              }());
+              builder.onAfterBuild(function() {
+                var _ref5 = _async_to_generator(function(param2) {
+                  var stats, environments, isFirstCompile, isWatch;
+                  return _ts_generator(this, function(_state2) {
+                    switch (_state2.label) {
+                      case 0:
+                        stats = param2.stats, environments = param2.environments, isFirstCompile = param2.isFirstCompile, isWatch = param2.isWatch;
+                        return [
+                          4,
+                          hooks.onAfterBuild.call({
+                            stats,
+                            environments,
+                            isFirstCompile,
+                            isWatch
+                          })
+                        ];
+                      case 1:
+                        _state2.sent();
+                        return [
+                          4,
+                          emitResolvedConfig(appContext.appDirectory, normalizedConfig)
+                        ];
+                      case 2:
+                        _state2.sent();
+                        return [
+                          2
+                        ];
+                    }
+                  });
+                });
+                return function(_2) {
+                  return _ref5.apply(this, arguments);
+                };
+              }());
+              builder.onDevCompileDone(function() {
+                var _ref5 = _async_to_generator(function(param2) {
+                  var isFirstCompile;
+                  return _ts_generator(this, function(_state2) {
+                    isFirstCompile = param2.isFirstCompile;
+                    hooks.onAfterDev.call({
+                      isFirstCompile
+                    });
+                    if (isFirstCompile) {
+                      printInstructions(hooks, appContext, normalizedConfig);
+                    }
+                    return [
+                      2
+                    ];
+                  });
+                });
+                return function(_2) {
+                  return _ref5.apply(this, arguments);
+                };
+              }());
+              builder.onBeforeCreateCompiler(function() {
+                var _ref5 = _async_to_generator(function(param2) {
+                  var bundlerConfigs, environments;
+                  return _ts_generator(this, function(_state2) {
+                    switch (_state2.label) {
+                      case 0:
+                        bundlerConfigs = param2.bundlerConfigs, environments = param2.environments;
+                        return [
+                          4,
+                          hooks.onBeforeCreateCompiler.call({
+                            environments,
+                            bundlerConfigs
+                          })
+                        ];
+                      case 1:
+                        _state2.sent();
+                        return [
+                          2
+                        ];
+                    }
+                  });
+                });
+                return function(_2) {
+                  return _ref5.apply(this, arguments);
+                };
+              }());
+              builder.onAfterCreateCompiler(function() {
+                var _ref5 = _async_to_generator(function(param2) {
+                  var compiler, environments;
+                  return _ts_generator(this, function(_state2) {
+                    switch (_state2.label) {
+                      case 0:
+                        compiler = param2.compiler, environments = param2.environments;
+                        return [
+                          4,
+                          hooks.onAfterCreateCompiler.call({
+                            environments,
+                            compiler
+                          })
+                        ];
+                      case 1:
+                        _state2.sent();
+                        return [
+                          2
+                        ];
+                    }
+                  });
+                });
+                return function(_2) {
+                  return _ref5.apply(this, arguments);
+                };
+              }());
+              builder.addPlugins(resolvedConfig.builderPlugins);
+              api.updateAppContext({
+                builder
+              });
+              _state.label = 20;
+            case 20:
+              return [
+                2
+              ];
+          }
+        });
+      }));
+      api.addWatchFiles(function() {
+        return {
+          files: pagesDir,
+          isPrivate: true
+        };
+      });
+      api.modifyResolvedConfig(function(resolved) {
+        var appContext = api.getAppContext();
+        var config = initialNormalizedConfig(resolved, appContext, bundler);
+        return config;
+      });
+    }
+  };
+}
+;
+export {
+  analyze_default as default
+};

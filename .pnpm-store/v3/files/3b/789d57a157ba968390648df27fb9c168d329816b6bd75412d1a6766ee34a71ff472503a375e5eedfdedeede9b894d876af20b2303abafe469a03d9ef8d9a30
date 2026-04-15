@@ -1,0 +1,331 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var parseCommonConfig_exports = {};
+__export(parseCommonConfig_exports, {
+  isLooseCssModules: () => isLooseCssModules,
+  parseCommonConfig: () => parseCommonConfig
+});
+module.exports = __toCommonJS(parseCommonConfig_exports);
+var import_utils = require("@modern-js/utils");
+var import_core = require("@rsbuild/core");
+var import_plugin_css_minimizer = require("@rsbuild/plugin-css-minimizer");
+var import_plugin_less = require("@rsbuild/plugin-less");
+var import_plugin_react = require("@rsbuild/plugin-react");
+var import_plugin_sass = require("@rsbuild/plugin-sass");
+var import_plugin_toml = require("@rsbuild/plugin-toml");
+var import_plugin_yaml = require("@rsbuild/plugin-yaml");
+var import_devServer = require("./devServer");
+var import_antd = require("./plugins/antd");
+var import_arco = require("./plugins/arco");
+var import_devtools = require("./plugins/devtools");
+var import_emitRouteFile = require("./plugins/emitRouteFile");
+var import_environmentDefaults = require("./plugins/environmentDefaults");
+var import_frameworkConfig = require("./plugins/frameworkConfig");
+var import_globalVars = require("./plugins/globalVars");
+var import_htmlMinify = require("./plugins/htmlMinify");
+var import_runtimeChunk = require("./plugins/runtimeChunk");
+var import_splitChunk = require("./plugins/splitChunk");
+var import_utils2 = require("./utils");
+const CSS_MODULES_REGEX = /\.modules?\.\w+$/i;
+const GLOBAL_CSS_REGEX = /\.global\.\w+$/;
+const isLooseCssModules = (path) => {
+  if (import_utils2.NODE_MODULES_REGEX.test(path)) {
+    return CSS_MODULES_REGEX.test(path);
+  }
+  return !GLOBAL_CSS_REGEX.test(path);
+};
+function removeUndefinedKey(obj) {
+  Object.keys(obj).forEach((key) => {
+    if (obj[key] === void 0) {
+      delete obj[key];
+    }
+  });
+  return obj;
+}
+const isUseCssSourceMap = (disableSourceMap = {}) => {
+  if (typeof disableSourceMap === "boolean") {
+    return !disableSourceMap;
+  }
+  if (disableSourceMap.css === void 0) {
+    return process.env.NODE_ENV !== "production";
+  }
+  return !disableSourceMap.css;
+};
+async function parseCommonConfig(uniBuilderConfig, options) {
+  var _uniBuilderConfig_output, _uniBuilderConfig_tools;
+  var _rsbuildConfig_tools, _output, _output_distPath, _output1, _extraConfig, _html, _extraConfig1;
+  const { frameworkConfigPath } = options;
+  const { plugins: [...plugins] = [], performance: { ...performanceConfig } = {}, output: { disableFilenameHash, enableLatestDecorators, cssModuleLocalIdentName, enableInlineScripts, disableCssExtract, enableInlineStyles, enableCssModuleTSDeclaration, disableCssModuleExtension, disableTsChecker, disableSvgr, svgDefaultExport, assetsRetry, enableAssetFallback, enableAssetManifest, disableSourceMap, sourceMap, convertToRem, disableMinimize, polyfill, dataUriLimit = 1e4, distPath = {}, ...outputConfig } = {}, html: { disableHtmlFolder, metaByEntries, titleByEntries, faviconByEntries, injectByEntries, templateByEntries, templateParametersByEntries, tagsByEntries, outputStructure, appIcon, tags, ...htmlConfig } = {}, source: { alias, globalVars, resolveMainFields, resolveExtensionPrefix, transformImport, ...sourceConfig } = {}, dev, security: { checkSyntax, sri, ...securityConfig } = {}, tools: { devServer, tsChecker, minifyCss, less, sass, htmlPlugin, autoprefixer, ...toolsConfig } = {}, environments = {} } = uniBuilderConfig;
+  const rsbuildConfig = {
+    plugins,
+    output: {
+      polyfill: polyfill === "ua" ? "off" : polyfill,
+      dataUriLimit,
+      sourceMap,
+      ...outputConfig
+    },
+    source: {
+      alias,
+      ...sourceConfig
+    },
+    performance: performanceConfig,
+    html: htmlConfig,
+    tools: toolsConfig,
+    security: securityConfig,
+    environments
+  };
+  rsbuildConfig.tools.htmlPlugin = htmlPlugin;
+  var _lightningcssLoader;
+  (_lightningcssLoader = (_rsbuildConfig_tools = rsbuildConfig.tools).lightningcssLoader) !== null && _lightningcssLoader !== void 0 ? _lightningcssLoader : _rsbuildConfig_tools.lightningcssLoader = false;
+  const { html = {}, output = {}, source = {} } = rsbuildConfig;
+  source.transformImport = transformImport === false ? () => [] : transformImport;
+  if (enableLatestDecorators) {
+    source.decorators = {
+      version: "2022-03"
+    };
+  } else {
+    var _source;
+    var _decorators;
+    (_decorators = (_source = source).decorators) !== null && _decorators !== void 0 ? _decorators : _source.decorators = {
+      version: "legacy"
+    };
+  }
+  var _charset;
+  (_charset = (_output = output).charset) !== null && _charset !== void 0 ? _charset : _output.charset = "ascii";
+  if (disableMinimize) {
+    var _output2;
+    (_output2 = output).minify || (_output2.minify = false);
+  }
+  if (cssModuleLocalIdentName) {
+    var _output3;
+    (_output3 = output).cssModules || (_output3.cssModules = {});
+    output.cssModules.localIdentName = cssModuleLocalIdentName;
+  }
+  if (isUseCssSourceMap(disableSourceMap) && output.sourceMap !== true) {
+    var _output4;
+    (_output4 = output).sourceMap || (_output4.sourceMap = {});
+    output.sourceMap.css = true;
+  }
+  const { server: _server, worker, ...rsbuildDistPath } = distPath;
+  output.distPath = rsbuildDistPath;
+  var _html1;
+  (_html1 = (_output_distPath = output.distPath).html) !== null && _html1 !== void 0 ? _html1 : _output_distPath.html = "html";
+  var _polyfill;
+  (_polyfill = (_output1 = output).polyfill) !== null && _polyfill !== void 0 ? _polyfill : _output1.polyfill = "entry";
+  if (disableCssModuleExtension) {
+    var _output5, _output_cssModules;
+    (_output5 = output).cssModules || (_output5.cssModules = {});
+    var _auto;
+    (_auto = (_output_cssModules = output.cssModules).auto) !== null && _auto !== void 0 ? _auto : _output_cssModules.auto = isLooseCssModules;
+  }
+  if (enableInlineScripts) {
+    output.inlineScripts = enableInlineScripts;
+  }
+  if (disableCssExtract) {
+    output.injectStyles = disableCssExtract;
+  }
+  if (enableInlineStyles) {
+    output.inlineStyles = enableInlineStyles;
+  }
+  if (disableFilenameHash !== void 0) {
+    output.filenameHash = !disableFilenameHash;
+  }
+  const extraConfig = {};
+  (_extraConfig = extraConfig).html || (_extraConfig.html = {});
+  extraConfig.html.outputStructure = outputStructure !== null && outputStructure !== void 0 ? outputStructure : disableHtmlFolder ? "flat" : "nested";
+  if (metaByEntries) {
+    extraConfig.html.meta = ({ entryName }) => metaByEntries[entryName];
+  }
+  var _title;
+  (_title = (_html = html).title) !== null && _title !== void 0 ? _title : _html.title = "";
+  if (titleByEntries) {
+    extraConfig.html.title = ({ entryName }) => titleByEntries[entryName];
+  }
+  if (faviconByEntries) {
+    extraConfig.html.favicon = ({ entryName }) => faviconByEntries[entryName];
+  }
+  if (injectByEntries) {
+    extraConfig.html.inject = ({ entryName }) => injectByEntries[entryName];
+  }
+  if (templateByEntries) {
+    extraConfig.html.template = ({ entryName }) => templateByEntries[entryName];
+  }
+  if (templateParametersByEntries) {
+    extraConfig.html.templateParameters = (defaultValue, { entryName }) => ({
+      ...defaultValue,
+      ...templateParametersByEntries[entryName] || {}
+    });
+  }
+  html.appIcon = typeof appIcon === "string" ? {
+    icons: [
+      {
+        src: appIcon,
+        size: 180
+      }
+    ]
+  } : appIcon;
+  if (tags) {
+    html.tags = Array.isArray(tags) ? tags.filter((t) => typeof t !== "function").concat(tags.filter((t) => typeof t === "function")) : tags;
+  }
+  if (tagsByEntries) {
+    extraConfig.html.tags = [
+      (tags2, utils) => {
+        const entryTags = (0, import_utils2.castArray)(tagsByEntries[utils.entryName]);
+        const handlers = [];
+        for (const tag of entryTags) {
+          if ((0, import_utils.isFunction)(tag)) {
+            handlers.push(tag);
+          } else {
+            tags2.push(tag);
+          }
+        }
+        return handlers.reduce((currentTags, handler) => handler(currentTags, utils) || currentTags, tags2);
+      }
+    ];
+  }
+  var _tools;
+  (_tools = (_extraConfig1 = extraConfig).tools) !== null && _tools !== void 0 ? _tools : _extraConfig1.tools = {};
+  if (htmlPlugin !== false) {
+    extraConfig.tools.htmlPlugin = (config) => {
+      if (typeof config.templateParameters === "function") {
+        const originFn = config.templateParameters;
+        config.templateParameters = (...args) => {
+          const res = originFn(...args);
+          return {
+            title: config.title,
+            meta: void 0,
+            ...res
+          };
+        };
+      }
+    };
+  }
+  const { dev: rsbuildDev, server } = (0, import_devServer.transformToRsbuildServerOptions)(dev || {}, devServer || {});
+  rsbuildConfig.server = removeUndefinedKey(server);
+  rsbuildConfig.dev = removeUndefinedKey(rsbuildDev);
+  rsbuildConfig.html = html;
+  rsbuildConfig.output = output;
+  const rsbuildPlugins = [
+    (0, import_splitChunk.pluginSplitChunks)(),
+    (0, import_globalVars.pluginGlobalVars)(globalVars),
+    (0, import_devtools.pluginDevtool)({
+      disableSourceMap,
+      sourceMap
+    }),
+    (0, import_emitRouteFile.pluginEmitRouteFile)(),
+    (0, import_plugin_toml.pluginToml)(),
+    (0, import_plugin_yaml.pluginYaml)(),
+    (0, import_antd.pluginAntd)(transformImport),
+    (0, import_arco.pluginArco)(transformImport),
+    (0, import_plugin_sass.pluginSass)({
+      sassLoaderOptions: sass
+    }),
+    (0, import_plugin_less.pluginLess)({
+      lessLoaderOptions: less
+    }),
+    (0, import_environmentDefaults.pluginEnvironmentDefaults)(distPath),
+    (0, import_htmlMinify.pluginHtmlMinifierTerser)()
+  ];
+  if (checkSyntax) {
+    const { pluginCheckSyntax } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-check-syntax")));
+    rsbuildPlugins.push(pluginCheckSyntax(typeof checkSyntax === "boolean" ? {} : checkSyntax));
+  }
+  if (!disableTsChecker) {
+    const { pluginTypeCheck } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-type-check")));
+    rsbuildPlugins.push(pluginTypeCheck({
+      tsCheckerOptions: tsChecker
+    }));
+  }
+  if (resolveMainFields) {
+    const { pluginMainFields } = await Promise.resolve().then(() => __toESM(require("./plugins/mainFields")));
+    rsbuildPlugins.push(pluginMainFields(resolveMainFields));
+  }
+  if (resolveExtensionPrefix) {
+    const { pluginExtensionPrefix } = await Promise.resolve().then(() => __toESM(require("./plugins/extensionPrefix")));
+    rsbuildPlugins.push(pluginExtensionPrefix(resolveExtensionPrefix));
+  }
+  if (convertToRem) {
+    const { pluginRem } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-rem")));
+    rsbuildPlugins.push(pluginRem(typeof convertToRem === "boolean" ? {} : convertToRem));
+  }
+  if (enableCssModuleTSDeclaration) {
+    const { pluginTypedCSSModules } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-typed-css-modules")));
+    rsbuildPlugins.push(pluginTypedCSSModules());
+  }
+  rsbuildPlugins.push((0, import_runtimeChunk.pluginRuntimeChunk)((_uniBuilderConfig_output = uniBuilderConfig.output) === null || _uniBuilderConfig_output === void 0 ? void 0 : _uniBuilderConfig_output.disableInlineRuntimeChunk));
+  const { sourceBuild } = uniBuilderConfig.experiments || {};
+  if (sourceBuild) {
+    const { pluginSourceBuild } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-source-build")));
+    rsbuildPlugins.push(pluginSourceBuild(sourceBuild === true ? {} : sourceBuild));
+  }
+  rsbuildPlugins.push((0, import_plugin_react.pluginReact)());
+  if (!disableSvgr) {
+    const { pluginSvgr } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-svgr")));
+    rsbuildPlugins.push(pluginSvgr({
+      mixedImport: true,
+      svgrOptions: {
+        exportType: svgDefaultExport === "component" ? "default" : "named"
+      }
+    }));
+  }
+  const pugOptions = (_uniBuilderConfig_tools = uniBuilderConfig.tools) === null || _uniBuilderConfig_tools === void 0 ? void 0 : _uniBuilderConfig_tools.pug;
+  if (pugOptions) {
+    const { pluginPug } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-pug")));
+    rsbuildPlugins.push(pluginPug(typeof pugOptions === "boolean" ? {} : {
+      pugOptions
+    }));
+  }
+  if (assetsRetry) {
+    const { pluginAssetsRetry } = await Promise.resolve().then(() => __toESM(require("@rsbuild/plugin-assets-retry")));
+    rsbuildPlugins.push(pluginAssetsRetry(assetsRetry));
+  }
+  if (enableAssetFallback) {
+    const { pluginFallback } = await Promise.resolve().then(() => __toESM(require("./plugins/fallback")));
+    rsbuildPlugins.push(pluginFallback());
+  }
+  if (frameworkConfigPath) {
+    rsbuildPlugins.push((0, import_frameworkConfig.pluginFrameworkConfig)(frameworkConfigPath));
+  }
+  rsbuildPlugins.push((0, import_plugin_css_minimizer.pluginCssMinimizer)({
+    pluginOptions: minifyCss
+  }));
+  if (enableAssetManifest) {
+    const { pluginManifest } = await Promise.resolve().then(() => __toESM(require("./plugins/manifest")));
+    rsbuildPlugins.push(pluginManifest());
+  }
+  return {
+    rsbuildConfig: (0, import_core.mergeRsbuildConfig)(rsbuildConfig, extraConfig),
+    rsbuildPlugins
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  isLooseCssModules,
+  parseCommonConfig
+});

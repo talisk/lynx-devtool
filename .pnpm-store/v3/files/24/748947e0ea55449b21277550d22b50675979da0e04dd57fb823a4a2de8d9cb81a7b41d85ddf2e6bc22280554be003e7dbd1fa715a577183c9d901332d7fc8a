@@ -1,0 +1,6 @@
+import type { RsbuildPlugin, SourceMap } from '@rsbuild/core';
+import type { DisableSourceMapOption } from '../../types';
+export declare const pluginDevtool: (options: {
+    disableSourceMap?: DisableSourceMapOption;
+    sourceMap?: SourceMap | boolean;
+}) => RsbuildPlugin;

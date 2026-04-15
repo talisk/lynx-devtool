@@ -1,0 +1,5 @@
+import React from 'react';
+export declare function Head(props: {
+    children?: any;
+}): React.JSX.Element;
+export declare function DefaultHead(): React.JSX.Element;

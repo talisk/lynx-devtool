@@ -1,0 +1,18 @@
+import type { AppContext, InternalContext } from '../types/cli/context';
+import type { CLIPlugin, CLIPluginExtends } from '../types/cli/plugin';
+interface ContextParams<Extends extends CLIPluginExtends> {
+    appContext: AppContext<Extends>;
+    config: Extends['config'];
+    normalizedConfig: Extends['normalizedConfig'];
+}
+export declare function initAppContext<Extends extends CLIPluginExtends>(params: {
+    packageName: string;
+    configFile: string;
+    command: string;
+    appDirectory: string;
+    plugins: CLIPlugin<Extends>[];
+    srcDir?: string;
+    distDir?: string;
+}): AppContext<Extends>;
+export declare function createContext<Extends extends CLIPluginExtends>({ appContext, config, normalizedConfig, }: ContextParams<Extends>): Promise<InternalContext<Extends>>;
+export {};

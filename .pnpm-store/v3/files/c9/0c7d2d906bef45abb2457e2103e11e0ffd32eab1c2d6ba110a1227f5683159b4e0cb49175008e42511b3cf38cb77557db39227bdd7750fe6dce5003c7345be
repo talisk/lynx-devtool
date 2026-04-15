@@ -1,0 +1,1 @@
+{"version":3,"file":"send-event.js","sourceRoot":"","sources":["../../../../src/proxy/helpers/send-event.ts"],"names":[],"mappings":"AAYA,OAAO,EAAE,mBAAmB,EAAE,MAAM,YAAY,CAAC;AAejD,MAAM,UAAU,SAAS,CACvB,MAAiC,EACjC,OAA0B;IAE1B,MAAM,CAAC,IAAI,CAAC,mBAAmB,CAAC,OAAO,CAAC,CAAC,CAAC;AAC5C,CAAC"}

@@ -1,0 +1,98 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var initialize_exports = {};
+__export(initialize_exports, {
+  default: () => initialize_default
+});
+module.exports = __toCommonJS(initialize_exports);
+var import_utils = require("@modern-js/utils");
+var import_config = require("../../config");
+var initialize_default = ({ bundler }) => ({
+  name: "@modern-js/plugin-initialize",
+  post: [
+    "@modern-js/plugin-ssr",
+    "@modern-js/plugin-document",
+    "@modern-js/plugin-state",
+    "@modern-js/plugin-router",
+    "@modern-js/plugin-router-v5",
+    "@modern-js/plugin-polyfill"
+  ],
+  setup(api) {
+    api.config(() => {
+      const appContext = api.getAppContext();
+      const userConfig = api.getConfig();
+      api.updateAppContext({
+        bundlerType: bundler
+      });
+      return (0, import_config.checkIsLegacyConfig)(userConfig) ? (0, import_config.createLegacyDefaultConfig)(appContext) : (0, import_config.createDefaultConfig)(appContext);
+    });
+    api.modifyResolvedConfig(async (resolved) => {
+      var _resolved_output_distPath;
+      let appContext = api.getAppContext();
+      const userConfig = api.getConfig();
+      const port = await getServerPort(resolved);
+      appContext = {
+        ...appContext,
+        port,
+        distDirectory: (0, import_utils.ensureAbsolutePath)(appContext.appDirectory, ((_resolved_output_distPath = resolved.output.distPath) === null || _resolved_output_distPath === void 0 ? void 0 : _resolved_output_distPath.root) || "dist")
+      };
+      api.updateAppContext(appContext);
+      const normalizedConfig = (0, import_config.checkIsLegacyConfig)(resolved) ? (0, import_config.transformNormalizedConfig)(resolved) : resolved;
+      resolved._raw = userConfig;
+      resolved.server = {
+        ...normalizedConfig.server || {},
+        port
+      };
+      var _normalizedConfig_autoLoadPlugins;
+      resolved.autoLoadPlugins = (_normalizedConfig_autoLoadPlugins = normalizedConfig.autoLoadPlugins) !== null && _normalizedConfig_autoLoadPlugins !== void 0 ? _normalizedConfig_autoLoadPlugins : false;
+      stabilizeConfig(resolved, normalizedConfig, [
+        "source",
+        "bff",
+        "dev",
+        "html",
+        "output",
+        "tools",
+        "testing",
+        "plugins",
+        "builderPlugins",
+        "runtime",
+        "runtimeByEntries",
+        "deploy",
+        "performance"
+      ]);
+      if (bundler === "webpack") {
+        resolved.security = normalizedConfig.security || {};
+        resolved.experiments = normalizedConfig.experiments;
+      }
+      return resolved;
+    });
+  }
+});
+function stabilizeConfig(resolve, config, keys) {
+  keys.forEach((key) => {
+    resolve[key] = config[key] || {};
+  });
+}
+async function getServerPort(config) {
+  const prodPort = Number(process.env.PORT) || config.server.port || 8080;
+  if ((0, import_utils.isDev)() && (0, import_utils.isDevCommand)()) {
+    return (0, import_utils.getPort)(Number(process.env.PORT) || config.dev.port || prodPort);
+  }
+  return prodPort;
+}

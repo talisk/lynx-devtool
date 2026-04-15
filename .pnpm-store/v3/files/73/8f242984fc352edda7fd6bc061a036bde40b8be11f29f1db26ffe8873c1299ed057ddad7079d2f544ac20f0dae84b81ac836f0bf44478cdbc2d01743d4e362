@@ -1,0 +1,68 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var createBuilderProviderConfig_exports = {};
+__export(createBuilderProviderConfig_exports, {
+  createBuilderProviderConfig: () => createBuilderProviderConfig
+});
+module.exports = __toCommonJS(createBuilderProviderConfig_exports);
+var import_createCopyPattern = require("./createCopyPattern");
+function modifyOutputConfig(config, appContext) {
+  const defaultCopyPattern = (0, import_createCopyPattern.createUploadPattern)(appContext, config);
+  const { copy } = config.output;
+  const copyOptions = Array.isArray(copy) ? copy : copy === null || copy === void 0 ? void 0 : copy.patterns;
+  const builderCopy = [
+    ...copyOptions || [],
+    defaultCopyPattern
+  ];
+  config.output = {
+    ...config.output,
+    copy: builderCopy
+  };
+}
+function createBuilderProviderConfig(resolveConfig, appContext) {
+  const htmlConfig = {
+    ...resolveConfig.html
+  };
+  if (!htmlConfig.template) {
+    htmlConfig.templateByEntries = {
+      ...appContext.htmlTemplates,
+      ...htmlConfig.templateByEntries
+    };
+  }
+  const config = {
+    ...resolveConfig,
+    plugins: [],
+    dev: {
+      ...resolveConfig.dev,
+      port: appContext.port
+    },
+    html: htmlConfig,
+    output: {
+      ...resolveConfig.output,
+      // We need to do this in the app-tools prepare hook because some files will be generated into the dist directory in the analyze process
+      cleanDistPath: false
+    }
+  };
+  modifyOutputConfig(config, appContext);
+  return config;
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createBuilderProviderConfig
+});

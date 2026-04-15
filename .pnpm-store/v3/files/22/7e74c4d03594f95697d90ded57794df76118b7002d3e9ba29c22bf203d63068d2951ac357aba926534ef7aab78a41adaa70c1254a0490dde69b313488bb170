@@ -1,0 +1,84 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var postcss_exports = {};
+__export(postcss_exports, {
+  pluginPostcss: () => pluginPostcss
+});
+module.exports = __toCommonJS(postcss_exports);
+var import_utils = require("@modern-js/utils");
+var import_getCssSupport = require("../getCssSupport");
+const pluginPostcss = ({ autoprefixer }) => ({
+  name: "uni-builder:postcss-plugins",
+  pre: [
+    "uni-builder:environment-defaults-plugin"
+  ],
+  setup(api) {
+    api.modifyEnvironmentConfig((config, { mergeEnvironmentConfig }) => {
+      var _config_output;
+      if (config.output.target !== "web") {
+        return config;
+      }
+      const cssSupport = (0, import_getCssSupport.getCssSupport)(config.output.overrideBrowserslist);
+      const enableExtractCSS = !((_config_output = config.output) === null || _config_output === void 0 ? void 0 : _config_output.injectStyles);
+      const enableCssMinify = !enableExtractCSS && import_utils.isProd;
+      const plugins = [
+        require("postcss-flexbugs-fixes"),
+        !cssSupport.customProperties && require("postcss-custom-properties"),
+        !cssSupport.initial && require("postcss-initial"),
+        !cssSupport.pageBreak && require("postcss-page-break"),
+        !cssSupport.fontVariant && require("postcss-font-variant"),
+        !cssSupport.mediaMinmax && require("postcss-media-minmax"),
+        require("postcss-nesting"),
+        enableCssMinify ? require("cssnano")({
+          preset: [
+            "default",
+            {
+              // merge longhand will break safe-area-inset-top, so disable it
+              // https://github.com/cssnano/cssnano/issues/803
+              // https://github.com/cssnano/cssnano/issues/967
+              mergeLonghand: false
+            }
+          ]
+        }) : false,
+        // The last insert autoprefixer
+        require("autoprefixer")((0, import_utils.applyOptionsChain)({
+          flexbox: "no-2009",
+          overrideBrowserslist: config.output.overrideBrowserslist
+        }, autoprefixer))
+      ].filter(Boolean);
+      return mergeEnvironmentConfig(
+        {
+          tools: {
+            postcss: {
+              postcssOptions: {
+                plugins
+              }
+            }
+          }
+        },
+        // user config has higher priority than builtin config
+        config
+      );
+    });
+  }
+});
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  pluginPostcss
+});

@@ -1,0 +1,6 @@
+import { DebugRouterConnector } from "../../connector";
+import { BaseDevice } from "../BaseDevice";
+export default class iOSDevice extends BaseDevice {
+    constructor(driver: DebugRouterConnector, serial: string, title: string);
+    getHost(): string;
+}

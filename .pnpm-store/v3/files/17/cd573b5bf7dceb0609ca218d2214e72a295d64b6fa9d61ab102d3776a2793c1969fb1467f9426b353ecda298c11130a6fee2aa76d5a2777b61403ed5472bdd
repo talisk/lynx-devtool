@@ -1,0 +1,14 @@
+import { execa } from "@modern-js/utils";
+const CHANGESET_PATH = require.resolve("@changesets/cli");
+function execaWithStreamLog(command, args) {
+  const promise = execa(command, args, {
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit"
+  });
+  return promise;
+}
+export {
+  CHANGESET_PATH,
+  execaWithStreamLog
+};

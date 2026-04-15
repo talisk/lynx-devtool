@@ -1,0 +1,5 @@
+export declare enum WatchStatus {
+    PrepareToWatch = 0,
+    Watching = 1,
+    StopWatching = 2
+}

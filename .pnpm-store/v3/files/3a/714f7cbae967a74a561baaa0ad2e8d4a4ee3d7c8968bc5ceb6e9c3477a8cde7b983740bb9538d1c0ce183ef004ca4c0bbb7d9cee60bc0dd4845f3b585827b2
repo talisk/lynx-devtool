@@ -1,0 +1,9 @@
+export declare const APP_FILE_NAME = "App";
+export declare const ENTRY_POINT_FILE_NAME = "index.jsx";
+export declare const SERVER_ENTRY_POINT_FILE_NAME = "index.server.jsx";
+export declare const INDEX_FILE_NAME = "index";
+export declare const ENTRY_BOOTSTRAP_FILE_NAME = "bootstrap.jsx";
+export declare const ENTRY_SERVER_BOOTSTRAP_FILE_NAME = "bootstrap.server.jsx";
+export declare const ENTRY_POINT_RUNTIME_REGISTER_FILE_NAME = "runtime-register.js";
+export declare const ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME = "runtime-global-context.js";
+export declare const ENTRY_POINT_REGISTER_FILE_NAME = "register.js";

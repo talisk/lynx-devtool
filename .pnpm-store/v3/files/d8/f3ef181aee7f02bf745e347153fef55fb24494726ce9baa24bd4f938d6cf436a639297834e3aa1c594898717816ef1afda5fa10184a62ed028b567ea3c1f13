@@ -1,0 +1,15 @@
+import path from "path";
+import { pkgUp } from "@modern-js/utils";
+const initAppDir = async (currentDir) => {
+  const cwd = currentDir || process.cwd();
+  const pkg = await pkgUp({
+    cwd
+  });
+  if (!pkg) {
+    throw new Error(`no package.json found in current work dir: ${cwd}`);
+  }
+  return path.dirname(pkg);
+};
+export {
+  initAppDir
+};

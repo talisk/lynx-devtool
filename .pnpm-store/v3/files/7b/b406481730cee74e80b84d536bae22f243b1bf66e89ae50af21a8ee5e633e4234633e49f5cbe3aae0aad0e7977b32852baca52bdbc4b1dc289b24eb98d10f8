@@ -1,0 +1,43 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var transform_exports = {};
+__export(transform_exports, {
+  TransformContext: () => TransformContext
+});
+module.exports = __toCommonJS(transform_exports);
+var import_sourcemap = require("./sourcemap");
+class TransformContext extends import_sourcemap.SourcemapContext {
+  addTransformResult(pluginId, result) {
+    this.cachedTransformResult.set(pluginId, result);
+    this.addSourceMap(pluginId, result.map);
+  }
+  getValidCache(pluginId, code) {
+    const cache = this.cachedTransformResult.get(pluginId);
+    if (cache && cache.originCode === code) {
+      return cache;
+    }
+  }
+  constructor(...args) {
+    super(...args), this.cachedTransformResult = /* @__PURE__ */ new Map();
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  TransformContext
+});

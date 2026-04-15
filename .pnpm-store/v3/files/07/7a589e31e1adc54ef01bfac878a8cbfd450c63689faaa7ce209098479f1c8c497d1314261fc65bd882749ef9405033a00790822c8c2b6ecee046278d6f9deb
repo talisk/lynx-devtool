@@ -1,0 +1,25 @@
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_without_properties } from "@swc/helpers/_/_object_without_properties";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { renderToString } from "react-dom/server";
+import { DOCUMENT_SCRIPT_ATTRIBUTES_END, DOCUMENT_SCRIPT_ATTRIBUTES_START, DOCUMENT_SCRIPT_PLACEHOLDER_END, DOCUMENT_SCRIPT_PLACEHOLDER_START } from "./constants";
+function Script(props) {
+  var content = props.content, rests = _object_without_properties(props, [
+    "content"
+  ]);
+  var contentStr = content === null || content === void 0 ? void 0 : content.toString();
+  var contentIIFE = (contentStr === null || contentStr === void 0 ? void 0 : contentStr.length) ? encodeURIComponent("(".concat(contentStr, ")()")) : "";
+  var scriptProperties = renderToString(/* @__PURE__ */ _jsx("script", _object_spread({}, rests)));
+  var scriptpPropertiesStr = encodeURIComponent(scriptProperties.replace("<script ", "").replace("></script>", ""));
+  return /* @__PURE__ */ _jsxs(_Fragment, {
+    children: [
+      "".concat(DOCUMENT_SCRIPT_PLACEHOLDER_START),
+      "".concat(DOCUMENT_SCRIPT_ATTRIBUTES_START).concat(scriptpPropertiesStr).concat(DOCUMENT_SCRIPT_ATTRIBUTES_END),
+      "".concat(contentIIFE),
+      "".concat(DOCUMENT_SCRIPT_PLACEHOLDER_END)
+    ]
+  });
+}
+export {
+  Script
+};

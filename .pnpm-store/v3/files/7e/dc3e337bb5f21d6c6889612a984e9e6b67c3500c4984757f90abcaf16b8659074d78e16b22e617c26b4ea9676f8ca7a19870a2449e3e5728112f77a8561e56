@@ -1,0 +1,85 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var en_exports = {};
+__export(en_exports, {
+  EN_LOCALE: () => EN_LOCALE
+});
+module.exports = __toCommonJS(en_exports);
+var import_utils = require("@modern-js/utils");
+const noDevTools = `There are no DevTools available, you can learn about them and choose to use them by following the link options.
+  - ${import_utils.chalk.underline(import_utils.chalk.blue("[Storybook]"), "https://modernjs.dev/module-tools/guide/basic/using-storybook.html")}
+`;
+const EN_LOCALE = {
+  command: {
+    shared: {
+      config: "sspecify the configuration file, which can be a relative or absolute path",
+      noNeedInstall: "not run install command"
+    },
+    build: {
+      describe: "build the module for production",
+      watch: "building module in watch mode",
+      tsconfig: "Specify a path to the tsconfig.json file",
+      styleOnly: "only build style",
+      platform: 'build the specified task or all tasks, If exist. (tasks: "storybook", "docs")',
+      noTsc: "close tsc compiler to emit d.ts (Deprecated)",
+      dts: "Turn on dts generation and type checking",
+      noClear: "disable auto clear dist dir"
+    },
+    dev: {
+      describe: "run and debug the module",
+      tsconfig: "Specify a path to the tsconfig.json file"
+    },
+    new: {
+      describe: "enable optional features",
+      debug: "using debug mode to log something",
+      config: "set default generator config(json string)",
+      distTag: `use specified tag version for it's generator`,
+      registry: "set npm registry url to run npm command",
+      lang: "set new command language(en or zh)"
+    }
+  },
+  log: {
+    dev: {
+      noDevtools: noDevTools
+    },
+    buildConfigTip: "The configuration file of the current project has both `buildConfig` and `buildPreset` options. However, only the `buildConfig` configuration will take effect. If you need to override the content of `buildPreset`, please use the function type of `buildPreset` (refer to the API documentation for details)."
+  },
+  errors: {
+    externalHelpers: `The 'externalHelpers' configuration is currently enabled, but the "@swc/helpers" dependency declaration was not found. This will cause issues with the build output.Use the following for installation:
+      ${import_utils.chalk.blue("Package Manager is npm:")}
+      ${import_utils.chalk.yellow("`npm i @swc/helpers`")} Or ${import_utils.chalk.yellow("`npm i @swc/helpers -D`")}
+
+      ${import_utils.chalk.blue("Package Manager is pnpm:")}
+      ${import_utils.chalk.yellow("`pnpm i @swc/helpers`")} Or ${import_utils.chalk.yellow("`pnpm i @swc/helpers -D`")}
+
+      ${import_utils.chalk.blue("Package Manager is yarn:")}
+      ${import_utils.chalk.yellow("`yarn add @swc/helpers`")} Or ${import_utils.chalk.yellow("`yarn add @swc/helpers -D`")}
+    `
+  },
+  warns: {
+    dts: {
+      abortOnError: "With the `dts.abortOnError` configuration currently turned off, type errors do not cause build failures, but they do not guarantee proper type file output"
+    },
+    clearRootPath: "It is detected that the outDir in the configuration is the same as the current project directory, and the current product directory will not be automatically deleted."
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  EN_LOCALE
+});

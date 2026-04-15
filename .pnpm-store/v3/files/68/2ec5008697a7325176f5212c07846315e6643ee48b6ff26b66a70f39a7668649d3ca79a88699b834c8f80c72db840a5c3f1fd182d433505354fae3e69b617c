@@ -1,0 +1,8 @@
+export type IsMonorepoFn = (monorepoRootPath: string) => Promise<boolean> | boolean;
+export type IsMonorepoResult = {
+    isMonorepo: boolean;
+    type: 'rush' | 'pnpm' | string;
+};
+export declare const isPnpmMonorepo: IsMonorepoFn;
+export declare const isRushMonorepo: IsMonorepoFn;
+export declare const isMonorepo: (monorepoRootPath: string, otherMonorepoChecks?: Record<string, IsMonorepoFn>) => Promise<IsMonorepoResult>;

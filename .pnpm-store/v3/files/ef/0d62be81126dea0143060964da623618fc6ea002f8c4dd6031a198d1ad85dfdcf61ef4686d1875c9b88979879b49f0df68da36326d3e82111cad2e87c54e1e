@@ -1,0 +1,156 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var code_exports = {};
+__export(code_exports, {
+  generateCode: () => generateCode,
+  generatorRegisterCode: () => generatorRegisterCode
+});
+module.exports = __toCommonJS(code_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_utils2 = require("@modern-js/utils");
+var import_lodash = require("@modern-js/utils/lodash");
+var import_constants = require("../../../cli/constants");
+var import_constants2 = require("../constants");
+var import_getClientRoutes = require("./getClientRoutes");
+var import_nestedRoutes = require("./nestedRoutes");
+var templates = __toESM(require("./templates"));
+var import_utils3 = require("./utils");
+const generateCode = async (appContext, config, entrypoints, api) => {
+  const { internalDirectory, srcDirectory, internalDirAlias, internalSrcAlias, packageName } = appContext;
+  const hookRunners = api.useHookRunners();
+  const isV5 = (0, import_utils.isRouterV5)(config);
+  const getRoutes = isV5 ? import_getClientRoutes.getClientRoutesLegacy : import_getClientRoutes.getClientRoutes;
+  const oldVersion = typeof (config === null || config === void 0 ? void 0 : config.runtime.router) === "object" ? Boolean((config === null || config === void 0 ? void 0 : config.runtime.router).oldVersion) : false;
+  await Promise.all(entrypoints.map(generateEntryCode));
+  async function generateEntryCode(entrypoint) {
+    const { entryName, isMainEntry, isAutoMount, pageRoutesEntry, nestedRoutesEntry } = entrypoint;
+    const { metaName } = api.useAppContext();
+    if (isAutoMount) {
+      if (pageRoutesEntry || nestedRoutesEntry) {
+        var _config_output;
+        let initialRoutes = [];
+        let nestedRoutes = null;
+        if (entrypoint.entry) {
+          initialRoutes = getRoutes({
+            entrypoint,
+            srcDirectory,
+            srcAlias: internalSrcAlias,
+            internalDirectory,
+            internalDirAlias
+          });
+        }
+        if (!isV5 && entrypoint.nestedRoutesEntry) {
+          nestedRoutes = await (0, import_nestedRoutes.walk)(entrypoint.nestedRoutesEntry, entrypoint.nestedRoutesEntry, {
+            name: internalSrcAlias,
+            basename: srcDirectory
+          }, entrypoint.entryName, entrypoint.isMainEntry, oldVersion);
+          if (nestedRoutes) {
+            if (!Array.isArray(nestedRoutes)) {
+              nestedRoutes = [
+                nestedRoutes
+              ];
+            }
+            for (const route of nestedRoutes) {
+              initialRoutes.unshift(route);
+            }
+          }
+        }
+        const config2 = api.useResolvedConfigContext();
+        const ssrByRouteIds = config2.server.ssrByRouteIds || [];
+        const clonedRoutes = (0, import_lodash.cloneDeep)(initialRoutes);
+        const markedRoutes = ssrByRouteIds.length > 0 ? (0, import_utils2.markRoutes)(clonedRoutes, ssrByRouteIds) : initialRoutes;
+        const { routes } = await hookRunners.modifyFileSystemRoutes({
+          entrypoint,
+          routes: markedRoutes
+        });
+        const ssr = (0, import_utils.getEntryOptions)(entryName, isMainEntry, config2.server.ssr, config2.server.ssrByEntries, packageName);
+        const useSSG = (0, import_utils.isSSGEntry)(config2, entryName, entrypoints);
+        let mode;
+        if (ssr) {
+          mode = typeof ssr === "object" ? ssr.mode || "string" : "string";
+        }
+        if (mode === "stream") {
+          const hasPageRoute = routes.some((route) => "type" in route && route.type === "page");
+          if (hasPageRoute) {
+            import_utils.logger.error("Streaming ssr is not supported when pages dir exists");
+            process.exit(1);
+          }
+        }
+        const { code } = await hookRunners.beforeGenerateRoutes({
+          entrypoint,
+          code: await templates.fileSystemRoutes({
+            metaName,
+            routes,
+            ssrMode: useSSG ? "string" : mode,
+            nestedRoutesEntry: entrypoint.nestedRoutesEntry,
+            entryName: entrypoint.entryName,
+            internalDirectory,
+            splitRouteChunks: config2 === null || config2 === void 0 ? void 0 : (_config_output = config2.output) === null || _config_output === void 0 ? void 0 : _config_output.splitRouteChunks
+          })
+        });
+        if (entrypoint.nestedRoutesEntry && (0, import_utils.isUseSSRBundle)(config2)) {
+          var _config_output1;
+          const routesServerFile = (0, import_utils3.getServerLoadersFile)(internalDirectory, entryName);
+          const filtedRoutesForServer = (0, import_utils2.filterRoutesForServer)(routes);
+          const routesForServerLoaderMatches = (0, import_utils2.filterRoutesLoader)(routes);
+          const code2 = templates.routesForServer({
+            routesForServerLoaderMatches
+          });
+          await import_utils.fs.ensureFile(routesServerFile);
+          await import_utils.fs.writeFile(routesServerFile, code2);
+          const serverRoutesCode = await templates.fileSystemRoutes({
+            metaName,
+            routes: filtedRoutesForServer,
+            ssrMode: useSSG ? "string" : mode,
+            nestedRoutesEntry: entrypoint.nestedRoutesEntry,
+            entryName: entrypoint.entryName,
+            internalDirectory,
+            splitRouteChunks: config2 === null || config2 === void 0 ? void 0 : (_config_output1 = config2.output) === null || _config_output1 === void 0 ? void 0 : _config_output1.splitRouteChunks
+          });
+          await import_utils.fs.outputFile(import_path.default.resolve(internalDirectory, `./${entryName}/routes.server.js`), serverRoutesCode, "utf8");
+        }
+        const serverLoaderCombined = templates.ssrLoaderCombinedModule(entrypoints, entrypoint, config2, appContext);
+        if (serverLoaderCombined) {
+          const serverLoaderFile = (0, import_utils3.getServerCombinedModueFile)(internalDirectory, entryName);
+          await import_utils.fs.outputFile(serverLoaderFile, serverLoaderCombined);
+        }
+        await import_utils.fs.outputFile(import_path.default.resolve(internalDirectory, `./${entryName}/${import_constants2.FILE_SYSTEM_ROUTES_FILE_NAME}`), code, "utf8");
+      }
+    }
+  }
+};
+function generatorRegisterCode(internalDirectory, entryName, code) {
+  import_utils.fs.outputFileSync(import_path.default.resolve(internalDirectory, `./${entryName}/${import_constants.ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME}`), code, "utf8");
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  generateCode,
+  generatorRegisterCode
+});

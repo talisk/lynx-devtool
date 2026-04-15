@@ -1,0 +1,10 @@
+import { useLocation, useNavigate } from '@modern-js/runtime-utils/router';
+import type React from 'react';
+export interface WithRouterProps<Params extends {
+    [K in keyof Params]?: string;
+} = {}> {
+    location: ReturnType<typeof useLocation>;
+    params: Params;
+    navigate: ReturnType<typeof useNavigate>;
+}
+export declare const withRouter: <Props extends WithRouterProps<{}>>(Component: React.ComponentType<Props>) => (props: Omit<Props, keyof WithRouterProps<{}>>) => React.JSX.Element;

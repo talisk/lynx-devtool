@@ -1,0 +1,40 @@
+import type { ServerRoute } from '@modern-js/types';
+import type { UniBuilderInstance, UniBuilderWebpackInstance } from '@modern-js/uni-builder';
+import type { Hooks } from '../../cli/hooks';
+import type { CLIPluginAPI } from './api';
+import type { CLIPlugin, CLIPluginExtends } from './plugin';
+export interface Entrypoint {
+    entryName: string;
+    entry: string;
+}
+/** The public context */
+export type AppContext<Extends extends CLIPluginExtends> = {
+    packageName: string;
+    configFile: string;
+    command: string;
+    isProd: boolean;
+    appDirectory: string;
+    srcDirectory: string;
+    distDirectory: string;
+    nodeModulesDirectory: string;
+    plugins: CLIPlugin<Extends>[];
+    bundlerType?: 'webpack' | 'rspack' | 'esbuild';
+    builder?: UniBuilderInstance | UniBuilderWebpackInstance;
+    port?: number;
+    host?: string;
+    ip?: string;
+    serverRoutes?: ServerRoute[];
+};
+/** The inner context. */
+export type InternalContext<Extends extends CLIPluginExtends> = AppContext<Extends> & {
+    /** All hooks. */
+    hooks: Hooks<Extends['config'], Extends['normalizedConfig']> & Extends['extendHooks'];
+    /** All plugin registry hooks */
+    extendsHooks: Extends['extendHooks'];
+    /** Current App config. */
+    config: Readonly<Extends['config']>;
+    /** The normalized Rsbuild config. */
+    normalizedConfig?: Extends['normalizedConfig'];
+    pluginAPI?: CLIPluginAPI<Extends> & Record<string, (...args: any[]) => any>;
+    _internalContext?: InternalContext<Extends>;
+};

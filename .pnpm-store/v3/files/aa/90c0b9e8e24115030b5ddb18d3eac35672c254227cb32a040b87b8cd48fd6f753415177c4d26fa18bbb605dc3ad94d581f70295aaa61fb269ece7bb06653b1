@@ -1,0 +1,6 @@
+import { BaseDevice } from "../device/BaseDevice";
+import { UsbClient } from "../usb/Client";
+export declare function setDeviceTimeMap(device: BaseDevice): void;
+export declare function monitorUnregisterDevice(device: BaseDevice, retryTime: number): void;
+export declare function setClientTimeMap(client: UsbClient): void;
+export declare function monitorUnregisterClient(client: UsbClient, retryTime: number): void;

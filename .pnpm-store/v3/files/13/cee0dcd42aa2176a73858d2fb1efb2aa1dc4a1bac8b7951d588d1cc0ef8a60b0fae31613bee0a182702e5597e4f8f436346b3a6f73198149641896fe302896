@@ -1,0 +1,30 @@
+import type { IAbstractSocketConnection } from "./socket.model";
+import type { ISocketMessage } from "./message.model";
+export interface IHttpServerOptions {
+    route?: string;
+    timeout?: number;
+}
+export interface IConnection {
+    readonly descriptor: IClientDescriptor;
+    readonly connection: IAbstractSocketConnection;
+    messageHandlers: Set<(data: string | ISocketMessage<any>) => void>;
+    errorHandlers: Set<(error: Error) => void>;
+}
+export interface IRequestInfo {
+    remoteAddr: string;
+    did: string;
+    appId: string;
+    osType: string;
+}
+export interface IClientDescriptor extends Record<string, any> {
+    id: number;
+    room?: string;
+    token?: string;
+    ipAddress?: string;
+    info?: Record<string, any>;
+    type?: string;
+}
+export interface IClient {
+    readonly descriptor: IClientDescriptor;
+    readonly connection: IAbstractSocketConnection;
+}

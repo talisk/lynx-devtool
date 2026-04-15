@@ -1,0 +1,42 @@
+import { createHtmlConfig } from "./createHtmlConfig";
+import { createOutputConfig } from "./createOutputConfig";
+import { createSourceConfig } from "./createSourceConfig";
+import { createToolsConfig } from "./createToolsConfig";
+function transformNormalizedConfig(config) {
+  const html = createHtmlConfig(config);
+  const output = createOutputConfig(config);
+  const source = createSourceConfig(config);
+  const tools = createToolsConfig(config);
+  const { bff, dev, deploy, runtime, runtimeByEntries, server, cliOptions, plugins, testing, autoLoadPlugins } = config;
+  return {
+    source,
+    html,
+    output,
+    tools,
+    bff,
+    dev,
+    deploy,
+    runtime,
+    runtimeByEntries,
+    server,
+    cliOptions,
+    testing,
+    builderPlugins: [],
+    plugins,
+    security: {},
+    _raw: {},
+    experiments: {},
+    environments: {},
+    autoLoadPlugins,
+    performance: {
+      removeMomentLocale: true
+    }
+  };
+}
+function checkIsLegacyConfig(config) {
+  return Boolean(config.legacy);
+}
+export {
+  checkIsLegacyConfig,
+  transformNormalizedConfig
+};

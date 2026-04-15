@@ -1,0 +1,16 @@
+import type { CheckSyntaxExclude, CheckSyntaxOptions, ECMASyntaxError, EcmaVersion, SyntaxErrorKey } from './types.js';
+export declare const JS_REGEX: RegExp;
+export declare class CheckSyntax {
+    errors: ECMASyntaxError[];
+    ecmaVersion: EcmaVersion;
+    targets: string[];
+    rootPath: string;
+    exclude: CheckSyntaxExclude | undefined;
+    excludeOutput: CheckSyntaxExclude | undefined;
+    excludeErrorLogs: SyntaxErrorKey[];
+    constructor(options: CheckSyntaxOptions & Required<Pick<CheckSyntaxOptions, 'targets'>> & {
+        rootPath: string;
+    });
+    check(filepath: string, code?: string): Promise<void>;
+    tryParse(filepath: string, code: string): Promise<void>;
+}

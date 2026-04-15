@@ -1,0 +1,146 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { logger } from "@modern-js/utils";
+import { buildServerConfig } from "../utils/config";
+import { loadServerPlugins } from "../utils/loadPlugins";
+import { registerCompiler } from "../utils/register";
+import { generateRoutes } from "../utils/routes";
+var build = function() {
+  var _ref = _async_to_generator(function(api, options) {
+    var _resolvedConfig_source, resolvedConfig, appContext, hooks, _resolvedConfig_source1, registerEsm, apiOnly, appDirectory, distDirectory, serverConfigFile, distDirectory1, appDirectory1, serverConfigFile1;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          if (options === null || options === void 0 ? void 0 : options.analyze) {
+            process.env.BUNDLE_ANALYZE = "true";
+          }
+          resolvedConfig = api.getNormalizedConfig();
+          appContext = api.getAppContext();
+          hooks = api.getHooks();
+          return [
+            4,
+            loadServerPlugins(api, appContext.appDirectory, appContext.metaName)
+          ];
+        case 1:
+          _state.sent();
+          if (!(appContext.moduleType && appContext.moduleType === "module"))
+            return [
+              3,
+              4
+            ];
+          return [
+            4,
+            import("../esm/register-esm.mjs")
+          ];
+        case 2:
+          registerEsm = _state.sent().registerEsm;
+          return [
+            4,
+            registerEsm({
+              appDir: appContext.appDirectory,
+              distDir: appContext.distDirectory,
+              alias: (_resolvedConfig_source1 = resolvedConfig.source) === null || _resolvedConfig_source1 === void 0 ? void 0 : _resolvedConfig_source1.alias
+            })
+          ];
+        case 3:
+          _state.sent();
+          _state.label = 4;
+        case 4:
+          return [
+            4,
+            registerCompiler(appContext.appDirectory, appContext.distDirectory, resolvedConfig === null || resolvedConfig === void 0 ? void 0 : (_resolvedConfig_source = resolvedConfig.source) === null || _resolvedConfig_source === void 0 ? void 0 : _resolvedConfig_source.alias)
+          ];
+        case 5:
+          _state.sent();
+          apiOnly = appContext.apiOnly;
+          if (!apiOnly)
+            return [
+              3,
+              10
+            ];
+          appDirectory = appContext.appDirectory, distDirectory = appContext.distDirectory, serverConfigFile = appContext.serverConfigFile;
+          return [
+            4,
+            hooks.onBeforeBuild.call({
+              environments: {},
+              // "null" bundlerConfigs
+              bundlerConfigs: void 0,
+              isFirstCompile: false,
+              isWatch: false
+            })
+          ];
+        case 6:
+          _state.sent();
+          return [
+            4,
+            buildServerConfig({
+              appDirectory,
+              distDirectory,
+              configFile: serverConfigFile
+            })
+          ];
+        case 7:
+          _state.sent();
+          return [
+            4,
+            generateRoutes(appContext)
+          ];
+        case 8:
+          _state.sent();
+          return [
+            4,
+            hooks.onAfterBuild.call({
+              environments: {},
+              // "null" stats
+              stats: void 0,
+              isFirstCompile: false,
+              isWatch: false
+            })
+          ];
+        case 9:
+          _state.sent();
+          return [
+            2
+          ];
+        case 10:
+          api.modifyResolvedConfig(function(config) {
+            return _object_spread_props(_object_spread({}, config), {
+              cliOptions: options
+            });
+          });
+          distDirectory1 = appContext.distDirectory, appDirectory1 = appContext.appDirectory, serverConfigFile1 = appContext.serverConfigFile;
+          return [
+            4,
+            buildServerConfig({
+              appDirectory: appDirectory1,
+              distDirectory: distDirectory1,
+              configFile: serverConfigFile1
+            })
+          ];
+        case 11:
+          _state.sent();
+          logger.info("Starting production build...");
+          if (!appContext.builder) {
+            throw new Error("Expect the Builder to have been initialized, But the appContext.builder received `undefined`");
+          }
+          return [
+            4,
+            appContext.builder.build()
+          ];
+        case 12:
+          _state.sent();
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function build2(api, options) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  build
+};

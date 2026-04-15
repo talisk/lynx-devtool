@@ -1,0 +1,225 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var cli_exports = {};
+__export(cli_exports, {
+  default: () => cli_default,
+  documentPlugin: () => documentPlugin,
+  getDocumenByEntryName: () => getDocumenByEntryName
+});
+module.exports = __toCommonJS(cli_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_esbuild = require("esbuild");
+var import_react = __toESM(require("react"));
+var import_server = __toESM(require("react-dom/server"));
+var import_DocumentContext = require("../DocumentContext");
+var import_constants = require("../constants");
+const debug = (0, import_utils.createDebugger)("html_genarate");
+const getDocumenByEntryName = function(entrypoints, entryName, fallbackDir) {
+  var _entrypoints_find;
+  const entryDir = (_entrypoints_find = entrypoints.find((item) => item.entryName === entryName)) === null || _entrypoints_find === void 0 ? void 0 : _entrypoints_find.absoluteEntryDir;
+  const entryDirs = import_constants.DOC_EXT.map((item) => `${entryDir}${import_path.default.sep}${import_constants.DOCUMENT_FILE_NAME}.${item}`);
+  const fallbackDirs = fallbackDir ? import_constants.DOC_EXT.map((item) => [
+    fallbackDir,
+    "src",
+    `${import_constants.DOCUMENT_FILE_NAME}.${item}`
+  ].join(import_path.default.sep)) : [];
+  const docFile = (0, import_utils.findExists)([
+    ...entryDirs,
+    ...fallbackDirs
+  ]);
+  return docFile || void 0;
+};
+const documentPlugin = () => ({
+  name: "@modern-js/plugin-document",
+  pre: [
+    "@modern-js/plugin-analyze"
+  ],
+  setup: async (api) => {
+    function getDocParams(params) {
+      const { config, templateParameters, entryName } = params;
+      return {
+        processEnv: process.env,
+        config: {
+          output: config.output
+        },
+        entryName,
+        templateParams: templateParameters
+      };
+    }
+    const documentEntry = (entryName, templateParameters) => {
+      const { entrypoints, internalDirectory, appDirectory } = api.useAppContext();
+      const documentFilePath = getDocumenByEntryName(entrypoints, entryName, appDirectory);
+      if (!documentFilePath) {
+        return null;
+      }
+      return async ({ htmlWebpackPlugin }) => {
+        const config = api.useResolvedConfigContext();
+        const documentParams = getDocParams({
+          config,
+          entryName,
+          templateParameters
+        });
+        const tempTsConfigFile = import_path.default.join(internalDirectory, `./document/_tempTsconfig.json`);
+        const userTsConfigFilePath = import_path.default.join(appDirectory, "tsconfig.json");
+        let tsConfig;
+        try {
+          tsConfig = await require(userTsConfigFilePath);
+        } catch (err) {
+          tsConfig = {};
+        }
+        if (tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) {
+          tsConfig.compilerOptions.jsx = "react-jsx";
+        } else {
+          tsConfig.compilerOptions = {
+            jsx: "react-jsx"
+          };
+        }
+        import_utils.fs.outputFileSync(tempTsConfigFile, JSON.stringify(tsConfig));
+        const htmlOutputFile = import_path.default.join(internalDirectory, `./document/_${entryName}.html.js`);
+        await (0, import_esbuild.build)({
+          entryPoints: [
+            documentFilePath
+          ],
+          outfile: htmlOutputFile,
+          platform: "node",
+          // change esbuild use the rootDir tsconfig.json as default to tempTsConfigFile
+          tsconfig: tempTsConfigFile,
+          target: "es6",
+          loader: {
+            ".ts": "ts",
+            ".tsx": "tsx"
+          },
+          bundle: true,
+          plugins: [
+            {
+              name: "make-all-packages-external",
+              setup(build2) {
+                build2.onResolve({
+                  filter: /^[^./]|^\.[^./]|^\.\.[^/]/
+                }, (args) => {
+                  let external = true;
+                  if (args.kind === "entry-point") {
+                    external = false;
+                  }
+                  return {
+                    path: args.path,
+                    external
+                  };
+                });
+              }
+            }
+          ]
+        });
+        delete require.cache[require.resolve(htmlOutputFile)];
+        const Document = (await require(htmlOutputFile)).default;
+        const HTMLElement = import_react.default.createElement(import_DocumentContext.DocumentContext.Provider, {
+          value: documentParams
+        }, import_react.default.createElement(Document, null));
+        let html = import_server.default.renderToStaticMarkup(HTMLElement);
+        debug("entry %s's document jsx rendered html: %o", entryName, html);
+        const { partialsByEntrypoint } = api.useAppContext();
+        const scripts = [
+          htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName === "script").join(""),
+          htmlWebpackPlugin.tags.bodyTags.toString()
+        ].join("");
+        const partialsContent = {
+          partialsTop: "",
+          partialsHead: "",
+          partialsBody: ""
+        };
+        if (partialsByEntrypoint === null || partialsByEntrypoint === void 0 ? void 0 : partialsByEntrypoint[entryName]) {
+          partialsContent.partialsTop = partialsByEntrypoint[entryName].top.join("\n");
+          partialsContent.partialsHead = partialsByEntrypoint[entryName].head.join("\n");
+          partialsContent.partialsBody = partialsByEntrypoint[entryName].body.join("\n");
+        }
+        html = html.replace(import_constants.TOP_PARTICALS_SEPARATOR, partialsContent.partialsTop).replace(import_constants.HEAD_PARTICALS_SEPARATOR, partialsContent.partialsHead).replace(import_constants.BODY_PARTICALS_SEPARATOR, partialsContent.partialsBody);
+        const links = [
+          htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName === "link").join("")
+        ].join("");
+        const metas = [
+          templateParameters.meta,
+          htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName !== "script" && item.tagName !== "link" && item.tagName !== "title").join("")
+        ].join("");
+        const titles = htmlWebpackPlugin.tags.headTags.filter((item) => item.tagName === "title").join("").replace("<title>", "").replace("</title>", "") || templateParameters.title;
+        if (html.includes(import_constants.DOCUMENT_SCRIPT_PLACEHOLDER_START) && html.includes(import_constants.DOCUMENT_SCRIPT_PLACEHOLDER_END)) {
+          const { nonce } = config.security || {};
+          const nonceAttr = nonce ? `nonce=${nonce}` : "";
+          html = html.replace(new RegExp(`${import_constants.DOCUMENT_SCRIPT_PLACEHOLDER_START}${import_constants.DOCUMENT_SCRIPT_ATTRIBUTES_START}(.*)${import_constants.DOCUMENT_SCRIPT_ATTRIBUTES_END}(.*?)${import_constants.DOCUMENT_SCRIPT_PLACEHOLDER_END}`, "g"), (_scriptStr, $1, $2) => `<script ${decodeURIComponent($1)} ${nonceAttr}>${decodeURIComponent($2)}</script>`);
+        }
+        if (html.includes(import_constants.DOCUMENT_STYLE_PLACEHOLDER_START) && html.includes(import_constants.DOCUMENT_STYLE_PLACEHOLDER_END)) {
+          html = html.replace(new RegExp(`${import_constants.DOCUMENT_STYLE_PLACEHOLDER_START}(.*?)${import_constants.DOCUMENT_STYLE_PLACEHOLDER_END}`, "g"), (_styleStr, $1) => `<style>${decodeURIComponent($1)}</style>`);
+        }
+        if (html.includes(import_constants.DOCUMENT_COMMENT_PLACEHOLDER_START) && html.includes(import_constants.DOCUMENT_COMMENT_PLACEHOLDER_END)) {
+          html = html.replace(new RegExp(`${import_constants.DOCUMENT_COMMENT_PLACEHOLDER_START}(.*?)${import_constants.DOCUMENT_COMMENT_PLACEHOLDER_END}`, "g"), (_scriptStr, $1) => `${decodeURIComponent($1)}`);
+        }
+        const finalHtml = `<!DOCTYPE html>${html}`.replace(import_constants.DOCUMENT_META_PLACEHOLDER, metas).replace(import_constants.DOCUMENT_SSR_PLACEHOLDER, import_constants.HTML_SEPARATOR).replace(import_constants.DOCUMENT_SCRIPTS_PLACEHOLDER, scripts).replace(import_constants.DOCUMENT_LINKS_PLACEHOLDER, links).replace(import_constants.DOCUMENT_CHUNKSMAP_PLACEHOLDER, import_constants.PLACEHOLDER_REPLACER_MAP[import_constants.DOCUMENT_CHUNKSMAP_PLACEHOLDER]).replace(import_constants.DOCUMENT_SSRDATASCRIPT_PLACEHOLDER, import_constants.PLACEHOLDER_REPLACER_MAP[import_constants.DOCUMENT_SSRDATASCRIPT_PLACEHOLDER]).replace(import_constants.DOCUMENT_TITLE_PLACEHOLDER, titles);
+        return finalHtml;
+      };
+    };
+    return {
+      config: () => {
+        var _userConfig_tools;
+        const userConfig = api.useConfigContext();
+        if (((_userConfig_tools = userConfig.tools) === null || _userConfig_tools === void 0 ? void 0 : _userConfig_tools.htmlPlugin) === false) {
+          return {};
+        }
+        return {
+          tools: {
+            htmlPlugin: (options, entry) => {
+              const hackParameters = typeof (options === null || options === void 0 ? void 0 : options.templateParameters) === "function" ? options === null || options === void 0 ? void 0 : options.templateParameters({}, {}, {}, {}) : {
+                ...options === null || options === void 0 ? void 0 : options.templateParameters
+              };
+              const templateContent = documentEntry(
+                entry.entryName,
+                // options,
+                hackParameters
+              );
+              const documentHtmlOptions = templateContent ? {
+                templateContent,
+                // Note: the behavior of inject/modify tags in afterTemplateExecution hook will not take effect
+                inject: false
+              } : {};
+              return {
+                ...options,
+                ...documentHtmlOptions
+              };
+            }
+          }
+        };
+      }
+    };
+  }
+});
+var cli_default = documentPlugin;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  documentPlugin,
+  getDocumenByEntryName
+});

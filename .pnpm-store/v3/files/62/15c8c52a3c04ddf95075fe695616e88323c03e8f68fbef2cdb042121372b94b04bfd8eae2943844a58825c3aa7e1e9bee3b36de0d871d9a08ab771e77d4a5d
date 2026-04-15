@@ -1,0 +1,10 @@
+var sortRoutes = function(route1, route2) {
+  return route2.urlPath.length - route1.urlPath.length;
+};
+var uniqueKeyByRoute = function(route) {
+  return "".concat(route.entryName, "-").concat(route.urlPath);
+};
+export {
+  sortRoutes,
+  uniqueKeyByRoute
+};

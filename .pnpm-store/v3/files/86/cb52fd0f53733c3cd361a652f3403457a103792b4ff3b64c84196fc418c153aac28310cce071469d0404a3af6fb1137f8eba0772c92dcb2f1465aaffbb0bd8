@@ -1,0 +1,2 @@
+import React from 'react';
+export declare function Body(props: React.DOMAttributes<HTMLBodyElement>): React.JSX.Element;

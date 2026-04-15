@@ -1,0 +1,16 @@
+import { createDebugger } from "@modern-js/utils";
+import { mergeConfig } from "../utils/mergeConfig";
+const debug = createDebugger("resolve-config");
+const createResolveConfig = async (loaded, configs) => {
+  const { config: userConfig } = loaded;
+  const resolved = mergeConfig([
+    {},
+    ...configs,
+    userConfig
+  ]);
+  debug("resolved %o", resolved);
+  return resolved;
+};
+export {
+  createResolveConfig
+};

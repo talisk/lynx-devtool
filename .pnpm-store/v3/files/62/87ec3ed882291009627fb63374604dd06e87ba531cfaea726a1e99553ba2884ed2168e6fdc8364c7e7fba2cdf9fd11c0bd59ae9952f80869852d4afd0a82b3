@@ -1,0 +1,6 @@
+import type { LoadedConfig } from '../types';
+/**
+ * Assign the pkg config into the user config.
+ */
+export declare function assignPkgConfig<T>(userConfig: T, pkgConfig: T): {} & T;
+export declare function createLoadedConfig<T>(appDirectory: string, configFilePath: string, packageJsonConfig?: string): Promise<LoadedConfig<T>>;

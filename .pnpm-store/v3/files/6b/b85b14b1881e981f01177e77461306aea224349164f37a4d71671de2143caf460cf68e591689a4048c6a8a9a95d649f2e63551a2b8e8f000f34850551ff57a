@@ -1,0 +1,61 @@
+/// <reference types="node" />
+/// <reference types="node" />
+import type { IncomingMessage } from "http";
+export interface IAbstractSocketConnection {
+    on(event: "open", listener: (this: IAbstractSocketConnection) => void): this;
+    on(event: "close", listener: (this: IAbstractSocketConnection) => void): this;
+    on(event: "error", listener: (this: IAbstractSocketConnection, error: any) => void): this;
+    on(event: "message", listener: (this: IAbstractSocketConnection, data: string) => void): this;
+    off(event: string, listener: (...args: any[]) => void): this;
+    removeAllListeners(event: string): this;
+    send(data: string): void;
+    close(event?: {
+        code?: number;
+        data?: string;
+    }): void;
+}
+export type SocketData = string | Buffer | ArrayBuffer | Buffer[];
+export interface IAbstractSocketServer {
+    close(cb?: (err?: Error) => void): void;
+    on(event: "connection", cb: (this: IAbstractSocketServer, socket: IAbstractSocketConnection, request: IncomingMessage) => void): this;
+    on(event: "error", cb: (this: IAbstractSocketServer, error: Error) => void): this;
+    on(event: "close" | "listening", cb: (this: IAbstractSocketServer) => void): this;
+    off(event: "connection", cb: (this: IAbstractSocketServer, socket: IAbstractSocketConnection, request: IncomingMessage) => void): this;
+    off(event: "error", cb: (this: IAbstractSocketServer, error: Error) => void): this;
+    off(event: "close" | "listening", cb: (this: IAbstractSocketServer) => void): this;
+}
+export interface ICustomLogImpl {
+    verbose(message: string, extra?: Record<string, any>): void;
+    debug(message: string, extra?: Record<string, any>): void;
+    info(message: string, extra?: Record<string, any>): void;
+    warn(message: string, extra?: Record<string, any>): void;
+    error(message: string, extra?: Record<string, any>): void;
+    fatal(message: string, extra?: Record<string, any>): void;
+}
+export declare enum ServerLogLevel {
+    verbose = 0,
+    debug = 1,
+    info = 2,
+    warn = 3,
+    error = 4,
+    fatal = 5
+}
+export interface ServerLoggerOptions {
+    printLogLevel?: ServerLogLevel;
+    uploadLogLevel?: ServerLogLevel;
+    batchCount?: number;
+    batchSize?: number;
+    batchFlushDelay?: number;
+}
+export declare enum ServerEventTrackType {
+    ClientConnect = "client_connect",
+    ServerInitClient = "server_init_client",
+    ClientRegister = "client_register",
+    ClientRegisterFailed = "client_register_failed",
+    ServerRegisteredClient = "server_registered_client",
+    ClientConnectError = "client_connect_error",
+    ClientConnectClose = "client_connect_close",
+    ClientJoinRoom = "client_join_room",
+    ClientJoinRoomFailed = "client_join_room_failed",
+    ClientRoomJoined = "client_room_joined"
+}

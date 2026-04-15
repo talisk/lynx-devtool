@@ -1,0 +1,3 @@
+import type { Plugin } from 'esbuild';
+import type { ICompiler } from '../../types';
+export declare const adapterPlugin: (compiler: ICompiler) => Plugin;

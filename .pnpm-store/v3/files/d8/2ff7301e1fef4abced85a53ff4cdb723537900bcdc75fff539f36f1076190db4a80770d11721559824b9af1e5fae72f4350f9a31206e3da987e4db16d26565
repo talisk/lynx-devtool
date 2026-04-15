@@ -1,0 +1,401 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { castArray } from "@modern-js/uni-builder";
+import { newAction, upgradeAction } from "@modern-js/utils";
+import { i18n, localeKeys } from "../locale";
+var devCommand = function() {
+  var _ref = _async_to_generator(function(program, api) {
+    var hooks, devToolMetas, devProgram, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _loop, _iterator, _step;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          hooks = api.getHooks();
+          return [
+            4,
+            hooks.registerDev.call()
+          ];
+        case 1:
+          devToolMetas = _state.sent();
+          devProgram = program.command("dev").alias("start").usage("[options]").description(i18n.t(localeKeys.command.dev.describe)).option("-c --config <config>", i18n.t(localeKeys.command.shared.config)).option("-e --entry [entry...]", i18n.t(localeKeys.command.dev.entry)).option("--analyze", i18n.t(localeKeys.command.shared.analyze)).option("--api-only", i18n.t(localeKeys.command.dev.apiOnly)).option("--web-only", i18n.t(localeKeys.command.dev.webOnly)).action(function() {
+            var _ref2 = _async_to_generator(function(options) {
+              var dev;
+              return _ts_generator(this, function(_state2) {
+                switch (_state2.label) {
+                  case 0:
+                    return [
+                      4,
+                      import("./dev.js")
+                    ];
+                  case 1:
+                    dev = _state2.sent().dev;
+                    return [
+                      4,
+                      dev(api, options)
+                    ];
+                  case 2:
+                    _state2.sent();
+                    return [
+                      2
+                    ];
+                }
+              });
+            });
+            return function(options) {
+              return _ref2.apply(this, arguments);
+            };
+          }());
+          _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+          try {
+            _loop = function() {
+              var meta = _step.value;
+              if (!meta.subCommands) {
+                return "continue";
+              }
+              var _iteratorNormalCompletion2 = true, _didIteratorError2 = false, _iteratorError2 = void 0;
+              try {
+                for (var _iterator2 = meta.subCommands[Symbol.iterator](), _step1; !(_iteratorNormalCompletion2 = (_step1 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                  var subCmd = _step1.value;
+                  devProgram.command(subCmd).action(/* @__PURE__ */ _async_to_generator(function() {
+                    var options, appDirectory, isTypescript;
+                    var _arguments = arguments;
+                    return _ts_generator(this, function(_state2) {
+                      switch (_state2.label) {
+                        case 0:
+                          options = _arguments.length > 0 && _arguments[0] !== void 0 ? _arguments[0] : {};
+                          appDirectory = api.getAppContext().appDirectory;
+                          return [
+                            4,
+                            import("@modern-js/utils")
+                          ];
+                        case 1:
+                          isTypescript = _state2.sent().isTypescript;
+                          return [
+                            4,
+                            meta.action(options, {
+                              isTsProject: isTypescript(appDirectory)
+                            })
+                          ];
+                        case 2:
+                          _state2.sent();
+                          return [
+                            2
+                          ];
+                      }
+                    });
+                  }));
+                }
+              } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+              } finally {
+                try {
+                  if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+                    _iterator2.return();
+                  }
+                } finally {
+                  if (_didIteratorError2) {
+                    throw _iteratorError2;
+                  }
+                }
+              }
+            };
+            for (_iterator = devToolMetas[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true)
+              _loop();
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return != null) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function devCommand2(program, api) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var buildCommand = function() {
+  var _ref = _async_to_generator(function(program, api) {
+    var hooks, platformBuilders, buildProgram, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _loop, _iterator, _step;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          hooks = api.getHooks();
+          return [
+            4,
+            hooks.registerBuildPlatform.call()
+          ];
+        case 1:
+          platformBuilders = _state.sent();
+          buildProgram = program.command("build").usage("[options]").description(i18n.t(localeKeys.command.build.describe)).option("-c --config <config>", i18n.t(localeKeys.command.shared.config)).option("--analyze", i18n.t(localeKeys.command.shared.analyze)).action(function() {
+            var _ref2 = _async_to_generator(function(options) {
+              var build;
+              return _ts_generator(this, function(_state2) {
+                switch (_state2.label) {
+                  case 0:
+                    return [
+                      4,
+                      import("./build.js")
+                    ];
+                  case 1:
+                    build = _state2.sent().build;
+                    return [
+                      4,
+                      build(api, options)
+                    ];
+                  case 2:
+                    _state2.sent();
+                    return [
+                      2
+                    ];
+                }
+              });
+            });
+            return function(options) {
+              return _ref2.apply(this, arguments);
+            };
+          }());
+          _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+          try {
+            _loop = function() {
+              var platformBuilder = _step.value;
+              var platforms = castArray(platformBuilder.platform);
+              var _iteratorNormalCompletion2 = true, _didIteratorError2 = false, _iteratorError2 = void 0;
+              try {
+                var _loop2 = function() {
+                  var platform = _step1.value;
+                  buildProgram.command(platform).action(/* @__PURE__ */ _async_to_generator(function() {
+                    var appDirectory, isTypescript;
+                    return _ts_generator(this, function(_state2) {
+                      switch (_state2.label) {
+                        case 0:
+                          appDirectory = api.getAppContext().appDirectory;
+                          return [
+                            4,
+                            import("@modern-js/utils")
+                          ];
+                        case 1:
+                          isTypescript = _state2.sent().isTypescript;
+                          return [
+                            4,
+                            platformBuilder.build(platform, {
+                              isTsProject: isTypescript(appDirectory)
+                            })
+                          ];
+                        case 2:
+                          _state2.sent();
+                          return [
+                            2
+                          ];
+                      }
+                    });
+                  }));
+                };
+                for (var _iterator2 = platforms[Symbol.iterator](), _step1; !(_iteratorNormalCompletion2 = (_step1 = _iterator2.next()).done); _iteratorNormalCompletion2 = true)
+                  _loop2();
+              } catch (err) {
+                _didIteratorError2 = true;
+                _iteratorError2 = err;
+              } finally {
+                try {
+                  if (!_iteratorNormalCompletion2 && _iterator2.return != null) {
+                    _iterator2.return();
+                  }
+                } finally {
+                  if (_didIteratorError2) {
+                    throw _iteratorError2;
+                  }
+                }
+              }
+            };
+            for (_iterator = platformBuilders[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true)
+              _loop();
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return != null) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function buildCommand2(program, api) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var serverCommand = function(program, api) {
+  program.command("serve").usage("[options]").description(i18n.t(localeKeys.command.serve.describe)).option("--api-only", i18n.t(localeKeys.command.dev.apiOnly)).option("-c --config <config>", i18n.t(localeKeys.command.shared.config)).action(/* @__PURE__ */ _async_to_generator(function() {
+    var start;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            import("./serve.js")
+          ];
+        case 1:
+          start = _state.sent().start;
+          return [
+            4,
+            start(api)
+          ];
+        case 2:
+          _state.sent();
+          return [
+            2
+          ];
+      }
+    });
+  }));
+};
+var deployCommand = function(program, api) {
+  program.command("deploy").usage("[options]").option("-c --config <config>", i18n.t(localeKeys.command.shared.config)).option("-s --skip-build", i18n.t(localeKeys.command.shared.skipBuild)).description(i18n.t(localeKeys.command.deploy.describe)).action(function() {
+    var _ref = _async_to_generator(function(options) {
+      var build, deploy;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            if (!!options.skipBuild)
+              return [
+                3,
+                3
+              ];
+            return [
+              4,
+              import("./build.js")
+            ];
+          case 1:
+            build = _state.sent().build;
+            return [
+              4,
+              build(api)
+            ];
+          case 2:
+            _state.sent();
+            _state.label = 3;
+          case 3:
+            return [
+              4,
+              import("./deploy.js")
+            ];
+          case 4:
+            deploy = _state.sent().deploy;
+            return [
+              4,
+              deploy(api, options)
+            ];
+          case 5:
+            _state.sent();
+            process.exit(0);
+            return [
+              2
+            ];
+        }
+      });
+    });
+    return function(options) {
+      return _ref.apply(this, arguments);
+    };
+  }());
+};
+var newCommand = function(program, locale) {
+  program.command("new").usage("[options]").description(i18n.t(localeKeys.command.new.describe)).option("--config-file <configFile>", i18n.t(localeKeys.command.shared.config)).option("--lang <lang>", i18n.t(localeKeys.command.new.lang)).option("-c, --config <config>", i18n.t(localeKeys.command.new.config)).option("-d, --debug", i18n.t(localeKeys.command.new.debug), false).option("--dist-tag <tag>", i18n.t(localeKeys.command.new.distTag)).option("--registry", i18n.t(localeKeys.command.new.registry)).option("--no-need-install", i18n.t(localeKeys.command.shared.noNeedInstall)).action(function() {
+    var _ref = _async_to_generator(function(options) {
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            return [
+              4,
+              newAction(_object_spread_props(_object_spread({}, options), {
+                locale: options.lang || locale
+              }), "mwa")
+            ];
+          case 1:
+            _state.sent();
+            return [
+              2
+            ];
+        }
+      });
+    });
+    return function(options) {
+      return _ref.apply(this, arguments);
+    };
+  }());
+};
+var inspectCommand = function(program, api) {
+  program.command("inspect").description("inspect the internal configs").option("--env <env>", i18n.t(localeKeys.command.inspect.env), "development").option("--output <output>", i18n.t(localeKeys.command.inspect.output), "./").option("--verbose", i18n.t(localeKeys.command.inspect.verbose)).option("-c --config <config>", i18n.t(localeKeys.command.shared.config)).action(function() {
+    var _ref = _async_to_generator(function(options) {
+      var inspect;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            return [
+              4,
+              import("./inspect.js")
+            ];
+          case 1:
+            inspect = _state.sent().inspect;
+            inspect(api, options);
+            return [
+              2
+            ];
+        }
+      });
+    });
+    return function(options) {
+      return _ref.apply(this, arguments);
+    };
+  }());
+};
+var upgradeCommand = function(program) {
+  program.command("upgrade").allowUnknownOption().option("-h --help", "Show help").action(/* @__PURE__ */ _async_to_generator(function() {
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            upgradeAction()
+          ];
+        case 1:
+          _state.sent();
+          return [
+            2
+          ];
+      }
+    });
+  }));
+};
+export {
+  buildCommand,
+  deployCommand,
+  devCommand,
+  inspectCommand,
+  newCommand,
+  serverCommand,
+  upgradeCommand
+};

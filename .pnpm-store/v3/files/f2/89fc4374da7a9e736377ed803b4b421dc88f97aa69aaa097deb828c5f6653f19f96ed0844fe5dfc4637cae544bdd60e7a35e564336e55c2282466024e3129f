@@ -1,0 +1,37 @@
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { createUploadPattern } from "./createCopyPattern";
+function modifyOutputConfig(config, appContext) {
+  var defaultCopyPattern = createUploadPattern(appContext, config);
+  var copy = config.output.copy;
+  var copyOptions = Array.isArray(copy) ? copy : copy === null || copy === void 0 ? void 0 : copy.patterns;
+  var builderCopy = _to_consumable_array(copyOptions || []).concat([
+    defaultCopyPattern
+  ]);
+  config.output = _object_spread_props(_object_spread({}, config.output), {
+    copy: builderCopy
+  });
+}
+function createBuilderProviderConfig(resolveConfig, appContext) {
+  var htmlConfig = _object_spread({}, resolveConfig.html);
+  if (!htmlConfig.template) {
+    htmlConfig.templateByEntries = _object_spread({}, appContext.htmlTemplates, htmlConfig.templateByEntries);
+  }
+  var config = _object_spread_props(_object_spread({}, resolveConfig), {
+    plugins: [],
+    dev: _object_spread_props(_object_spread({}, resolveConfig.dev), {
+      port: appContext.port
+    }),
+    html: htmlConfig,
+    output: _object_spread_props(_object_spread({}, resolveConfig.output), {
+      // We need to do this in the app-tools prepare hook because some files will be generated into the dist directory in the analyze process
+      cleanDistPath: false
+    })
+  });
+  modifyOutputConfig(config, appContext);
+  return config;
+}
+export {
+  createBuilderProviderConfig
+};

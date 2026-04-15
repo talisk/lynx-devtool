@@ -1,0 +1,10 @@
+import type { CLIPluginAPI } from '@modern-js/plugin-v2';
+import { type Command } from '@modern-js/utils';
+import type { AppTools } from '../types';
+export declare const devCommand: (program: Command, api: CLIPluginAPI<AppTools<'shared'>>) => Promise<void>;
+export declare const buildCommand: (program: Command, api: CLIPluginAPI<AppTools<'shared'>>) => Promise<void>;
+export declare const serverCommand: (program: Command, api: CLIPluginAPI<AppTools<'shared'>>) => void;
+export declare const deployCommand: (program: Command, api: CLIPluginAPI<AppTools<'shared'>>) => void;
+export declare const newCommand: (program: Command, locale: string) => void;
+export declare const inspectCommand: (program: Command, api: CLIPluginAPI<AppTools<'shared'>>) => void;
+export declare const upgradeCommand: (program: Command) => void;

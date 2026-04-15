@@ -1,0 +1,5 @@
+import type { AppNormalizedConfig } from '../../types';
+import type { AppToolsContext } from '../../types/new';
+export declare function initHtmlConfig(config: AppNormalizedConfig<'shared'>, appContext: AppToolsContext<'shared'>): AppNormalizedConfig<'shared'>['html'];
+export declare function initSourceConfig(config: AppNormalizedConfig<'shared'>, appContext: AppToolsContext<'shared'>, bundler: 'webpack' | 'rspack'): void;
+export declare function createBuilderModuleScope(config: AppNormalizedConfig<'webpack'>): (string | RegExp)[] | undefined;

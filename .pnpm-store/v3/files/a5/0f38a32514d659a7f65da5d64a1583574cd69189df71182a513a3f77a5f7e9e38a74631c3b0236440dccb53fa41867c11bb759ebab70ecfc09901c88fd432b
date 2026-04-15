@@ -1,0 +1,7 @@
+interface StatusOptions {
+    verbose: boolean;
+    output: string;
+    since: string;
+}
+export declare function status(options: StatusOptions): Promise<void>;
+export {};

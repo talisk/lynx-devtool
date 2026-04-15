@@ -1,0 +1,15 @@
+import { Client as ADBClient, DeviceClient } from "@devicefarmer/adbkit";
+import { BaseDevice } from "../BaseDevice";
+import { DebugRouterConnector } from "../../connector";
+export default class AndroidDevice extends BaseDevice {
+    private adb;
+    private static readonly localBasePort;
+    get ports(): number[];
+    constructor(driver: DebugRouterConnector, serial: string, title: string, adb: ADBClient);
+    getHost(): string;
+    forwards(): Promise<void>;
+    private forward;
+    adbForwardRemove(device: DeviceClient): Promise<void>;
+    exeCmd(cmd: string): Promise<unknown>;
+    executeShell(command: string): Promise<string>;
+}

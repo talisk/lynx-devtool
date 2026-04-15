@@ -1,0 +1,177 @@
+import * as path from "path";
+import { fs, createDebugger, getArgv, isApiOnly, isDevCommand, minimist } from "@modern-js/utils";
+import { createBuilderGenerator } from "../../builder";
+import { initialNormalizedConfig } from "../../config";
+import { emitResolvedConfig } from "../../utils/config";
+import { getSelectedEntries } from "../../utils/getSelectedEntries";
+import { printInstructions } from "../../utils/printInstructions";
+import { generateRoutes } from "../../utils/routes";
+import { checkIsBuildCommands, checkIsServeCommand } from "./utils";
+const debug = createDebugger("plugin-analyze");
+var analyze_default = ({ bundler }) => ({
+  name: "@modern-js/plugin-analyze",
+  post: [
+    "@modern-js/runtime"
+  ],
+  setup: (api) => {
+    let pagesDir = [];
+    let nestedRouteEntries = [];
+    api.onPrepare(async () => {
+      var _resolvedConfig_source;
+      let appContext = api.getAppContext();
+      const resolvedConfig = api.getNormalizedConfig();
+      const hooks = api.getHooks();
+      try {
+        if (checkIsBuildCommands()) {
+          fs.emptydirSync(appContext.internalDirectory);
+        }
+      } catch {
+      }
+      const apiOnly = await isApiOnly(appContext.appDirectory, (_resolvedConfig_source = resolvedConfig.source) === null || _resolvedConfig_source === void 0 ? void 0 : _resolvedConfig_source.entriesDir, appContext.apiDirectory);
+      await hooks.addRuntimeExports.call();
+      const [{ getProdServerRoutes }] = await Promise.all([
+        import("./getServerRoutes.js")
+      ]);
+      if (apiOnly) {
+        const routes2 = [];
+        if (checkIsServeCommand()) {
+          routes2.push(...getProdServerRoutes(appContext.distDirectory));
+        } else {
+          const { routes: modifiedRoutes } = await hooks.modifyServerRoutes.call({
+            routes: []
+          });
+          routes2.push(...modifiedRoutes);
+        }
+        debug(`server routes: %o`, routes2);
+        api.updateAppContext({
+          apiOnly,
+          serverRoutes: routes2
+        });
+        return;
+      }
+      const [{ getBundleEntry }, { getServerRoutes }, { getHtmlTemplate }] = await Promise.all([
+        import("./getBundleEntry.js"),
+        import("./getServerRoutes.js"),
+        import("./getHtmlTemplate.js")
+      ]);
+      const { entrypoints } = await hooks.modifyEntrypoints.call({
+        entrypoints: await getBundleEntry(hooks, appContext, resolvedConfig)
+      });
+      debug(`entrypoints: %o`, entrypoints);
+      const routes = [];
+      if (checkIsServeCommand()) {
+        routes.push(...getProdServerRoutes(appContext.distDirectory));
+      } else {
+        const initialRoutes = getServerRoutes(entrypoints, {
+          appContext,
+          config: resolvedConfig
+        });
+        const { routes: modifiedRoutes } = await hooks.modifyServerRoutes.call({
+          routes: initialRoutes
+        });
+        routes.push(...modifiedRoutes);
+      }
+      debug(`server routes: %o`, routes);
+      appContext = {
+        ...api.getAppContext(),
+        entrypoints,
+        serverRoutes: routes
+      };
+      api.updateAppContext(appContext);
+      nestedRouteEntries = entrypoints.map((point) => point.nestedRoutesEntry).filter(Boolean);
+      pagesDir = entrypoints.map((point) => point.entry).filter((entry) => entry && !path.extname(entry)).concat(nestedRouteEntries);
+      const { partialsByEntrypoint, htmlTemplates } = await getHtmlTemplate(entrypoints, hooks, {
+        appContext,
+        config: resolvedConfig
+      });
+      debug(`html templates: %o`, htmlTemplates);
+      api.updateAppContext({
+        partialsByEntrypoint
+      });
+      let checkedEntries = entrypoints.map((point) => point.entryName);
+      if (isDevCommand()) {
+        const { entry } = minimist(getArgv());
+        checkedEntries = await getSelectedEntries(typeof entry === "string" ? entry.split(",") : entry, entrypoints);
+      }
+      appContext = {
+        ...api.getAppContext(),
+        entrypoints,
+        checkedEntries,
+        apiOnly,
+        serverRoutes: routes,
+        htmlTemplates
+      };
+      api.updateAppContext(appContext);
+      if (checkIsBuildCommands()) {
+        await hooks.generateEntryCode.call({
+          entrypoints
+        });
+        const normalizedConfig = api.getNormalizedConfig();
+        const createBuilderForModern = await createBuilderGenerator(bundler);
+        const builder = await createBuilderForModern({
+          normalizedConfig,
+          appContext
+        });
+        builder.onBeforeBuild(async ({ bundlerConfigs, isFirstCompile, environments, isWatch }) => {
+          if (!isFirstCompile) {
+            return;
+          }
+          await generateRoutes(appContext);
+          await hooks.onBeforeBuild.call({
+            isFirstCompile,
+            isWatch,
+            environments,
+            bundlerConfigs
+          });
+        });
+        builder.onAfterBuild(async ({ stats, environments, isFirstCompile, isWatch }) => {
+          await hooks.onAfterBuild.call({
+            stats,
+            environments,
+            isFirstCompile,
+            isWatch
+          });
+          await emitResolvedConfig(appContext.appDirectory, normalizedConfig);
+        });
+        builder.onDevCompileDone(async ({ isFirstCompile }) => {
+          hooks.onAfterDev.call({
+            isFirstCompile
+          });
+          if (isFirstCompile) {
+            printInstructions(hooks, appContext, normalizedConfig);
+          }
+        });
+        builder.onBeforeCreateCompiler(async ({ bundlerConfigs, environments }) => {
+          await hooks.onBeforeCreateCompiler.call({
+            environments,
+            bundlerConfigs
+          });
+        });
+        builder.onAfterCreateCompiler(async ({ compiler, environments }) => {
+          await hooks.onAfterCreateCompiler.call({
+            environments,
+            compiler
+          });
+        });
+        builder.addPlugins(resolvedConfig.builderPlugins);
+        api.updateAppContext({
+          builder
+        });
+      }
+    });
+    api.addWatchFiles(() => {
+      return {
+        files: pagesDir,
+        isPrivate: true
+      };
+    });
+    api.modifyResolvedConfig((resolved) => {
+      const appContext = api.getAppContext();
+      const config = initialNormalizedConfig(resolved, appContext, bundler);
+      return config;
+    });
+  }
+});
+export {
+  analyze_default as default
+};

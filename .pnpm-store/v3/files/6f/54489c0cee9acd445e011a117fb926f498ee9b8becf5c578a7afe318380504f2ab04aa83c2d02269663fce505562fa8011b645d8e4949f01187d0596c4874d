@@ -1,0 +1,104 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var template_exports = {};
+__export(template_exports, {
+  index: () => index,
+  register: () => register,
+  runtimeGlobalContext: () => runtimeGlobalContext,
+  runtimeRegister: () => runtimeRegister
+});
+module.exports = __toCommonJS(template_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_constants = require("./constants");
+const genRenderCode = ({ srcDirectory, internalSrcAlias, metaName, entry, customEntry, customBootstrap, mountId }) => {
+  if (customEntry) {
+    return `import '${(0, import_utils.formatImportPath)(entry.replace(srcDirectory, internalSrcAlias))}'`;
+  }
+  return `import { createRoot } from '@${metaName}/runtime/react';
+import { render } from '@${metaName}/runtime/browser';
+${customBootstrap ? `import customBootstrap from '${(0, import_utils.formatImportPath)(customBootstrap.replace(srcDirectory, internalSrcAlias))}';` : ""}
+
+const ModernRoot = createRoot();
+
+${customBootstrap ? `customBootstrap(ModernRoot, () => render(<ModernRoot />, '${mountId || "root"}'));` : `render(<ModernRoot />, '${mountId || "root"}');`}`;
+};
+const index = ({ srcDirectory, internalSrcAlias, metaName, entry, entryName, customEntry, customBootstrap, mountId }) => `import '@${metaName}/runtime/registry/${entryName}';
+${genRenderCode({
+  srcDirectory,
+  internalSrcAlias,
+  metaName,
+  entry,
+  customEntry,
+  customBootstrap,
+  mountId
+})}
+`;
+const register = () => `import './${import_constants.ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME}';
+import './${import_constants.ENTRY_POINT_RUNTIME_REGISTER_FILE_NAME}';
+`;
+const getImportRuntimeConfigCode = (srcDirectory, internalSrcAlias, runtimeConfigFile) => {
+  if (runtimeConfigFile && (0, import_utils.findExists)(import_utils.JS_EXTENSIONS.map((ext) => import_path.default.resolve(srcDirectory, `${runtimeConfigFile}${ext}`)))) {
+    return `import runtimeConfig from '${internalSrcAlias}/${runtimeConfigFile}';`;
+  }
+  return `let runtimeConfig;`;
+};
+const getRegisterRuntimePluginCode = (entryName, name, config) => {
+  const configName = name === "garfish" ? "masterApp" : name;
+  return `plugins.push(${name}Plugin(mergeConfig(${JSON.stringify(config)}, (runtimeConfig || {})['${configName}'], ((runtimeConfig || {})['${configName}ByEntries'] || {})['${entryName}'], (getGlobalAppConfig() || {})['${configName}'])));`;
+};
+const runtimeRegister = ({ entryName, srcDirectory, internalSrcAlias, metaName, runtimeConfigFile, runtimePlugins }) => `import { registerPlugin, mergeConfig } from '@${metaName}/runtime/plugin';
+import { getGlobalAppConfig, getGlobalLayoutApp } from '@${metaName}/runtime/context';
+${getImportRuntimeConfigCode(srcDirectory, internalSrcAlias, runtimeConfigFile)}
+
+const plugins = [];
+
+${runtimePlugins.map(({ name, path: path2, config }) => `import { ${name}Plugin } from '${path2}';
+
+${getRegisterRuntimePluginCode(entryName, name, config)}
+`).join("\n")}
+registerPlugin(plugins, runtimeConfig);
+`;
+const runtimeGlobalContext = ({ srcDirectory, internalSrcAlias, metaName, entry, customEntry }) => {
+  return `import { setGlobalContext } from '@${metaName}/runtime/context'
+
+import App from '${// We need to get the path of App.tsx here, but the entry is `src/entry.tsx`
+  (0, import_utils.formatImportPath)(customEntry ? entry.replace(/entry\.[tj]sx/, "App").replace(srcDirectory, internalSrcAlias) : entry.replace(srcDirectory, internalSrcAlias).replace(/\.[tj]sx/, ""))}';
+
+setGlobalContext({
+  App,
+});`;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  index,
+  register,
+  runtimeGlobalContext,
+  runtimeRegister
+});

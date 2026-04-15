@@ -1,0 +1,102 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var devServer_exports = {};
+__export(devServer_exports, {
+  transformToRsbuildServerOptions: () => transformToRsbuildServerOptions
+});
+module.exports = __toCommonJS(devServer_exports);
+var import_utils = require("@modern-js/utils");
+var import_ts_deepmerge = require("ts-deepmerge");
+const transformDevSetupMiddlewares = (seuptMiddlewares) => {
+  if (seuptMiddlewares) {
+    const newSetupMiddlewares = seuptMiddlewares.map((handler) => (_, server) => {
+      handler({
+        unshift() {
+        },
+        push() {
+        }
+      }, server);
+    });
+    return newSetupMiddlewares;
+  }
+  return void 0;
+};
+const transformToRsbuildServerOptions = (dev, devServer) => {
+  var _newDevServerConfig_devMiddleware;
+  const { port = 8080, host, https, startUrl, beforeStartUrl, setupMiddlewares, ...devConfig } = dev;
+  var _dev_hmr, _dev_liveReload;
+  const newDevServerConfig = (0, import_utils.applyOptionsChain)({
+    devMiddleware: {
+      writeToDisk: (file) => !file.includes(".hot-update.")
+    },
+    hot: (_dev_hmr = dev === null || dev === void 0 ? void 0 : dev.hmr) !== null && _dev_hmr !== void 0 ? _dev_hmr : true,
+    liveReload: (_dev_liveReload = dev === null || dev === void 0 ? void 0 : dev.liveReload) !== null && _dev_liveReload !== void 0 ? _dev_liveReload : true,
+    client: {
+      path: "/webpack-hmr",
+      overlay: false,
+      port: "<port>",
+      ...devConfig.client || {}
+    },
+    setupMiddlewares
+  }, devServer, {}, import_ts_deepmerge.merge);
+  const rsbuildDev = {
+    writeToDisk: (_newDevServerConfig_devMiddleware = newDevServerConfig.devMiddleware) === null || _newDevServerConfig_devMiddleware === void 0 ? void 0 : _newDevServerConfig_devMiddleware.writeToDisk,
+    hmr: newDevServerConfig.hot,
+    liveReload: newDevServerConfig.liveReload,
+    ...devConfig,
+    client: {
+      ...newDevServerConfig.client,
+      ...devConfig.client || {}
+    }
+  };
+  if (dev.progressBar === void 0) {
+    rsbuildDev.progressBar = true;
+  }
+  rsbuildDev.setupMiddlewares = transformDevSetupMiddlewares(newDevServerConfig.setupMiddlewares);
+  const server = (0, import_utils.isProd)() ? {
+    publicDir: false,
+    htmlFallback: false,
+    printUrls: false
+  } : {
+    publicDir: false,
+    htmlFallback: false,
+    printUrls: false,
+    compress: newDevServerConfig.compress,
+    headers: newDevServerConfig.headers,
+    historyApiFallback: newDevServerConfig.historyApiFallback,
+    proxy: newDevServerConfig.proxy,
+    port,
+    host,
+    https: https ? https : void 0
+  };
+  if (!(0, import_utils.isProd)() && startUrl) {
+    server.open = beforeStartUrl ? {
+      target: startUrl === true ? "//localhost:<port>" : startUrl,
+      before: beforeStartUrl
+    } : startUrl;
+  }
+  return {
+    dev: rsbuildDev,
+    server
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  transformToRsbuildServerOptions
+});

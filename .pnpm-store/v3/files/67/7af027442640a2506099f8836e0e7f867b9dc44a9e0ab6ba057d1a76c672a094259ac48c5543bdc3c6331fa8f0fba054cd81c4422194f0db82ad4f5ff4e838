@@ -1,0 +1,12 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+import { Helmet } from "../../../../exports/head";
+var NoSSRCache = function() {
+  return /* @__PURE__ */ _jsx(Helmet, {
+    children: /* @__PURE__ */ _jsx("meta", {
+      name: "no-ssr-cache"
+    })
+  });
+};
+export {
+  NoSSRCache
+};

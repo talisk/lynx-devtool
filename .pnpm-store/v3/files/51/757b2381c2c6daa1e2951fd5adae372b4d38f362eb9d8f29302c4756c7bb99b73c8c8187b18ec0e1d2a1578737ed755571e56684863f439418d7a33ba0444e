@@ -1,0 +1,11 @@
+export declare enum MultiOpenStatus {
+    attached = 0,
+    unattached = 1,
+    unInit = 2
+}
+export interface MultiOpenCallback {
+    statusChanged: (status: MultiOpenStatus) => void;
+}
+export declare class DefaultMultiOpenCallback implements MultiOpenCallback {
+    statusChanged(status: MultiOpenStatus): void;
+}

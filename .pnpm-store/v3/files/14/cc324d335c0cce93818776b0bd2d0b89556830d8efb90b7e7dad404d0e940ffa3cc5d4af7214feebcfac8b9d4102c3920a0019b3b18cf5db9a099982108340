@@ -1,0 +1,25 @@
+export var ERemoteDebugDriverExternalEvent;
+(function (ERemoteDebugDriverExternalEvent) {
+    ERemoteDebugDriverExternalEvent["RoomJoined"] = "RoomJoined";
+    ERemoteDebugDriverExternalEvent["RoomLeaved"] = "RoomLeaved";
+    ERemoteDebugDriverExternalEvent["Close"] = "Close";
+    ERemoteDebugDriverExternalEvent["Connect"] = "Connect";
+    ERemoteDebugDriverExternalEvent["ClientList"] = "ClientList";
+    ERemoteDebugDriverExternalEvent["SessionList"] = "SessionList";
+    ERemoteDebugDriverExternalEvent["CDP"] = "CDP";
+    ERemoteDebugDriverExternalEvent["PingPongDelay"] = "PingPongDelay";
+    ERemoteDebugDriverExternalEvent["R2DStopAtEntry"] = "R2DStopAtEntry";
+    ERemoteDebugDriverExternalEvent["R2DStopLepusAtEntry"] = "R2DStopLepusAtEntry";
+    ERemoteDebugDriverExternalEvent["RemoteCall"] = "RemoteCall";
+    ERemoteDebugDriverExternalEvent["UsbConnect"] = "UsbConnect";
+    ERemoteDebugDriverExternalEvent["UsbConnectAck"] = "UsbConnectAck";
+    ERemoteDebugDriverExternalEvent["HMR"] = "HMR";
+    ERemoteDebugDriverExternalEvent["All"] = "All";
+})(ERemoteDebugDriverExternalEvent || (ERemoteDebugDriverExternalEvent = {}));
+export var ERemoteDebugDriverInternalEvent;
+(function (ERemoteDebugDriverInternalEvent) {
+    ERemoteDebugDriverInternalEvent["I"] = "I";
+})(ERemoteDebugDriverInternalEvent || (ERemoteDebugDriverInternalEvent = {}));
+const a = {};
+const b = {};
+//# sourceMappingURL=driver.js.map

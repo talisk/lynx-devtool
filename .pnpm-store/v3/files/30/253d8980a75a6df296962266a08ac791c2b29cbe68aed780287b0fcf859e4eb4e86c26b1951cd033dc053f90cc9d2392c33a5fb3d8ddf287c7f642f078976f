@@ -1,0 +1,2 @@
+import type { Context, HookList } from '../../types';
+export declare function getInternalList(context: Context): Promise<HookList>;

@@ -1,0 +1,1 @@
+export declare function createBuilderGenerator(bundler: 'webpack' | 'rspack'): Promise<typeof import("./builder-rspack/index.js").createRspackBuilderForModern | typeof import("./builder-webpack/index.js").createWebpackBuilderForModern>;

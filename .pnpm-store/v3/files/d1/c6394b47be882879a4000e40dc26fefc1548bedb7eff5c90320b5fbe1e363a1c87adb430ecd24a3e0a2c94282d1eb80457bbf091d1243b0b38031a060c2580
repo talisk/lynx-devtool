@@ -1,0 +1,1 @@
+export declare const castArray: <T>(arr?: T | T[]) => T[];

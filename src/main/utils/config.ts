@@ -3,7 +3,7 @@
 // LICENSE file in the root directory of this source tree.
 
 import { ILDTConfig, OnChangeListener } from '@lynx-js/lynx-devtool-utils';
-import { LDT_CONFIG_FILE } from './const';
+import { LDT_CONFIG_FILE, LDT_DIR } from './const';
 import fs from 'fs';
 
 class LDTConfig implements ILDTConfig {
@@ -11,10 +11,22 @@ class LDTConfig implements ILDTConfig {
   private _changeListenerMap = new Map<string, OnChangeListener[]>();
 
   constructor() {
+    if (!fs.existsSync(LDT_DIR)) {
+      fs.mkdirSync(LDT_DIR, { recursive: true });
+    }
     if (!fs.existsSync(LDT_CONFIG_FILE)) {
       this._writeConfig(true);
     } else {
-      this.config = JSON.parse(fs.readFileSync(LDT_CONFIG_FILE, 'utf-8'));
+      try {
+        this.config = JSON.parse(fs.readFileSync(LDT_CONFIG_FILE, 'utf-8'));
+      } catch (e) {
+        try {
+          fs.renameSync(LDT_CONFIG_FILE, `${LDT_CONFIG_FILE}.broken.${Date.now()}`);
+        } catch {}
+        this.config = {};
+        this._writeConfig(true);
+        console.log(`Error parsing config file: ${e}`);
+      }
     }
   }
 
@@ -46,13 +58,24 @@ class LDTConfig implements ILDTConfig {
   }
 
   private _writeConfig(sync = false) {
+    const data = JSON.stringify(this.config, null, 2);
+    const tmpFile = `${LDT_CONFIG_FILE}.${process.pid}.tmp`;
     if (sync) {
-      fs.writeFileSync(LDT_CONFIG_FILE, JSON.stringify(this.config, null, 2));
+      fs.writeFileSync(tmpFile, data);
+      fs.renameSync(tmpFile, LDT_CONFIG_FILE);
     } else {
-      fs.writeFile(LDT_CONFIG_FILE, JSON.stringify(this.config, null, 2), (err) => {
-        if (err) {
-          console.log(`Error writing config file: ${err}`);
+      fs.writeFile(tmpFile, data, (writeErr) => {
+        if (writeErr) {
+          fs.rm(tmpFile, { force: true }, () => {});
+          console.log(`Error writing config file: ${writeErr}`);
+          return;
         }
+        fs.rename(tmpFile, LDT_CONFIG_FILE, (renameErr) => {
+          if (renameErr) {
+            fs.rm(tmpFile, { force: true }, () => {});
+            console.log(`Error writing config file: ${renameErr}`);
+          }
+        });
       });
     }
   }

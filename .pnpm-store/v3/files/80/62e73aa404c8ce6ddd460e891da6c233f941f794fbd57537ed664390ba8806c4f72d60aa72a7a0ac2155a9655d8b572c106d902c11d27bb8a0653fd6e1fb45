@@ -1,0 +1,262 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { DEFAULT_SERVER_CONFIG, ROUTE_SPEC_FILE, fs as fse } from "@modern-js/utils";
+import { isMainEntry } from "../../../utils/routes";
+import { handleDependencies } from "../dependencies";
+import { genPluginImportsCode, getPluginsCode, serverAppContenxtTemplate } from "../utils";
+var createVercelPreset = function(appContext, modernConfig, needModernServer) {
+  var appDirectory = appContext.appDirectory, distDirectory = appContext.distDirectory, entrypoints = appContext.entrypoints, serverPlugins = appContext.serverPlugins, moduleType = appContext.moduleType;
+  var isEsmProject = moduleType === "module";
+  var plugins = serverPlugins.map(function(plugin) {
+    return [
+      plugin.name,
+      plugin.options
+    ];
+  });
+  var vercelOutput = path.join(appDirectory, ".vercel");
+  var outputDirectory = path.join(vercelOutput, "output");
+  var funcsDirectory = path.join(outputDirectory, "functions", "index.func");
+  var entryFilePath = path.join(funcsDirectory, "index.js");
+  var handlerFilePath = path.join(funcsDirectory, "vercel-handler.cjs");
+  return {
+    prepare: function prepare() {
+      return _async_to_generator(function() {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              return [
+                4,
+                fse.remove(vercelOutput)
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    writeOutput: function writeOutput() {
+      return _async_to_generator(function() {
+        var config, mainEntryName, staticDirectory, destHtmlDirectory, outputHtmlDirectory;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              config = {
+                version: 3,
+                routes: [
+                  {
+                    src: "/static/(.*)",
+                    headers: {
+                      "cache-control": "s-maxage=31536000, immutable"
+                    },
+                    continue: true
+                  },
+                  {
+                    handle: "filesystem"
+                  }
+                ]
+              };
+              if (!needModernServer) {
+                mainEntryName = modernConfig.source.mainEntryName;
+                entrypoints.forEach(function(entry) {
+                  var isMain = isMainEntry(entry.entryName, mainEntryName);
+                  config.routes.push({
+                    src: "/".concat(isMain ? "" : entry.entryName, "(?:/.*)?"),
+                    headers: {
+                      "cache-control": "s-maxage=0"
+                    },
+                    dest: "/html/".concat(entry.entryName, "/index.html")
+                  });
+                });
+              } else {
+                config.routes.push({
+                  src: "/(.*)",
+                  dest: "/index"
+                });
+              }
+              return [
+                4,
+                fse.ensureDir(outputDirectory)
+              ];
+            case 1:
+              _state.sent();
+              return [
+                4,
+                fse.writeJSON(path.join(outputDirectory, "config.json"), config, {
+                  spaces: 2
+                })
+              ];
+            case 2:
+              _state.sent();
+              staticDirectory = path.join(outputDirectory, "static/static");
+              return [
+                4,
+                fse.copy(path.join(distDirectory, "static"), staticDirectory)
+              ];
+            case 3:
+              _state.sent();
+              if (!!needModernServer)
+                return [
+                  3,
+                  5
+                ];
+              destHtmlDirectory = path.join(distDirectory, "html");
+              outputHtmlDirectory = path.join(path.join(outputDirectory, "static"), "html");
+              return [
+                4,
+                fse.copy(destHtmlDirectory, outputHtmlDirectory)
+              ];
+            case 4:
+              _state.sent();
+              return [
+                3,
+                9
+              ];
+            case 5:
+              return [
+                4,
+                fse.ensureDir(funcsDirectory)
+              ];
+            case 6:
+              _state.sent();
+              return [
+                4,
+                fse.copy(distDirectory, funcsDirectory, {
+                  filter: function(src) {
+                    var distStaticDirectory = path.join(distDirectory, "static");
+                    return !src.includes(distStaticDirectory);
+                  }
+                })
+              ];
+            case 7:
+              _state.sent();
+              return [
+                4,
+                fse.writeJSON(path.join(funcsDirectory, ".vc-config.json"), {
+                  runtime: "nodejs16.x",
+                  handler: "index.js",
+                  launcherType: "Nodejs",
+                  shouldAddHelpers: false,
+                  supportsResponseStreaming: true
+                })
+              ];
+            case 8:
+              _state.sent();
+              _state.label = 9;
+            case 9:
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    genEntry: function genEntry() {
+      return _async_to_generator(function() {
+        var _modernConfig_bff, serverConfig, pluginImportCode, dynamicProdOptions, pluginsCode, serverAppContext, handlerCode;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              if (!needModernServer) {
+                return [
+                  2
+                ];
+              }
+              serverConfig = {
+                bff: {
+                  prefix: modernConfig === null || modernConfig === void 0 ? void 0 : (_modernConfig_bff = modernConfig.bff) === null || _modernConfig_bff === void 0 ? void 0 : _modernConfig_bff.prefix
+                },
+                output: {
+                  distPath: {
+                    root: "."
+                  }
+                }
+              };
+              pluginImportCode = genPluginImportsCode(plugins || []);
+              dynamicProdOptions = {
+                config: serverConfig,
+                serverConfigFile: DEFAULT_SERVER_CONFIG
+              };
+              pluginsCode = getPluginsCode(plugins || []);
+              serverAppContext = serverAppContenxtTemplate(appContext);
+              return [
+                4,
+                fse.readFile(path.join(__dirname, "./vercel-handler.js"))
+              ];
+            case 1:
+              handlerCode = _state.sent().toString();
+              handlerCode = handlerCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", '"'.concat(ROUTE_SPEC_FILE, '"')).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+              return [
+                4,
+                fse.writeFile(handlerFilePath, handlerCode)
+              ];
+            case 2:
+              _state.sent();
+              if (!isEsmProject)
+                return [
+                  3,
+                  4
+                ];
+              return [
+                4,
+                fse.copy(path.join(__dirname, "./vercel-entry.mjs"), entryFilePath)
+              ];
+            case 3:
+              _state.sent();
+              return [
+                3,
+                6
+              ];
+            case 4:
+              return [
+                4,
+                fse.copy(path.join(__dirname, "./vercel-entry.js"), entryFilePath)
+              ];
+            case 5:
+              _state.sent();
+              _state.label = 6;
+            case 6:
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    end: function end() {
+      return _async_to_generator(function() {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              if (!needModernServer) {
+                return [
+                  2
+                ];
+              }
+              return [
+                4,
+                handleDependencies({
+                  appDir: appDirectory,
+                  serverRootDir: funcsDirectory,
+                  includeEntries: [
+                    require.resolve("@modern-js/prod-server")
+                  ]
+                })
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    }
+  };
+};
+export {
+  createVercelPreset
+};

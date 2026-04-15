@@ -1,0 +1,91 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var release_exports = {};
+__export(release_exports, {
+  release: () => release
+});
+module.exports = __toCommonJS(release_exports);
+var import_path = __toESM(require("path"));
+var import_git = require("@changesets/git");
+var import_utils = require("@modern-js/utils");
+var import_utils2 = require("../utils");
+async function release(options) {
+  const appDir = process.cwd();
+  const packageManager = await (0, import_utils.getPackageManager)(process.cwd());
+  const params = [
+    "publish"
+  ];
+  const { tag, otp, ignoreScripts, gitChecks, provenance } = options;
+  if (tag) {
+    params.push("--tag");
+    params.push(tag);
+  }
+  if (otp) {
+    params.push("--otp");
+    params.push(otp);
+  }
+  if (!(0, import_utils.isMonorepo)(appDir) || packageManager === "yarn" || packageManager === "npm") {
+    await (0, import_utils2.execaWithStreamLog)(process.execPath, [
+      import_utils2.CHANGESET_PATH,
+      ...params
+    ]);
+    return;
+  }
+  params.push("-r");
+  params.push("--filter");
+  const pnpmVersion = await (0, import_utils.getPnpmVersion)();
+  if (pnpmVersion.startsWith("6")) {
+    params.push("./packages/");
+  } else {
+    params.push("{./packages/**}");
+  }
+  params.push("--report-summary");
+  if (ignoreScripts) {
+    params.push("--ignore-scripts");
+  }
+  if (!gitChecks) {
+    params.push("--no-git-checks");
+  }
+  if (provenance) {
+    if (import_utils.semver.lt(pnpmVersion, "8.4.0")) {
+      console.warn("current pnpm version not support --provenance, please upgrade pnpm version first.");
+    } else {
+      params.push("--provenance");
+    }
+  }
+  await (0, import_utils2.execaWithStreamLog)(packageManager, params);
+  const pnpmPublishSummaryFile = import_path.default.join(appDir, "pnpm-publish-summary.json");
+  const publishInfo = await import_utils.fs.readJSON(pnpmPublishSummaryFile, "utf-8");
+  await Promise.all((publishInfo.publishedPackages || []).map((pkg) => (0, import_git.tag)(`${pkg.name}@${pkg.version}`, appDir)));
+  await import_utils.fs.remove(pnpmPublishSummaryFile);
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  release
+});

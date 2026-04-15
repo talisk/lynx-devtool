@@ -1,0 +1,32 @@
+import { WebSocket } from "ws";
+import { WebSocketController } from "./WebSocketServer";
+import { Client } from "../connector/Client";
+export type WebSocketClientInfo = {
+    id: number;
+    app: string;
+    debugRouterVersion: string;
+    deviceModel: string;
+    network: "WiFi";
+    osVersion: string;
+    sdkVersion: string;
+    type: string;
+    raw_info: any;
+};
+export declare class WebSocketClient extends Client {
+    private readonly server;
+    readonly info: WebSocketClientInfo;
+    private readonly socket;
+    private pendingRequests;
+    constructor(server: WebSocketController, info: WebSocketClientInfo, socket: WebSocket);
+    clientId(): number;
+    type(): string;
+    sendMessage(message: string): void;
+    close(): void;
+    handleListClients(): void;
+    private handleClose;
+    private isBufferClass;
+    private handleMessage;
+    private handleCustomizedMessage;
+    private handlePing;
+    sendCustomizedMessage(method: string, params?: Object, sessionId?: number, type?: string): Promise<string>;
+}

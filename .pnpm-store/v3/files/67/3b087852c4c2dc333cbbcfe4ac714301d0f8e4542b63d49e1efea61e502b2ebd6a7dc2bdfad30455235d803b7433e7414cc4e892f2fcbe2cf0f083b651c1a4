@@ -1,0 +1,34 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isUnknownMessage = exports.isTypedSocketMessage = exports.decodeSocketMessage = exports.encodeSocketMessage = void 0;
+const message_model_1 = require("./message.model");
+const availableEvents = Object.values(message_model_1.SocketEvents);
+function encodeSocketMessage(message) {
+    return JSON.stringify(message);
+}
+exports.encodeSocketMessage = encodeSocketMessage;
+function decodeSocketMessage(data, event) {
+    try {
+        const message = JSON.parse(typeof data === "string" ? data : data.toString());
+        if (!("event" in message))
+            return undefined;
+        if (!("data" in message))
+            message.data = undefined;
+        if (event == null)
+            return message;
+        return isTypedSocketMessage(message, event) ? message : undefined;
+    }
+    catch (_a) {
+        return undefined;
+    }
+}
+exports.decodeSocketMessage = decodeSocketMessage;
+function isTypedSocketMessage(message, event) {
+    return (message === null || message === void 0 ? void 0 : message.event) === event;
+}
+exports.isTypedSocketMessage = isTypedSocketMessage;
+function isUnknownMessage(message) {
+    return message == null || !availableEvents.includes(message.event);
+}
+exports.isUnknownMessage = isUnknownMessage;
+//# sourceMappingURL=message.js.map

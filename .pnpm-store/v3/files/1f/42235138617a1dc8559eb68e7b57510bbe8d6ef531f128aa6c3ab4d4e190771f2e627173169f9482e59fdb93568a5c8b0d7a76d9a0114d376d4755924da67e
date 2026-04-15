@@ -1,0 +1,94 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { createProdServer } from "@modern-js/prod-server";
+import { SERVER_DIR, getMeta, getTargetDir, isApiOnly, logger } from "@modern-js/utils";
+import { loadServerPlugins } from "../utils/loadPlugins";
+import { printInstructions } from "../utils/printInstructions";
+var start = function() {
+  var _ref = _async_to_generator(function(api) {
+    var _userConfig_source, _userConfig_output_distPath, appContext, userConfig, hooks, distDirectory, appDirectory, internalDirectory, port, metaName, serverRoutes, serverConfigFile, apiOnly, runMode, meta, serverConfigPath, pluginInstances, app;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          appContext = api.getAppContext();
+          userConfig = api.getNormalizedConfig();
+          hooks = api.getHooks();
+          distDirectory = appContext.distDirectory, appDirectory = appContext.appDirectory, internalDirectory = appContext.internalDirectory, port = appContext.port, metaName = appContext.metaName, serverRoutes = appContext.serverRoutes, serverConfigFile = appContext.serverConfigFile;
+          logger.info("Starting production server...");
+          return [
+            4,
+            isApiOnly(appContext.appDirectory, userConfig === null || userConfig === void 0 ? void 0 : (_userConfig_source = userConfig.source) === null || _userConfig_source === void 0 ? void 0 : _userConfig_source.entriesDir, appContext.apiDirectory)
+          ];
+        case 1:
+          apiOnly = _state.sent();
+          if (apiOnly) {
+            runMode = "apiOnly";
+          }
+          meta = getMeta(metaName);
+          serverConfigPath = path.resolve(distDirectory, SERVER_DIR, "".concat(meta, ".server"));
+          return [
+            4,
+            loadServerPlugins(api, appDirectory, metaName)
+          ];
+        case 2:
+          pluginInstances = _state.sent();
+          return [
+            4,
+            createProdServer({
+              metaName,
+              pwd: distDirectory,
+              config: _object_spread_props(_object_spread({}, userConfig), {
+                dev: userConfig.dev,
+                // server-core can't get RegExp & Function output.enableInlineScripts by JSON.stringy;
+                output: _object_spread({
+                  path: (_userConfig_output_distPath = userConfig.output.distPath) === null || _userConfig_output_distPath === void 0 ? void 0 : _userConfig_output_distPath.root
+                }, userConfig.output || {})
+              }),
+              routes: serverRoutes,
+              plugins: pluginInstances,
+              serverConfigFile,
+              serverConfigPath,
+              appContext: {
+                appDirectory,
+                internalDirectory,
+                sharedDirectory: getTargetDir(appContext.sharedDirectory, appContext.appDirectory, appContext.distDirectory),
+                apiDirectory: getTargetDir(appContext.apiDirectory, appContext.appDirectory, appContext.distDirectory),
+                lambdaDirectory: getTargetDir(appContext.lambdaDirectory, appContext.appDirectory, appContext.distDirectory)
+              },
+              runMode
+            })
+          ];
+        case 3:
+          app = _state.sent();
+          app.listen(port, /* @__PURE__ */ _async_to_generator(function() {
+            return _ts_generator(this, function(_state2) {
+              switch (_state2.label) {
+                case 0:
+                  return [
+                    4,
+                    printInstructions(hooks, appContext, userConfig)
+                  ];
+                case 1:
+                  _state2.sent();
+                  return [
+                    2
+                  ];
+              }
+            });
+          }));
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function start2(api) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  start
+};

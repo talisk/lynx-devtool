@@ -1,0 +1,5 @@
+import type { Entrypoint } from '@modern-js/types';
+import type { AppNormalizedConfig } from '../../types';
+import type { AppToolsContext, AppToolsHooks } from '../../types/new';
+export type { Entrypoint };
+export declare const getFileSystemEntry: (hooks: AppToolsHooks<'shared'>, appContext: AppToolsContext<'shared'>, config: AppNormalizedConfig<'shared'>) => Promise<Entrypoint[]>;

@@ -1,0 +1,102 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { serializeJson } from "@modern-js/runtime-utils/node";
+import { SSR_DATA_JSON_ID } from "../../constants";
+import { SSR_DATA_PLACEHOLDER } from "../constants";
+import { buildHtml } from "../shared";
+import { attributesToString, safeReplace } from "../utils";
+function buildShellAfterTemplate(afterAppTemplate, options) {
+  var request = options.request, config = options.config, ssrConfig = options.ssrConfig, runtimeContext = options.runtimeContext, renderLevel = options.renderLevel, entryName = options.entryName;
+  var callbacks = [
+    createReplaceSSRData({
+      request,
+      ssrConfig,
+      nonce: config.nonce,
+      useJsonScript: config.useJsonScript,
+      runtimeContext,
+      renderLevel
+    }),
+    function(template) {
+      return injectJs(template, entryName, config.nonce);
+    }
+  ];
+  function injectJs(template, entryName2, nonce) {
+    return _injectJs.apply(this, arguments);
+  }
+  function _injectJs() {
+    _injectJs = _async_to_generator(function(template, entryName2, nonce) {
+      var routeManifest, routeAssets, asyncEntry, _assets_filter, assets, jsChunkStr;
+      return _ts_generator(this, function(_state) {
+        routeManifest = runtimeContext.routeManifest;
+        routeAssets = routeManifest.routeAssets;
+        asyncEntry = routeAssets["async-".concat(entryName2)];
+        if (asyncEntry) {
+          ;
+          assets = asyncEntry.assets;
+          jsChunkStr = assets === null || assets === void 0 ? void 0 : (_assets_filter = assets.filter(function(asset) {
+            return asset.endsWith(".js");
+          })) === null || _assets_filter === void 0 ? void 0 : _assets_filter.map(function(asset) {
+            return "<script src=".concat(asset, ' nonce="').concat(nonce, '"></script>');
+          }).join(" ");
+          if (jsChunkStr) {
+            return [
+              2,
+              safeReplace(template, "<!--<?- chunksMap.js ?>-->", jsChunkStr)
+            ];
+          }
+        }
+        return [
+          2,
+          template
+        ];
+      });
+    });
+    return _injectJs.apply(this, arguments);
+  }
+  return buildHtml(afterAppTemplate, callbacks);
+}
+function createReplaceSSRData(options) {
+  var runtimeContext = options.runtimeContext, nonce = options.nonce, renderLevel = options.renderLevel, useJsonScript = options.useJsonScript, ssrConfig = options.ssrConfig;
+  var _runtimeContext_ssrContext = runtimeContext.ssrContext, request = _runtimeContext_ssrContext.request, reporter = _runtimeContext_ssrContext.reporter;
+  var headers = (typeof ssrConfig === "undefined" ? "undefined" : _type_of(ssrConfig)) === "object" && ssrConfig.unsafeHeaders ? Object.fromEntries(Object.entries(request.headers).filter(function(param) {
+    var _param = _sliced_to_array(param, 2), key = _param[0], _ = _param[1];
+    var _ssrConfig_unsafeHeaders_map, _ssrConfig_unsafeHeaders;
+    return (_ssrConfig_unsafeHeaders = ssrConfig.unsafeHeaders) === null || _ssrConfig_unsafeHeaders === void 0 ? void 0 : (_ssrConfig_unsafeHeaders_map = _ssrConfig_unsafeHeaders.map(function(header) {
+      return header.toLowerCase();
+    })) === null || _ssrConfig_unsafeHeaders_map === void 0 ? void 0 : _ssrConfig_unsafeHeaders_map.includes(key.toLowerCase());
+  })) : void 0;
+  var ssrData = {
+    data: {
+      initialData: runtimeContext.initialData,
+      i18nData: runtimeContext.__i18nData__
+    },
+    context: {
+      reporter: {
+        sessionId: reporter === null || reporter === void 0 ? void 0 : reporter.sessionId
+      },
+      request: {
+        query: request.query,
+        params: request.params,
+        pathname: request.pathname,
+        host: request.host,
+        url: request.url,
+        headers
+      }
+    },
+    mode: "stream",
+    renderLevel
+  };
+  var attrsStr = attributesToString({
+    nonce
+  });
+  var serializeSSRData = serializeJson(ssrData);
+  var ssrDataScript = useJsonScript ? '<script type="application/json" id="'.concat(SSR_DATA_JSON_ID, '">').concat(serializeSSRData, "</script>") : "<script".concat(attrsStr, ">window._SSR_DATA = ").concat(serializeSSRData, "</script>");
+  return function(template) {
+    return safeReplace(template, SSR_DATA_PLACEHOLDER, ssrDataScript);
+  };
+}
+export {
+  buildShellAfterTemplate
+};

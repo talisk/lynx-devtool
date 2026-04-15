@@ -1,0 +1,179 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const HarmonyDevice_1 = __importDefault(require("./HarmonyDevice"));
+const hdc_validator_1 = require("../../utils/hdc.validator");
+const WatchStatus_1 = require("../../device/WatchStatus");
+const DeviceManager_1 = require("../DeviceManager");
+const logger_1 = require("../../utils/logger");
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+class HarmonyDeviceManager extends DeviceManager_1.DeviceManager {
+    constructor(driver, options) {
+        super(driver);
+        this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+        this.retryCount = 0;
+        this.hdcClient = null;
+        this.hdcOptions = options;
+    }
+    createDevice(hdcClient, target) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                var _a;
+                try {
+                    const device = new HarmonyDevice_1.default(this.driver, target.connectKey, "Harmony", hdcClient);
+                    yield device.forwards();
+                    resolve(device);
+                }
+                catch (e) {
+                    const msg = "createDevice: harmony: error" + target.connectKey + " " + (e === null || e === void 0 ? void 0 : e.message);
+                    logger_1.defaultLogger.debug(msg);
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("harmony_create_device_error", null, {
+                        msg: msg,
+                        stage: "create",
+                    });
+                    resolve(undefined);
+                }
+            }));
+        });
+    }
+    registerDevice(hdcClient, target) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            logger_1.defaultLogger.debug("start to create harmony device:" + JSON.stringify(target));
+            const harmonyDevice = yield this.createDevice(hdcClient, target);
+            if (!harmonyDevice) {
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("harmony_register_device_error", null, {
+                    msg: "harmonyDevice does not exist",
+                });
+                return;
+            }
+            this.driver.registerDevice(harmonyDevice);
+        });
+    }
+    watchDevices(killHdc = false) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.hdcClient) {
+                this.hdcClient = yield (0, hdc_validator_1.getHdcInstance)(this.hdcOptions);
+                if (!this.hdcClient) {
+                    logger_1.defaultLogger.debug("getHdcInstance error");
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("harmony_watch_device_error", null, {
+                        msg: "getHdcInstance error",
+                        stage: "device",
+                        detail: "getHdcInstance",
+                    });
+                    return;
+                }
+            }
+            if (this.currentWatchStatus !== WatchStatus_1.WatchStatus.StopWatching) {
+                return;
+            }
+            this.currentWatchStatus = WatchStatus_1.WatchStatus.PrepareToWatch;
+            if (killHdc && this.retryCount > 3) {
+                try {
+                    yield this.hdcClient.kill();
+                }
+                catch (e) {
+                    logger_1.defaultLogger.debug("hdcClient kill error");
+                    (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("harmony_watch_device_error", null, {
+                        msg: "hdcClient kill error",
+                    });
+                }
+                this.retryCount = 0;
+            }
+            try {
+                this.hdcClient
+                    .trackTargets()
+                    .then((tracker) => {
+                    tracker.on("error", (err) => __awaiter(this, void 0, void 0, function* () {
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                        const msg = "tracker error:" + (err === null || err === void 0 ? void 0 : err.message);
+                        logger_1.defaultLogger.debug(msg);
+                        this.unregisterAllHarmonyTarget();
+                        this.reWatchHarmonyDevices();
+                    }));
+                    tracker.on("add", (target) => {
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                        this.retryCount = 0;
+                        logger_1.defaultLogger.debug("tracker add:" + JSON.stringify(target));
+                        if (target.connStatus === "Connected") {
+                            this.registerDevice(this.hdcClient, target);
+                        }
+                    });
+                    tracker.on("change", (newTarget, oldTarget) => {
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                        this.retryCount = 0;
+                        logger_1.defaultLogger.debug("tracker old Target:" + JSON.stringify(oldTarget));
+                        logger_1.defaultLogger.debug("tracker change to:" + JSON.stringify(newTarget));
+                        if (newTarget.connStatus === "Connected") {
+                            this.registerDevice(this.hdcClient, newTarget);
+                        }
+                        else {
+                            if (this.driver.devices.has(newTarget.connectKey)) {
+                                this.driver.unregisterDevice(newTarget.connectKey);
+                            }
+                        }
+                    });
+                    tracker.on("remove", (target) => {
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                        this.retryCount = 0;
+                        logger_1.defaultLogger.debug("tracker remove:" + JSON.stringify(target));
+                        if (this.driver.devices.has(target.connType)) {
+                            this.driver.unregisterDevice(target.connType);
+                        }
+                    });
+                })
+                    .catch((err) => __awaiter(this, void 0, void 0, function* () {
+                    var _d;
+                    this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                    const msg = "trackDevices catch:" + (err === null || err === void 0 ? void 0 : err.message);
+                    logger_1.defaultLogger.debug(msg);
+                    (_d = (0, DriverReportService_1.getDriverReportService)()) === null || _d === void 0 ? void 0 : _d.report("harmony_watch_device_error", null, {
+                        msg: msg,
+                        stage: "device",
+                        detail: "trackDevices_catch",
+                    });
+                    this.unregisterAllHarmonyTarget();
+                    this.reWatchHarmonyDevices();
+                }));
+            }
+            catch (e) {
+                this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                const msg = "watchHarmonyDevices error:" + (e === null || e === void 0 ? void 0 : e.message);
+                logger_1.defaultLogger.debug(msg);
+                (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("harmony_watch_device_error", null, {
+                    msg: msg,
+                    stage: "device",
+                    detail: "watchHarmonyDevices_catch",
+                });
+                this.unregisterAllHarmonyTarget();
+                this.reWatchHarmonyDevices();
+            }
+        });
+    }
+    reWatchHarmonyDevices() {
+        this.retryCount++;
+        setTimeout(() => {
+            this.watchDevices(true);
+        }, 300);
+    }
+    unregisterAllHarmonyTarget() {
+        const harmonyDevices = Array.from(this.driver.devices.values()).filter((d) => d instanceof HarmonyDevice_1.default);
+        harmonyDevices.forEach((device) => {
+            this.driver.unregisterDevice(device.serial);
+        });
+    }
+}
+exports.default = HarmonyDeviceManager;
+//# sourceMappingURL=HarmonyDeviceManager.js.map

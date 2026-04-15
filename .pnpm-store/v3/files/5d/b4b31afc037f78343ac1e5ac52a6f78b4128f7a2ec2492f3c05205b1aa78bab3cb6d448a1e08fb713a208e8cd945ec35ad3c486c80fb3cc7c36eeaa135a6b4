@@ -1,0 +1,174 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name2 in all)
+    __defProp(target, name2, { get: all[name2], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var asset_exports = {};
+__export(asset_exports, {
+  asset: () => asset,
+  getAssetContents: () => getAssetContents
+});
+module.exports = __toCommonJS(asset_exports);
+var import_fs = __toESM(require("fs"));
+var import_path = require("path");
+var import_lodash = __toESM(require("@modern-js/utils/lodash"));
+var import_pluginutils = require("@rollup/pluginutils");
+var import_core = require("../../../compiled/@svgr/core");
+var import_plugin_jsx = __toESM(require("../../../compiled/@svgr/plugin-jsx"));
+var import_plugin_svgo = __toESM(require("../../../compiled/@svgr/plugin-svgo"));
+var import_file = require("../../constants/file");
+var import_utils = require("../../utils");
+const name = "asset";
+const SVG_REGEXP = /\.svg$/;
+const asset = {
+  name,
+  apply(compiler) {
+    compiler.hooks.load.tapPromise({
+      name
+    }, async (args) => {
+      if (import_file.assetExt.find((ext) => ext === (0, import_path.extname)(args.path))) {
+        const { buildType, outDir, sourceDir } = compiler.config;
+        const rebaseFrom = buildType === "bundle" ? outDir : (0, import_path.join)(outDir, (0, import_path.relative)(sourceDir, (0, import_path.dirname)(args.path)));
+        const { contents, loader } = await getAssetContents.apply(compiler, [
+          args.path,
+          rebaseFrom,
+          true
+        ]);
+        return {
+          contents,
+          loader
+        };
+      }
+    });
+  }
+};
+function encodeSVG(buffer) {
+  return encodeURIComponent(buffer.toString("utf-8").replace(/[\n\r]/gim, "").replace(/\t/gim, " ").replace(/<!--(.*(?=-->))-->/gim, "").replace(/'/gim, "\\i")).replace(/\(/g, "%28").replace(/\)/g, "%29");
+}
+const getDefaultSVGRConfig = () => ({
+  svgo: true,
+  svgoConfig: {
+    plugins: [
+      {
+        name: "preset-default",
+        params: {
+          overrides: {
+            // viewBox is required to resize SVGs with CSS.
+            // @see https://github.com/svg/svgo/issues/1128
+            removeViewBox: false
+          }
+        }
+      },
+      "prefixIds"
+    ]
+  }
+});
+async function getAssetContents(assetPath, rebaseFrom, calledOnLoad) {
+  const fileContent = await import_fs.default.promises.readFile(assetPath);
+  const { buildType, format, outDir } = this.config;
+  const { limit, path, publicPath, svgr, name: name2 } = this.config.asset;
+  const hash = (0, import_utils.getHash)(fileContent, null).slice(0, 8);
+  const outputFileName = getOutputFileName(assetPath, name2, hash);
+  const outputFilePath = (0, import_path.resolve)(outDir, path, outputFileName);
+  const relativePath = (0, import_path.relative)(rebaseFrom, outputFilePath);
+  const normalizedRelativePath = (0, import_utils.normalizeSlashes)(relativePath.startsWith("..") ? relativePath : `./${relativePath}`);
+  const normalizedPublicPath = `${typeof publicPath === "function" ? publicPath(assetPath) : publicPath}${path}/${outputFileName}`;
+  let emitAsset = true;
+  let contents = normalizedPublicPath;
+  let loader = "text";
+  const defaultConfig = getDefaultSVGRConfig();
+  const config = typeof svgr === "boolean" ? defaultConfig : import_lodash.default.merge(defaultConfig, svgr);
+  const filter = (0, import_pluginutils.createFilter)(config.include || SVG_REGEXP, config.exclude);
+  if (svgr && filter(assetPath) && calledOnLoad) {
+    const previousExport = config.exportType === "named" ? `export default "${normalizedPublicPath}"` : null;
+    contents = await (0, import_core.transform)(fileContent.toString(), config, {
+      filePath: assetPath,
+      caller: {
+        name: "svgr",
+        defaultPlugins: [
+          import_plugin_svgo.default,
+          import_plugin_jsx.default
+        ],
+        previousExport
+      }
+    });
+    loader = "jsx";
+    emitAsset = false;
+  } else if (buildType === "bundle") {
+    if (fileContent.length <= limit) {
+      const mimetype = (await Promise.resolve().then(() => __toESM(require("@modern-js/utils/mime-types")))).default.lookup(assetPath);
+      const isSVG = mimetype === "image/svg+xml";
+      const data = isSVG ? encodeSVG(fileContent) : fileContent.toString("base64");
+      const encoding = isSVG ? "" : ";base64";
+      contents = `data:${mimetype}${encoding},${data}`;
+      loader = "text";
+      emitAsset = false;
+    } else if ((format === "esm" || format === "cjs") && !publicPath) {
+      contents = calledOnLoad ? fileContent : normalizedRelativePath;
+      loader = calledOnLoad ? "copy" : "text";
+      emitAsset = !calledOnLoad;
+    }
+  } else {
+    contents = normalizedRelativePath;
+  }
+  if (emitAsset) {
+    this.emitAsset(outputFilePath, {
+      type: "asset",
+      fileName: outputFilePath,
+      contents: fileContent,
+      originalFileName: assetPath
+    });
+  }
+  return {
+    contents,
+    loader
+  };
+}
+function getOutputFileName(filePath, assetName, hash) {
+  const format = typeof assetName === "function" ? assetName(filePath) : assetName;
+  const fileBaseNameArray = (0, import_path.basename)(filePath).split(".");
+  var _fileBaseNameArray_pop;
+  const extname2 = (_fileBaseNameArray_pop = fileBaseNameArray.pop()) !== null && _fileBaseNameArray_pop !== void 0 ? _fileBaseNameArray_pop : "";
+  const fileBaseName = fileBaseNameArray.join(".");
+  const outputFileName = format.replace(/(\[[^\]]*\])/g, (str, match) => {
+    if (match === "[name]") {
+      return fileBaseName;
+    }
+    if (match === "[ext]") {
+      return extname2;
+    }
+    if (match === "[hash]") {
+      return hash;
+    }
+    return match;
+  });
+  return outputFileName;
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  asset,
+  getAssetContents
+});

@@ -1,0 +1,37 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const command_1 = __importDefault(require("../../command"));
+class TargetsCommand extends command_1.default {
+    constructor(connection) {
+        super(connection);
+    }
+    execute(...args) {
+        const command = "list targets -v";
+        const data = Buffer.from(command, "ascii");
+        this.send(data);
+        return this.connection.parser.readValue().then(this._parseDevices);
+    }
+    _parseDevices(value) {
+        return value
+            .toString("ascii")
+            .split("\n")
+            .filter((e) => e && !e.startsWith("[Empty]"))
+            .map((line) => {
+            if (line.startsWith("[Fail]")) {
+                throw new Error(line);
+            }
+            const [connKey, _, connType = "TCP", connStatus = "UNKONW", devName,] = line.split("\t");
+            return {
+                connectKey: connKey,
+                connType: connType,
+                connStatus: connStatus,
+                devName,
+            };
+        });
+    }
+}
+exports.default = TargetsCommand;
+//# sourceMappingURL=targets.js.map

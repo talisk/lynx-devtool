@@ -1,0 +1,1 @@
+export declare function getHdcInstance(hdcOption: any): Promise<import("./hdc/client").default>;

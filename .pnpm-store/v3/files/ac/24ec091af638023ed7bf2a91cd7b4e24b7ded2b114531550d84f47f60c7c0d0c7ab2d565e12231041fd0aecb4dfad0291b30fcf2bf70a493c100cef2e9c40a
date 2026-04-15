@@ -1,0 +1,74 @@
+import { serializeJson } from "@modern-js/runtime-utils/node";
+import { SSR_DATA_JSON_ID } from "../../constants";
+import { SSR_DATA_PLACEHOLDER } from "../constants";
+import { buildHtml } from "../shared";
+import { attributesToString, safeReplace } from "../utils";
+function buildShellAfterTemplate(afterAppTemplate, options) {
+  const { request, config, ssrConfig, runtimeContext, renderLevel, entryName } = options;
+  const callbacks = [
+    createReplaceSSRData({
+      request,
+      ssrConfig,
+      nonce: config.nonce,
+      useJsonScript: config.useJsonScript,
+      runtimeContext,
+      renderLevel
+    }),
+    (template) => injectJs(template, entryName, config.nonce)
+  ];
+  async function injectJs(template, entryName2, nonce) {
+    const { routeManifest } = runtimeContext;
+    const { routeAssets } = routeManifest;
+    const asyncEntry = routeAssets[`async-${entryName2}`];
+    if (asyncEntry) {
+      var _assets_filter;
+      const { assets } = asyncEntry;
+      const jsChunkStr = assets === null || assets === void 0 ? void 0 : (_assets_filter = assets.filter((asset) => asset.endsWith(".js"))) === null || _assets_filter === void 0 ? void 0 : _assets_filter.map((asset) => {
+        return `<script src=${asset} nonce="${nonce}"></script>`;
+      }).join(" ");
+      if (jsChunkStr) {
+        return safeReplace(template, "<!--<?- chunksMap.js ?>-->", jsChunkStr);
+      }
+    }
+    return template;
+  }
+  return buildHtml(afterAppTemplate, callbacks);
+}
+function createReplaceSSRData(options) {
+  const { runtimeContext, nonce, renderLevel, useJsonScript, ssrConfig } = options;
+  const { request, reporter } = runtimeContext.ssrContext;
+  const headers = typeof ssrConfig === "object" && ssrConfig.unsafeHeaders ? Object.fromEntries(Object.entries(request.headers).filter(([key, _]) => {
+    var _ssrConfig_unsafeHeaders_map, _ssrConfig_unsafeHeaders;
+    return (_ssrConfig_unsafeHeaders = ssrConfig.unsafeHeaders) === null || _ssrConfig_unsafeHeaders === void 0 ? void 0 : (_ssrConfig_unsafeHeaders_map = _ssrConfig_unsafeHeaders.map((header) => header.toLowerCase())) === null || _ssrConfig_unsafeHeaders_map === void 0 ? void 0 : _ssrConfig_unsafeHeaders_map.includes(key.toLowerCase());
+  })) : void 0;
+  const ssrData = {
+    data: {
+      initialData: runtimeContext.initialData,
+      i18nData: runtimeContext.__i18nData__
+    },
+    context: {
+      reporter: {
+        sessionId: reporter === null || reporter === void 0 ? void 0 : reporter.sessionId
+      },
+      request: {
+        query: request.query,
+        params: request.params,
+        pathname: request.pathname,
+        host: request.host,
+        url: request.url,
+        headers
+      }
+    },
+    mode: "stream",
+    renderLevel
+  };
+  const attrsStr = attributesToString({
+    nonce
+  });
+  const serializeSSRData = serializeJson(ssrData);
+  const ssrDataScript = useJsonScript ? `<script type="application/json" id="${SSR_DATA_JSON_ID}">${serializeSSRData}</script>` : `<script${attrsStr}>window._SSR_DATA = ${serializeSSRData}</script>`;
+  return (template) => safeReplace(template, SSR_DATA_PLACEHOLDER, ssrDataScript);
+}
+export {
+  buildShellAfterTemplate
+};

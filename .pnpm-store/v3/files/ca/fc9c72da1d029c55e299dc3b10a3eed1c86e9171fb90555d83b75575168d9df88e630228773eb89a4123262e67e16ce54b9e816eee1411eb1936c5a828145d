@@ -1,0 +1,90 @@
+{
+  "name": "@modern-js/plugin-v2",
+  "description": "A Progressive React Framework for modern web development.",
+  "homepage": "https://modernjs.dev",
+  "bugs": "https://github.com/web-infra-dev/modern.js/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/web-infra-dev/modern.js",
+    "directory": "packages/toolkit/plugin"
+  },
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "framework",
+    "modern",
+    "modern.js"
+  ],
+  "version": "2.63.2",
+  "jsnext:source": "./src/index.ts",
+  "types": "./dist/types/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "node": {
+        "jsnext:source": "./src/index.ts",
+        "import": "./dist/esm-node/index.js",
+        "require": "./dist/cjs/index.js"
+      },
+      "default": "./dist/esm/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts",
+      "jsnext:source": "./src/types/index.ts",
+      "default": "./dist/cjs/types/index.js"
+    },
+    "./run": {
+      "types": "./dist/types/cli/run/run.d.ts",
+      "jsnext:source": "./src/cli/run/run.ts",
+      "default": "./dist/cjs/cli/run/run.js"
+    },
+    "./cli": {
+      "types": "./dist/types/cli/index.d.ts",
+      "jsnext:source": "./src/cli/index.ts",
+      "default": "./dist/cjs/cli/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/index.d.ts"
+      ],
+      "run": [
+        "./dist/types/cli/run/run.d.ts"
+      ],
+      "cli": [
+        "./dist/types/cli/index.d.ts"
+      ]
+    }
+  },
+  "dependencies": {
+    "@swc/helpers": "0.5.13",
+    "@modern-js/node-bundle-require": "2.63.2",
+    "@modern-js/utils": "2.63.2"
+  },
+  "devDependencies": {
+    "@rsbuild/core": "1.1.9",
+    "@types/jest": "^29",
+    "@types/node": "^14",
+    "jest": "^29",
+    "typescript": "^5",
+    "@modern-js/uni-builder": "2.63.2",
+    "@modern-js/types": "2.63.2",
+    "@scripts/build": "2.63.2",
+    "@scripts/jest-config": "2.63.2"
+  },
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "new": "modern-lib new",
+    "dev": "modern-lib build --watch",
+    "build": "modern-lib build",
+    "test": "jest"
+  }
+}

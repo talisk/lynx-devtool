@@ -1,0 +1,5 @@
+import { type ICompiler } from '../../types';
+export declare const minify: {
+    name: string;
+    apply: (compiler: ICompiler) => void;
+};

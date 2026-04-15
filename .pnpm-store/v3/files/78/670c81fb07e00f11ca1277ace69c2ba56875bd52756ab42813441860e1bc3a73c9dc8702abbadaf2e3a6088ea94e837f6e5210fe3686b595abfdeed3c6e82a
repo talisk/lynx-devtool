@@ -1,0 +1,4 @@
+import { debug as Debugger } from '@modern-js/utils';
+export declare const debug: Debugger.Debugger;
+export declare const label: (info: string) => string;
+export declare const debugResolve: Debugger.Debugger;

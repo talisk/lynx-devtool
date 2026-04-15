@@ -1,0 +1,19 @@
+import fs from "fs";
+import path from "path";
+import { dotenv, dotenvExpand } from "@modern-js/utils";
+const loadEnv = (appDirectory, mode = process.env.NODE_ENV) => {
+  [
+    `.env.${mode}.local`,
+    ".env.local",
+    `.env.${mode}`,
+    ".env"
+  ].map((name) => path.resolve(appDirectory, name)).filter((filePath) => fs.existsSync(filePath) && !fs.statSync(filePath).isDirectory()).forEach((filePath) => {
+    const envConfig = dotenv.config({
+      path: filePath
+    });
+    dotenvExpand(envConfig);
+  });
+};
+export {
+  loadEnv
+};

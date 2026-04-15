@@ -1,0 +1,26 @@
+import { UsbClient } from "./Client";
+import { BaseDevice } from "../device/BaseDevice";
+import { ClientQuery } from "../utils/type";
+import { ClientEventsListener } from "./ClientAdapter";
+import { Connection } from "./Connection";
+import { DebugRouterConnector } from "../connector";
+export declare class ClientController implements ClientEventsListener {
+    private timer;
+    private sockets;
+    private ports;
+    private clientInfos;
+    connections: Map<number, UsbClient>;
+    driver: DebugRouterConnector;
+    device: BaseDevice;
+    constructor(driver: DebugRouterConnector, serverDevice: BaseDevice);
+    onConnectionDeleted(id: number): void;
+    onConnectionCreated(connection: Connection, port: number, ClientQuery: ClientQuery): number;
+    addConnection(connection: Connection, port: number, query: ClientQuery): number;
+    private removeConnection;
+    private createAdapter;
+    private watchClient;
+    startWatchClient(): void;
+    stopWatchClient(): void;
+    private closeAllConnection;
+    close(): void;
+}

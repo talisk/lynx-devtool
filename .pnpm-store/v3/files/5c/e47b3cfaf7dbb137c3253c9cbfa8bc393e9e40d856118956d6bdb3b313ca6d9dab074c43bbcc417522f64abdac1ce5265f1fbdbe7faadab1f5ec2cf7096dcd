@@ -1,0 +1,3 @@
+import type { ITypedSocketMessage, SocketEvents } from "../message.model";
+import type { IAbstractSocketConnection } from "../socket.model";
+export declare function waitEvent<T extends SocketEvents>(socket: IAbstractSocketConnection, event: T): Promise<ITypedSocketMessage<T>>;

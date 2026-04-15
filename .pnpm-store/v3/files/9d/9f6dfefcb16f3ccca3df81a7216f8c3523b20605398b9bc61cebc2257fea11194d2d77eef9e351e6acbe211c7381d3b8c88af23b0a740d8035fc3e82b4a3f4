@@ -1,0 +1,41 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.isCustomizedEventType = exports.isTypedSocketMessage = exports.DeviceOS = exports.CustomizedEventType = exports.SocketEvent = void 0;
+var SocketEvent;
+(function (SocketEvent) {
+    SocketEvent["Register"] = "Register";
+    SocketEvent["Customized"] = "Customized";
+    SocketEvent["Initialize"] = "Initialize";
+    SocketEvent["App"] = "App";
+})(SocketEvent = exports.SocketEvent || (exports.SocketEvent = {}));
+var CustomizedEventType;
+(function (CustomizedEventType) {
+    CustomizedEventType["CDP"] = "CDP";
+    CustomizedEventType["OpenCard"] = "OpenCard";
+    CustomizedEventType["SetGlobalSwitch"] = "SetGlobalSwitch";
+    CustomizedEventType["GetGlobalSwitch"] = "GetGlobalSwitch";
+    CustomizedEventType["SessionList"] = "SessionList";
+    CustomizedEventType["App"] = "App";
+})(CustomizedEventType = exports.CustomizedEventType || (exports.CustomizedEventType = {}));
+var DeviceOS;
+(function (DeviceOS) {
+    DeviceOS["Android"] = "Android";
+    DeviceOS["iOS"] = "iOS";
+    DeviceOS["Harmony"] = "Harmony";
+    DeviceOS["Mac"] = "Mac";
+    DeviceOS["Windows"] = "Windows";
+    DeviceOS["Linux"] = "Linux";
+    DeviceOS["Network"] = "Network";
+})(DeviceOS = exports.DeviceOS || (exports.DeviceOS = {}));
+function isTypedSocketMessage(message, event) {
+    return (message === null || message === void 0 ? void 0 : message.event) === event;
+}
+exports.isTypedSocketMessage = isTypedSocketMessage;
+function isCustomizedEventType(message, type) {
+    var _a;
+    return (message === null || message === void 0 ? void 0 : message.event) === SocketEvent.Customized
+        ? ((_a = message === null || message === void 0 ? void 0 : message.data) === null || _a === void 0 ? void 0 : _a.type) === type
+        : false;
+}
+exports.isCustomizedEventType = isCustomizedEventType;
+//# sourceMappingURL=type.js.map

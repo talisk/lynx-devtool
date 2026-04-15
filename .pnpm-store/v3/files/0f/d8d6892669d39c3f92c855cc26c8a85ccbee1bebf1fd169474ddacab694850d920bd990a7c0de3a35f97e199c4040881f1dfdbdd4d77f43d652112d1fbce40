@@ -1,0 +1,44 @@
+import { _ as _object_without_properties } from "@swc/helpers/_/_object_without_properties";
+import { createCollectAsyncHook } from "@modern-js/plugin-v2";
+import { getHookRunners } from "./hooks";
+var compatPlugin = function() {
+  return {
+    name: "@modern-js/app-tools-compat",
+    _registryApi: function(getAppContext, updateAppContext) {
+      var getInternalContext = function() {
+        return getAppContext()._internalContext;
+      };
+      return {
+        useAppContext: function() {
+          var _getAppContext = getAppContext(), _internalContext = _getAppContext._internalContext, appContext = _object_without_properties(_getAppContext, [
+            "_internalContext"
+          ]);
+          return appContext;
+        },
+        setAppContext: function(context) {
+          return updateAppContext(context);
+        },
+        useConfigContext: function() {
+          return getInternalContext().config;
+        },
+        useResolvedConfigContext: function() {
+          return getInternalContext().normalizedConfig;
+        },
+        useHookRunners: function() {
+          return getHookRunners(getInternalContext());
+        }
+      };
+    },
+    registryHooks: {
+      appendEntryCode: createCollectAsyncHook()
+    },
+    setup: function(api) {
+      api.updateAppContext({
+        toolsType: "app-tools"
+      });
+    }
+  };
+};
+export {
+  compatPlugin
+};

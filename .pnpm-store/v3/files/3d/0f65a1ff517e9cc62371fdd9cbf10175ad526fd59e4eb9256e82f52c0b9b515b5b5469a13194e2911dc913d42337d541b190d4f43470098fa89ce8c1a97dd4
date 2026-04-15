@@ -1,0 +1,20 @@
+import { CDPEventHandler, EventHandler, RequireMessageType, ResponseMessageType } from "../utils/type";
+export interface PendingRequestResolvers {
+    resolve: (data: ResponseMessageType) => void;
+    reject: (err: Error) => void;
+}
+export declare abstract class Connection {
+    private readonly events;
+    protected pendingRequests: Map<string, PendingRequestResolvers>;
+    abstract close(): void;
+    abstract send(data: any): void;
+    abstract sendExpectResponse(data: RequireMessageType): Promise<ResponseMessageType>;
+    handleClientEvent(event: string, params: any, session_id: any): void;
+    handleSessionList(sessionList: any): void;
+    on(event: string, callback: EventHandler): void;
+    onAllEvents(callback: CDPEventHandler): void;
+    off(event: string, callback: EventHandler): void;
+    offAllEvents(callback: CDPEventHandler): void;
+    once(event: string, callback: EventHandler): void;
+    matchPendingRequest(id: string): PendingRequestResolvers;
+}

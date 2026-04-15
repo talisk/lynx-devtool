@@ -1,0 +1,144 @@
+import path from "path";
+import { fs, ROUTE_SPEC_FILE, SERVER_BUNDLE_DIRECTORY, SERVER_WORKER_BUNDLE_DIRECTORY, getEntryOptions, isPlainObject, removeLeadingSlash, removeTailSlash, urlJoin } from "@modern-js/utils";
+import { isMainEntry } from "../../utils/routes";
+import { walkDirectory } from "./utils";
+const applyBaseUrl = (baseUrl, routes) => {
+  if (baseUrl) {
+    if (Array.isArray(baseUrl)) {
+      return baseUrl.reduce((previous, current) => [
+        ...previous,
+        ...applyBaseUrl(current, routes)
+      ], []);
+    } else {
+      return routes.map((route) => {
+        const urlPath = urlJoin(baseUrl, route.urlPath);
+        return {
+          ...route,
+          urlPath: urlPath === "/" ? urlPath : removeTailSlash(urlPath)
+        };
+      });
+    }
+  }
+  return routes;
+};
+const applyRouteOptions = (original, routeOptions) => {
+  const { route, disableSpa } = routeOptions;
+  original.isSPA = !disableSpa;
+  !original.isSPA && (original.entryPath = path.dirname(original.entryPath));
+  let routes;
+  if (route) {
+    if (Array.isArray(route)) {
+      routes = route.map((url) => {
+        if (isPlainObject(url)) {
+          const { path: urlPath, ...other } = url;
+          return {
+            ...original,
+            ...other,
+            urlPath
+          };
+        } else {
+          return {
+            ...original,
+            urlPath: url
+          };
+        }
+      });
+    } else if (isPlainObject(route)) {
+      const { path: urlPath, ...other } = route;
+      routes = [
+        {
+          ...original,
+          ...other,
+          urlPath
+        }
+      ];
+    } else {
+      routes = [
+        {
+          ...original,
+          urlPath: route
+        }
+      ];
+    }
+  } else {
+    routes = [
+      original
+    ];
+  }
+  return routes;
+};
+const collectHtmlRoutes = (entrypoints, appContext, config) => {
+  var _deploy_worker;
+  const { source: { mainEntryName }, html: { disableHtmlFolder }, output: { distPath: { html: htmlPath } = {} }, server: { baseUrl, routes, ssr, ssrByEntries }, deploy } = config;
+  const { packageName } = appContext;
+  const workerSSR = deploy === null || deploy === void 0 ? void 0 : (_deploy_worker = deploy.worker) === null || _deploy_worker === void 0 ? void 0 : _deploy_worker.ssr;
+  let htmlRoutes = entrypoints.reduce((previous, { entryName }) => {
+    const isMain = isMainEntry(entryName, mainEntryName);
+    const entryOptions = getEntryOptions(entryName, isMain, ssr, ssrByEntries, packageName);
+    const isSSR = Boolean(entryOptions);
+    const isWorker = Boolean(workerSSR);
+    const isStream = typeof entryOptions === "object" && entryOptions.mode === "stream";
+    const { resHeaders } = (routes === null || routes === void 0 ? void 0 : routes[entryName]) || {};
+    let route = {
+      urlPath: `/${isMain ? "" : entryName}`,
+      entryName,
+      entryPath: removeLeadingSlash(path.posix.normalize(`${htmlPath}/${entryName}${disableHtmlFolder ? ".html" : "/index.html"}`)),
+      isSPA: true,
+      isStream,
+      isSSR,
+      responseHeaders: resHeaders,
+      worker: isWorker ? `${SERVER_WORKER_BUNDLE_DIRECTORY}/${entryName}.js` : void 0,
+      bundle: isSSR ? `${SERVER_BUNDLE_DIRECTORY}/${entryName}.js` : void 0
+    };
+    if (routes === null || routes === void 0 ? void 0 : routes.hasOwnProperty(entryName)) {
+      const routeOptions = isPlainObject(routes[entryName]) ? routes[entryName] : {
+        route: routes[entryName]
+      };
+      route = applyRouteOptions(route, routeOptions);
+    }
+    return Array.isArray(route) ? [
+      ...previous,
+      ...route
+    ] : [
+      ...previous,
+      route
+    ];
+  }, []);
+  htmlRoutes = applyBaseUrl(baseUrl, htmlRoutes);
+  return htmlRoutes;
+};
+const collectStaticRoutes = (appContext, config) => {
+  const { appDirectory } = appContext;
+  const { source: { configDir }, server: { publicRoutes = {} } } = config;
+  const publicFolder = path.resolve(appDirectory, configDir || "", "public");
+  const ignoreFiles = [
+    ".gitkeep"
+  ];
+  return fs.existsSync(publicFolder) ? walkDirectory(publicFolder).filter((filePath) => !ignoreFiles.includes(path.basename(filePath))).map((filePath) => {
+    const urlPath = `${urlJoin(toPosix(filePath).slice(toPosix(publicFolder).length))}`;
+    return {
+      urlPath: publicRoutes[removeLeadingSlash(urlPath)] || urlPath,
+      isSPA: true,
+      isSSR: false,
+      entryPath: toPosix(path.relative(path.resolve(appDirectory, configDir || ""), filePath))
+    };
+  }) : [];
+};
+const getServerRoutes = (entrypoints, { appContext, config }) => [
+  ...collectHtmlRoutes(entrypoints, appContext, config),
+  ...collectStaticRoutes(appContext, config)
+];
+const toPosix = (pathStr) => pathStr.split(path.sep).join(path.posix.sep);
+const getProdServerRoutes = (distDirectory) => {
+  const routeJSON = path.join(distDirectory, ROUTE_SPEC_FILE);
+  try {
+    const { routes } = fs.readJSONSync(routeJSON);
+    return routes;
+  } catch (e) {
+    throw new Error(`Failed to read routes from ${routeJSON}, please check if the file exists.`);
+  }
+};
+export {
+  getProdServerRoutes,
+  getServerRoutes
+};

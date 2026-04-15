@@ -1,0 +1,6 @@
+import type { BaseBuildConfig } from '../types';
+export declare const getDefaultBuildConfig: () => Readonly<BaseBuildConfig>;
+/**
+ * supports require js plugin in less file
+ */
+export declare const cssExtensions: string[];

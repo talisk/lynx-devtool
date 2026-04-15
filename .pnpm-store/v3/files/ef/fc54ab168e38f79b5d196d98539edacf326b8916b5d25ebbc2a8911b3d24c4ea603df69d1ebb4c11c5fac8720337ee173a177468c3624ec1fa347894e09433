@@ -1,0 +1,11 @@
+import path from "path";
+import { CONFIG_FILE_EXTENSIONS, findExists } from "@modern-js/utils";
+import { DEFAULT_CONFIG_FILE } from "../constants";
+var getConfigFile = function(configFile) {
+  return findExists(CONFIG_FILE_EXTENSIONS.map(function(extension) {
+    return path.resolve(process.cwd(), "".concat(configFile || DEFAULT_CONFIG_FILE).concat(extension));
+  }));
+};
+export {
+  getConfigFile
+};

@@ -1,0 +1,78 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var loadPlugins_exports = {};
+__export(loadPlugins_exports, {
+  getServerPlugins: () => getServerPlugins,
+  loadInternalPlugins: () => loadInternalPlugins,
+  loadServerPlugins: () => loadServerPlugins
+});
+module.exports = __toCommonJS(loadPlugins_exports);
+var import_prod_server = require("@modern-js/prod-server");
+var import_utils = require("@modern-js/utils");
+const debug = (0, import_utils.createDebugger)("load-plugins");
+async function getServerPlugins(api, metaName = "modern-js") {
+  const hooks = api.getHooks();
+  const { plugins } = await hooks._internalServerPlugins.call({
+    plugins: []
+  });
+  const filtedPlugins = plugins.filter((plugin) => plugin.name.includes(metaName));
+  api.updateAppContext({
+    serverPlugins: filtedPlugins
+  });
+  return filtedPlugins;
+}
+async function loadServerPlugins(api, appDirectory, metaName) {
+  const plugins = await getServerPlugins(api, metaName);
+  const instances = await (0, import_prod_server.loadServerPlugins)(plugins, appDirectory);
+  return instances;
+}
+const resolveCliPlugin = async (p, appDirectory) => {
+  const pkg = typeof p === "string" ? p : p[0];
+  const pluginOptions = typeof p === "string" ? void 0 : p[1];
+  const path = (0, import_utils.tryResolve)(pkg, appDirectory);
+  let module2;
+  try {
+    module2 = await (0, import_utils.compatibleRequire)(path);
+  } catch (e) {
+    ({ default: module2 } = await (0, import_utils.dynamicImport)(path));
+  }
+  if (typeof module2 === "function") {
+    const result = module2(pluginOptions);
+    return result;
+  }
+  return module2;
+};
+const loadInternalPlugins = async (appDirectory, internalPlugins, autoLoad, autoLoadPlugins) => {
+  const plugins = [
+    ...autoLoadPlugins ? (0, import_utils.getInternalPlugins)(appDirectory, internalPlugins) : [],
+    ...autoLoad ? (0, import_utils.getInternalPlugins)(appDirectory, autoLoad) : []
+  ];
+  const loadedPlugins = await Promise.all(plugins.map((plugin) => {
+    const loadedPlugin = resolveCliPlugin(plugin, appDirectory);
+    debug(`resolve plugin %s: %s`, plugin, loadedPlugin);
+    return loadedPlugin;
+  }));
+  return loadedPlugins;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getServerPlugins,
+  loadInternalPlugins,
+  loadServerPlugins
+});

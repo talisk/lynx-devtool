@@ -1,0 +1,50 @@
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import path from "path";
+import { ROUTE_SPEC_FILE, fs as fse, isDepExists } from "@modern-js/utils";
+var serverAppContenxtTemplate = function(appContext) {
+  var appDirectory = appContext.appDirectory, sharedDirectory = appContext.sharedDirectory, apiDirectory = appContext.apiDirectory, lambdaDirectory = appContext.lambdaDirectory, metaName = appContext.metaName;
+  return {
+    sharedDirectory: 'path.join(__dirname, "'.concat(path.relative(appDirectory, sharedDirectory), '")'),
+    apiDirectory: 'path.join(__dirname, "'.concat(path.relative(appDirectory, apiDirectory), '")'),
+    lambdaDirectory: 'path.join(__dirname, "'.concat(path.relative(appDirectory, lambdaDirectory), '")'),
+    metaName
+  };
+};
+var genPluginImportsCode = function(plugins) {
+  return plugins.map(function(param, index) {
+    var _param = _sliced_to_array(param, 2), name = _param[0], options = _param[1];
+    return "\n      let plugin_".concat(index, " = require('").concat(name, "')\n      plugin_").concat(index, " = plugin_").concat(index, ".default || plugin_").concat(index, "\n      ");
+  }).join(";\n");
+};
+var getPluginsCode = function(plugins) {
+  return "[".concat(plugins.map(function(param, index) {
+    var _param = _sliced_to_array(param, 2), options = _param[1];
+    return "plugin_".concat(index, "(").concat(options ? JSON.stringify(options) : "", ")");
+  }).join(","), "]");
+};
+var getProjectUsage = function(appDirectory, distDirectory) {
+  var routeJSON = path.join(distDirectory, ROUTE_SPEC_FILE);
+  var routes = fse.readJSONSync(routeJSON).routes;
+  var useSSR = false;
+  var useAPI = false;
+  routes.forEach(function(route) {
+    if (route.isSSR) {
+      useSSR = true;
+    }
+    if (route.isApi) {
+      useAPI = true;
+    }
+  });
+  var useWebServer = isDepExists(appDirectory, "@modern-js/plugin-server");
+  return {
+    useSSR,
+    useAPI,
+    useWebServer
+  };
+};
+export {
+  genPluginImportsCode,
+  getPluginsCode,
+  getProjectUsage,
+  serverAppContenxtTemplate
+};

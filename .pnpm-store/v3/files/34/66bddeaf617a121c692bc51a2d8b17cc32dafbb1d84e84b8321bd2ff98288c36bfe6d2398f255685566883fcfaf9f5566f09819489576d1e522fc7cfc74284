@@ -1,0 +1,151 @@
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { merge } from "@modern-js/runtime-utils/merge";
+import { parsedJSONFromElement } from "@modern-js/runtime-utils/parsed";
+import { RouterProvider, createBrowserRouter, createHashRouter, createRoutesFromElements, useHref, useLocation, useMatches } from "@modern-js/runtime-utils/router";
+import { useContext, useMemo } from "react";
+import { RuntimeReactContext } from "../../core";
+import { getGlobalLayoutApp, getGlobalRoutes } from "../../core/context";
+import { modifyRoutes as modifyRoutesHook } from "./hooks";
+import { deserializeErrors, renderRoutes, urlJoin } from "./utils";
+var finalRouteConfig = {
+  routes: []
+};
+var beforeCreateRouter = true;
+function modifyRoutes(modifyFunction) {
+  if (beforeCreateRouter) {
+    var originRoutes = finalRouteConfig.routes;
+    var newRoutes = modifyFunction(originRoutes);
+    finalRouteConfig.routes = newRoutes;
+  } else {
+    console.error("It is not allowed to modify routes config after create router.");
+  }
+}
+var routerPlugin = function() {
+  var userConfig = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+  return {
+    name: "@modern-js/plugin-router",
+    registerHook: {
+      modifyRoutes: modifyRoutesHook
+    },
+    setup: function(api) {
+      var routes = [];
+      window._SERVER_DATA = parsedJSONFromElement("__MODERN_SERVER_DATA__");
+      return {
+        beforeRender: function beforeRender(context) {
+          context.router = {
+            useMatches,
+            useLocation,
+            useHref
+          };
+          Object.defineProperty(context, "routes", {
+            get: function get() {
+              return routes;
+            }
+          });
+        },
+        wrapRoot: function(App) {
+          var pluginConfig = api.useRuntimeConfigContext();
+          var _merge = merge(pluginConfig.router || {}, userConfig), _merge_serverBase = _merge.serverBase, serverBase = _merge_serverBase === void 0 ? [] : _merge_serverBase, _merge_supportHtml5History = _merge.supportHtml5History, supportHtml5History = _merge_supportHtml5History === void 0 ? true : _merge_supportHtml5History, _merge_basename = _merge.basename, basename = _merge_basename === void 0 ? "" : _merge_basename, routesConfig = _merge.routesConfig, createRoutes = _merge.createRoutes, future = _merge.future;
+          var select = function(pathname) {
+            return serverBase.find(function(baseUrl) {
+              return pathname.search(baseUrl) === 0;
+            }) || "/";
+          };
+          finalRouteConfig = _object_spread({
+            routes: getGlobalRoutes(),
+            globalApp: getGlobalLayoutApp()
+          }, routesConfig);
+          if (!finalRouteConfig.routes && !createRoutes) {
+            return App;
+          }
+          var getRouteApp = function() {
+            var useCreateRouter = function(props) {
+              var _window__SERVER_DATA;
+              var runtimeContext = useContext(RuntimeReactContext);
+              var baseUrl = (((_window__SERVER_DATA = window._SERVER_DATA) === null || _window__SERVER_DATA === void 0 ? void 0 : _window__SERVER_DATA.router.baseUrl) || select(location.pathname)).replace(/^\/*/, "/");
+              var _basename = baseUrl === "/" ? urlJoin(baseUrl, runtimeContext._internalRouterBaseName || basename) : baseUrl;
+              var hydrationData = window._ROUTER_DATA;
+              var getBlockNavState = runtimeContext.unstable_getBlockNavState;
+              return useMemo(function() {
+                if (hydrationData === null || hydrationData === void 0 ? void 0 : hydrationData.errors) {
+                  hydrationData = _object_spread_props(_object_spread({}, hydrationData), {
+                    errors: deserializeErrors(hydrationData.errors)
+                  });
+                }
+                routes = createRoutes ? createRoutes() : createRoutesFromElements(renderRoutes({
+                  routesConfig: finalRouteConfig,
+                  props
+                }));
+                var runner = api.useHookRunners();
+                routes = runner.modifyRoutes(routes);
+                var router = supportHtml5History ? createBrowserRouter(routes, {
+                  basename: _basename,
+                  hydrationData
+                }) : createHashRouter(routes, {
+                  basename: _basename,
+                  hydrationData
+                });
+                var originSubscribe = router.subscribe;
+                router.subscribe = function(listener) {
+                  var wrapedListener = function() {
+                    for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+                      args[_key] = arguments[_key];
+                    }
+                    var blockRoute = getBlockNavState ? getBlockNavState() : false;
+                    if (blockRoute) {
+                      return;
+                    }
+                    return listener.apply(void 0, _to_consumable_array(args));
+                  };
+                  return originSubscribe(wrapedListener);
+                };
+                return router;
+              }, [
+                finalRouteConfig,
+                props,
+                _basename,
+                hydrationData,
+                getBlockNavState
+              ]);
+            };
+            var Null = function() {
+              return null;
+            };
+            return function(props) {
+              beforeCreateRouter = false;
+              var router = useCreateRouter(props);
+              var routerWrapper = (
+                // To match the node tree about https://github.com/web-infra-dev/modern.js/blob/v2.59.0/packages/runtime/plugin-runtime/src/router/runtime/plugin.node.tsx#L150-L168
+                // According to react [useId generation algorithm](https://github.com/facebook/react/pull/22644), `useId` will generate id with the react node react struct.
+                // To void hydration failed, we must guarantee that the node tree when browser hydrate must have same struct with node tree when ssr render.
+                /* @__PURE__ */ _jsxs(_Fragment, {
+                  children: [
+                    /* @__PURE__ */ _jsx(RouterProvider, {
+                      router,
+                      future
+                    }),
+                    /* @__PURE__ */ _jsx(Null, {}),
+                    /* @__PURE__ */ _jsx(Null, {})
+                  ]
+                })
+              );
+              return App ? /* @__PURE__ */ _jsx(App, {
+                children: routerWrapper
+              }) : routerWrapper;
+            };
+          };
+          return getRouteApp();
+        }
+      };
+    }
+  };
+};
+export {
+  beforeCreateRouter,
+  finalRouteConfig,
+  modifyRoutes,
+  routerPlugin
+};

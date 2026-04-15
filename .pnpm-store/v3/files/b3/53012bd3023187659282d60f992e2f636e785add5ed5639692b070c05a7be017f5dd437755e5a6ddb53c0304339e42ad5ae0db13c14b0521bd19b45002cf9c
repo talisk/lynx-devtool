@@ -1,0 +1,15 @@
+# Installation
+> `npm install --save @types/electron-prompt`
+
+# Summary
+This package contains type definitions for electron-prompt (https://github.com/p-sam/electron-prompt#readme).
+
+# Details
+Files were exported from https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/electron-prompt.
+
+### Additional Details
+ * Last updated: Mon, 06 Nov 2023 22:41:05 GMT
+ * Dependencies: [electron](https://npmjs.com/package/electron)
+
+# Credits
+These definitions were written by [Florian Imdahl](https://github.com/ffflorian).

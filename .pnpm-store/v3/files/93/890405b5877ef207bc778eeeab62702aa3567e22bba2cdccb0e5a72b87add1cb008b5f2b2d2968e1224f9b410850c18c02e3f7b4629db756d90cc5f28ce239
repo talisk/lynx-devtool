@@ -1,0 +1,8 @@
+import type { Input } from '../types';
+export declare const getDefaultIndexEntry: ({ isTsProject, appDirectory, }: {
+    isTsProject: boolean;
+    appDirectory: string;
+}) => Promise<string[]>;
+export declare const normalizeInput: (input: Input, appDirectory: string, enableSvgr: boolean) => Promise<string[] | {
+    [name: string]: string;
+}>;

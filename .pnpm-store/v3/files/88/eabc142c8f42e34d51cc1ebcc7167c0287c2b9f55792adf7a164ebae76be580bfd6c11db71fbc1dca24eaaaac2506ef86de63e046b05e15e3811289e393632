@@ -1,0 +1,20 @@
+import type { ImportKind, Platform } from 'esbuild';
+/**
+ * supports require js plugin in less file
+ */
+export declare const cssExtensions: string[];
+export declare const createJsResolver: (options: ResolverOptions) => (id: string, dir: string, kind?: ImportKind) => string | false;
+export declare const createCssResolver: (options: ResolverOptions) => (id: string, dir: string, kind?: ImportKind) => string;
+export interface ResolverOptions {
+    platform: Platform;
+    resolveType: 'js' | 'css';
+    extensions: string[];
+    root: string;
+    alias: Record<string, string>;
+    tsConfig: {
+        configFile: string;
+        references?: string[] | undefined;
+    };
+    mainFields: string[];
+    preferRelative?: boolean;
+}

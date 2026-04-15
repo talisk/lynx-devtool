@@ -1,0 +1,26 @@
+import { createPublicPattern } from "./createCopyPattern";
+const builderPluginAdapterCopy = (options) => ({
+  name: "builder-plugin-adapter-copy",
+  setup(api) {
+    const { normalizedConfig: modernConfig, appContext } = options;
+    api.modifyBundlerChain((chain, { CHAIN_ID }) => {
+      if (chain.plugins.has(CHAIN_ID.PLUGIN.COPY)) {
+        const defaultCopyPattern = createPublicPattern(appContext, modernConfig, chain);
+        chain.plugin(CHAIN_ID.PLUGIN.COPY).tap((args) => {
+          var _args_;
+          return [
+            {
+              patterns: [
+                ...((_args_ = args[0]) === null || _args_ === void 0 ? void 0 : _args_.patterns) || [],
+                defaultCopyPattern
+              ]
+            }
+          ];
+        });
+      }
+    });
+  }
+});
+export {
+  builderPluginAdapterCopy
+};

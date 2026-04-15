@@ -1,0 +1,68 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { cli } from "@modern-js/plugin-v2/cli";
+import { chalk, clearConsole, getFullArgv, logger } from "@modern-js/utils";
+import { program } from "@modern-js/utils/commander";
+function restart(hooks, filename) {
+  return _restart.apply(this, arguments);
+}
+function _restart() {
+  _restart = _async_to_generator(function(hooks, filename) {
+    var hasGetError, err;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          clearConsole();
+          logger.info("Restart because ".concat(chalk.yellow(filename), " is changed...\n"));
+          hasGetError = false;
+          return [
+            4,
+            hooks.onBeforeRestart.call()
+          ];
+        case 1:
+          _state.sent();
+          _state.label = 2;
+        case 2:
+          _state.trys.push([
+            2,
+            4,
+            5,
+            6
+          ]);
+          return [
+            4,
+            cli.init(cli.getPrevInitOptions())
+          ];
+        case 3:
+          _state.sent();
+          return [
+            3,
+            6
+          ];
+        case 4:
+          err = _state.sent();
+          console.error(err);
+          hasGetError = true;
+          return [
+            3,
+            6
+          ];
+        case 5:
+          if (!hasGetError) {
+            program.parse(getFullArgv());
+          }
+          return [
+            7
+          ];
+        case 6:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return _restart.apply(this, arguments);
+}
+export {
+  restart
+};

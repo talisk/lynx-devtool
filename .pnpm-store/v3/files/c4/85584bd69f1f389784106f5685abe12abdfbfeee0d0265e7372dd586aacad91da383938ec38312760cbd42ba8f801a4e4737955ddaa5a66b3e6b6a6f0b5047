@@ -1,0 +1,128 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var register_exports = {};
+__export(register_exports, {
+  registerCompiler: () => registerCompiler
+});
+module.exports = __toCommonJS(register_exports);
+var import_node_path = __toESM(require("node:path"));
+var import_utils = require("@modern-js/utils");
+const registerEsbuild = async ({ isTsProject, tsConfig, distDir }) => {
+  const esbuildRegister = await import("esbuild-register/dist/node");
+  esbuildRegister.register({
+    tsconfigRaw: isTsProject ? tsConfig : void 0,
+    hookIgnoreNodeModules: true,
+    hookMatcher: (fileName) => !fileName.startsWith(distDir)
+  });
+};
+const registerCompiler = async (appDir, distDir, alias) => {
+  const TS_CONFIG_FILENAME = `tsconfig.json`;
+  const tsconfigPath = import_node_path.default.resolve(appDir, TS_CONFIG_FILENAME);
+  const isTsProject = await import_utils.fs.pathExists(tsconfigPath);
+  const aliasConfig = (0, import_utils.getAliasConfig)(alias, {
+    appDirectory: appDir,
+    tsconfigPath
+  });
+  const { paths = {}, absoluteBaseUrl = "./" } = aliasConfig;
+  const tsPaths = Object.keys(paths).reduce((o, key) => {
+    let tsPath = paths[key];
+    if (typeof tsPath === "string" && key.startsWith("@") && tsPath.startsWith("@")) {
+      try {
+        tsPath = require.resolve(tsPath, {
+          paths: [
+            process.cwd(),
+            ...module.paths
+          ]
+        });
+      } catch {
+      }
+    }
+    if (typeof tsPath === "string" && import_node_path.default.isAbsolute(tsPath)) {
+      tsPath = import_node_path.default.relative(absoluteBaseUrl, tsPath);
+    }
+    if (typeof tsPath === "string") {
+      tsPath = [
+        tsPath
+      ];
+    }
+    return {
+      ...o,
+      [`${key}`]: tsPath
+    };
+  }, {});
+  let tsConfig = {};
+  if (isTsProject) {
+    tsConfig = (0, import_utils.readTsConfigByFile)(tsconfigPath);
+  }
+  const { MODERN_NODE_LOADER } = process.env;
+  if (MODERN_NODE_LOADER === "esbuild" || !isTsProject) {
+    await registerEsbuild({
+      isTsProject,
+      tsConfig,
+      distDir
+    });
+  } else {
+    try {
+      const tsNode = await (0, import_utils.loadFromProject)("ts-node", appDir);
+      const tsNodeOptions = tsConfig["ts-node"];
+      tsNode.register({
+        project: tsconfigPath,
+        scope: true,
+        // for env.d.ts, https://www.npmjs.com/package/ts-node#missing-types
+        files: true,
+        transpileOnly: true,
+        ignore: [
+          "(?:^|/)node_modules/",
+          `(?:^|/)${import_node_path.default.relative(appDir, distDir)}/`
+        ],
+        ...tsNodeOptions
+      });
+    } catch (error) {
+      if (process.env.DEBUG) {
+        import_utils.logger.error(error);
+      }
+      await registerEsbuild({
+        isTsProject,
+        tsConfig,
+        distDir
+      });
+    }
+  }
+  const tsConfigPaths = (await import("@modern-js/utils/tsconfig-paths")).default;
+  if (await import_utils.fs.pathExists(appDir)) {
+    tsConfigPaths.register({
+      baseUrl: absoluteBaseUrl || "./",
+      paths: tsPaths
+    });
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  registerCompiler
+});

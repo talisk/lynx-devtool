@@ -1,0 +1,162 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { DEFAULT_SERVER_CONFIG, ROUTE_SPEC_FILE, chalk, fs as fse } from "@modern-js/utils";
+import { handleDependencies } from "../dependencies";
+import { genPluginImportsCode, getPluginsCode, serverAppContenxtTemplate } from "../utils";
+var createNodePreset = function(appContext, config) {
+  var appDirectory = appContext.appDirectory, distDirectory = appContext.distDirectory, serverPlugins = appContext.serverPlugins, moduleType = appContext.moduleType;
+  var isEsmProject = moduleType === "module";
+  var plugins = serverPlugins.map(function(plugin) {
+    return [
+      plugin.name,
+      plugin.options
+    ];
+  });
+  var outputDirectory = path.join(appDirectory, ".output");
+  var staticDirectory = path.join(outputDirectory, "static");
+  var entryFilePath = path.join(outputDirectory, "index.js");
+  return {
+    prepare: function prepare() {
+      return _async_to_generator(function() {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              return [
+                4,
+                fse.remove(outputDirectory)
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    writeOutput: function writeOutput() {
+      return _async_to_generator(function() {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              return [
+                4,
+                fse.copy(distDirectory, outputDirectory)
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    genEntry: function genEntry() {
+      return _async_to_generator(function() {
+        var _config_bff, serverConfig, pluginImportCode, dynamicProdOptions, pluginsCode, entryCode, serverAppContext, cjsEntryFilePath;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              serverConfig = {
+                server: {
+                  port: 8080
+                },
+                bff: {
+                  prefix: config === null || config === void 0 ? void 0 : (_config_bff = config.bff) === null || _config_bff === void 0 ? void 0 : _config_bff.prefix
+                },
+                output: {
+                  distPath: {
+                    root: "."
+                  }
+                }
+              };
+              pluginImportCode = genPluginImportsCode(plugins || []);
+              dynamicProdOptions = {
+                config: serverConfig,
+                serverConfigFile: DEFAULT_SERVER_CONFIG
+              };
+              pluginsCode = getPluginsCode(plugins);
+              return [
+                4,
+                fse.readFile(path.join(__dirname, "./node-entry.js"))
+              ];
+            case 1:
+              entryCode = _state.sent().toString();
+              serverAppContext = serverAppContenxtTemplate(appContext);
+              entryCode = entryCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", '"'.concat(ROUTE_SPEC_FILE, '"')).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+              if (!isEsmProject)
+                return [
+                  3,
+                  4
+                ];
+              cjsEntryFilePath = path.join(outputDirectory, "index.cjs");
+              return [
+                4,
+                fse.writeFile(cjsEntryFilePath, entryCode)
+              ];
+            case 2:
+              _state.sent();
+              return [
+                4,
+                fse.writeFile(entryFilePath, "import('./index.cjs');")
+              ];
+            case 3:
+              _state.sent();
+              return [
+                3,
+                6
+              ];
+            case 4:
+              return [
+                4,
+                fse.writeFile(entryFilePath, entryCode)
+              ];
+            case 5:
+              _state.sent();
+              _state.label = 6;
+            case 6:
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    end: function end() {
+      return _async_to_generator(function() {
+        var filter;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              console.log("Static directory:", chalk.blue(path.relative(appDirectory, staticDirectory)));
+              console.log("You can preview this build by", chalk.blue("node .output/index"));
+              filter = function(filePath) {
+                return !filePath.startsWith(staticDirectory);
+              };
+              return [
+                4,
+                handleDependencies({
+                  appDir: appDirectory,
+                  serverRootDir: outputDirectory,
+                  includeEntries: [
+                    require.resolve("@modern-js/prod-server")
+                  ],
+                  entryFilter: filter
+                })
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    }
+  };
+};
+export {
+  createNodePreset
+};

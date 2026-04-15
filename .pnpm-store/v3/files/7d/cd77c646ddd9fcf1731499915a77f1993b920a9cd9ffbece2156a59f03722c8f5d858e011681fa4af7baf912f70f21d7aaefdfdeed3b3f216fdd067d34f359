@@ -1,0 +1,169 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var requestHandler_exports = {};
+__export(requestHandler_exports, {
+  createRequestHandler: () => createRequestHandler
+});
+module.exports = __toCommonJS(requestHandler_exports);
+var import_request = require("@modern-js/runtime-utils/universal/request");
+var import_context = require("../context");
+var import_runtime = require("../context/runtime");
+var import_loaderManager = require("../loader/loaderManager");
+var import_runner = require("../plugin/runner");
+var import_react = require("../react");
+var import_constants = require("./constants");
+var import_utils = require("./utils");
+function createSSRContext(request, options) {
+  const { config, loaderContext, onError, onTiming, locals, resource, params, responseProxy, logger, metrics, reporter } = options;
+  const { nonce, useJsonScript } = config;
+  const { entryName, route } = resource;
+  const { headers } = request;
+  const cookie = headers.get("cookie") || "";
+  const cookieMap = (0, import_request.parseCookie)(request);
+  const pathname = (0, import_request.getPathname)(request);
+  const query = (0, import_request.parseQuery)(request);
+  const headersData = (0, import_request.parseHeaders)(request);
+  const url = new URL(request.url);
+  const host = headers.get("X-Forwarded-Host") || headers.get("host") || url.host;
+  let protocol = (headers.get("X-Forwarded-Proto") || url.protocol || "http").split(/\s*,\s*/, 1)[0];
+  if (!protocol.endsWith(":")) {
+    protocol += ":";
+  }
+  const ssrConfig = (0, import_utils.getSSRConfigByEntry)(entryName, config.ssr, config.ssrByEntries);
+  const ssrMode = (0, import_utils.getSSRMode)(ssrConfig);
+  const loaderFailureMode = typeof ssrConfig === "object" ? ssrConfig.loaderFailureMode : void 0;
+  return {
+    nonce,
+    useJsonScript,
+    loaderContext,
+    redirection: {},
+    htmlModifiers: [],
+    logger,
+    metrics,
+    request: {
+      url: request.url.replace(url.host, host).replace(url.protocol, protocol),
+      baseUrl: route.urlPath,
+      userAgent: headers.get("user-agent"),
+      cookie,
+      cookieMap,
+      pathname,
+      query,
+      params,
+      headers: headersData,
+      host,
+      raw: request
+    },
+    response: {
+      setHeader(key, value) {
+        responseProxy.headers[key] = value;
+      },
+      status(code) {
+        responseProxy.code = code;
+      },
+      locals: locals || {}
+    },
+    reporter,
+    mode: ssrMode,
+    onError,
+    onTiming,
+    loaderFailureMode
+  };
+}
+const createRequestHandler = async (handleRequest) => {
+  const requestHandler = async (request, options) => {
+    var _context_routerContext, _context_routerContext1;
+    const Root = (0, import_react.createRoot)();
+    const runner = (0, import_runner.getGlobalRunner)();
+    const { routeManifest } = options.resource;
+    const context = (0, import_runtime.getInitialContext)(runner, false, routeManifest);
+    const runBeforeRender = async (context2) => {
+      const result = await runner.beforeRender(context2);
+      if (typeof Response !== "undefined" && result instanceof Response) {
+        return result;
+      }
+      const init = (0, import_context.getGlobalAppInit)();
+      return init === null || init === void 0 ? void 0 : init(context2);
+    };
+    const responseProxy = {
+      headers: {},
+      code: -1
+    };
+    const ssrContext = createSSRContext(request, {
+      ...options,
+      responseProxy
+    });
+    Object.assign(context, {
+      ssrContext,
+      isBrowser: false,
+      loaderManager: (0, import_loaderManager.createLoaderManager)({}, {
+        skipNonStatic: options.staticGenerate,
+        // if not static generate, only non-static loader can exec on prod env
+        skipStatic: process.env.NODE_ENV === "production" && !options.staticGenerate
+      })
+    });
+    const getRedirectResponse = (result) => {
+      if (typeof Response !== "undefined" && // fix: ssg workflow doesn't inject Web Response
+      result instanceof Response && result.status >= 300 && result.status <= 399) {
+        const { status } = result;
+        const redirectUrl = result.headers.get("Location") || "/";
+        const { ssrContext: ssrContext2 } = context;
+        if (ssrContext2) {
+          return new Response(null, {
+            status,
+            headers: {
+              Location: redirectUrl
+            }
+          });
+        }
+      }
+      return void 0;
+    };
+    const initialData = await runBeforeRender(context);
+    if (((_context_routerContext = context.routerContext) === null || _context_routerContext === void 0 ? void 0 : _context_routerContext.statusCode) && ((_context_routerContext1 = context.routerContext) === null || _context_routerContext1 === void 0 ? void 0 : _context_routerContext1.statusCode) !== 200) {
+      var _context_routerContext2, _context_ssrContext;
+      (_context_ssrContext = context.ssrContext) === null || _context_ssrContext === void 0 ? void 0 : _context_ssrContext.response.status((_context_routerContext2 = context.routerContext) === null || _context_routerContext2 === void 0 ? void 0 : _context_routerContext2.statusCode);
+    }
+    context.initialData = initialData;
+    const redirectResponse = getRedirectResponse(initialData);
+    if (redirectResponse) {
+      return redirectResponse;
+    }
+    const { htmlTemplate } = options.resource;
+    options.resource.htmlTemplate = htmlTemplate.replace("</head>", `${import_constants.CHUNK_CSS_PLACEHOLDER}</head>`);
+    const response = await handleRequest(request, Root, {
+      ...options,
+      runtimeContext: context
+    });
+    Object.entries(responseProxy.headers).forEach(([key, value]) => {
+      response.headers.set(key, value);
+    });
+    if (responseProxy.code !== -1) {
+      return new Response(response.body, {
+        status: responseProxy.code,
+        headers: response.headers
+      });
+    }
+    return response;
+  };
+  return requestHandler;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createRequestHandler
+});

@@ -1,0 +1,328 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { DEFAULT_SERVER_CONFIG, ROUTE_SPEC_FILE, fs as fse } from "@modern-js/utils";
+import { isMainEntry } from "../../../utils/routes";
+import { handleDependencies } from "../dependencies";
+import { genPluginImportsCode, getPluginsCode, serverAppContenxtTemplate } from "../utils";
+function cleanDistDirectory(dir) {
+  return _cleanDistDirectory.apply(this, arguments);
+}
+function _cleanDistDirectory() {
+  _cleanDistDirectory = _async_to_generator(function(dir) {
+    var items, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, item, fullPath, err, error;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          _state.trys.push([
+            0,
+            10,
+            ,
+            11
+          ]);
+          return [
+            4,
+            fse.readdir(dir)
+          ];
+        case 1:
+          items = _state.sent();
+          _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+          _state.label = 2;
+        case 2:
+          _state.trys.push([
+            2,
+            7,
+            8,
+            9
+          ]);
+          _iterator = items[Symbol.iterator]();
+          _state.label = 3;
+        case 3:
+          if (!!(_iteratorNormalCompletion = (_step = _iterator.next()).done))
+            return [
+              3,
+              6
+            ];
+          item = _step.value;
+          fullPath = path.join(dir, item);
+          if (!(item !== "static" && item !== "_redirects" && item !== "html"))
+            return [
+              3,
+              5
+            ];
+          return [
+            4,
+            fse.remove(fullPath)
+          ];
+        case 4:
+          _state.sent();
+          _state.label = 5;
+        case 5:
+          _iteratorNormalCompletion = true;
+          return [
+            3,
+            3
+          ];
+        case 6:
+          return [
+            3,
+            9
+          ];
+        case 7:
+          err = _state.sent();
+          _didIteratorError = true;
+          _iteratorError = err;
+          return [
+            3,
+            9
+          ];
+        case 8:
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return != null) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+          return [
+            7
+          ];
+        case 9:
+          return [
+            3,
+            11
+          ];
+        case 10:
+          error = _state.sent();
+          console.error("Error cleaning directory:", error);
+          return [
+            3,
+            11
+          ];
+        case 11:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return _cleanDistDirectory.apply(this, arguments);
+}
+var createNetlifyPreset = function(appContext, modernConfig, needModernServer) {
+  var appDirectory = appContext.appDirectory, distDirectory = appContext.distDirectory, entrypoints = appContext.entrypoints, serverPlugins = appContext.serverPlugins, moduleType = appContext.moduleType;
+  var isEsmProject = moduleType === "module";
+  var plugins = serverPlugins.map(function(plugin) {
+    return [
+      plugin.name,
+      plugin.options
+    ];
+  });
+  var netlifyOutput = path.join(appDirectory, ".netlify");
+  var funcsDirectory = path.join(netlifyOutput, "functions");
+  var entryFilePath = path.join(funcsDirectory, "index.js");
+  var handlerFilePath = path.join(funcsDirectory, "netlify-handler.cjs");
+  return {
+    prepare: function prepare() {
+      return _async_to_generator(function() {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              return [
+                4,
+                fse.remove(netlifyOutput)
+              ];
+            case 1:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    writeOutput: function writeOutput() {
+      return _async_to_generator(function() {
+        var routes, mainEntryName, redirectContent, redirectFilePath;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              routes = [];
+              mainEntryName = modernConfig.source.mainEntryName;
+              if (!needModernServer) {
+                entrypoints.forEach(function(entry) {
+                  var isMain = isMainEntry(entry.entryName, mainEntryName);
+                  routes.push({
+                    src: "/".concat(isMain ? "" : "".concat(entry.entryName, "/"), "*"),
+                    dest: "/html/".concat(entry.entryName, "/index.html"),
+                    status: 200
+                  });
+                });
+              } else {
+                routes.push({
+                  src: "/*",
+                  dest: "/.netlify/functions/index",
+                  status: 200
+                });
+              }
+              redirectContent = routes.map(function(route) {
+                return "".concat(route.src, " ").concat(route.dest, " ").concat(route.status);
+              }).join("\n");
+              if (!needModernServer)
+                return [
+                  3,
+                  3
+                ];
+              return [
+                4,
+                fse.ensureDir(funcsDirectory)
+              ];
+            case 1:
+              _state.sent();
+              return [
+                4,
+                fse.copy(distDirectory, funcsDirectory, {
+                  filter: function(src) {
+                    var distStaticDirectory = path.join(distDirectory, "static");
+                    return !src.includes(distStaticDirectory);
+                  }
+                })
+              ];
+            case 2:
+              _state.sent();
+              _state.label = 3;
+            case 3:
+              redirectFilePath = path.join(distDirectory, "_redirects");
+              return [
+                4,
+                fse.writeFile(redirectFilePath, redirectContent)
+              ];
+            case 4:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    genEntry: function genEntry() {
+      return _async_to_generator(function() {
+        var _modernConfig_bff, serverConfig, pluginImportCode, dynamicProdOptions, pluginsCode, handlerCode, serverAppContext;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              if (!needModernServer) {
+                return [
+                  2
+                ];
+              }
+              serverConfig = {
+                bff: {
+                  prefix: modernConfig === null || modernConfig === void 0 ? void 0 : (_modernConfig_bff = modernConfig.bff) === null || _modernConfig_bff === void 0 ? void 0 : _modernConfig_bff.prefix
+                },
+                output: {
+                  distPath: {
+                    root: "."
+                  }
+                }
+              };
+              pluginImportCode = genPluginImportsCode(plugins || []);
+              dynamicProdOptions = {
+                config: serverConfig,
+                serverConfigFile: DEFAULT_SERVER_CONFIG
+              };
+              pluginsCode = getPluginsCode(plugins);
+              return [
+                4,
+                fse.readFile(path.join(__dirname, "./netlify-handler.js"))
+              ];
+            case 1:
+              handlerCode = _state.sent().toString();
+              serverAppContext = serverAppContenxtTemplate(appContext);
+              handlerCode = handlerCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", '"'.concat(ROUTE_SPEC_FILE, '"')).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+              return [
+                4,
+                fse.writeFile(handlerFilePath, handlerCode)
+              ];
+            case 2:
+              _state.sent();
+              if (!isEsmProject)
+                return [
+                  3,
+                  4
+                ];
+              return [
+                4,
+                fse.copy(path.join(__dirname, "./netlify-entry.mjs"), entryFilePath)
+              ];
+            case 3:
+              _state.sent();
+              return [
+                3,
+                6
+              ];
+            case 4:
+              return [
+                4,
+                fse.copy(path.join(__dirname, "./netlify-entry.js"), entryFilePath)
+              ];
+            case 5:
+              _state.sent();
+              _state.label = 6;
+            case 6:
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    },
+    end: function end() {
+      return _async_to_generator(function() {
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              if (!(process.env.NODE_ENV !== "development"))
+                return [
+                  3,
+                  2
+                ];
+              return [
+                4,
+                cleanDistDirectory(distDirectory)
+              ];
+            case 1:
+              _state.sent();
+              _state.label = 2;
+            case 2:
+              if (!needModernServer) {
+                return [
+                  2
+                ];
+              }
+              return [
+                4,
+                handleDependencies({
+                  appDir: appDirectory,
+                  serverRootDir: funcsDirectory,
+                  includeEntries: [
+                    require.resolve("@modern-js/prod-server")
+                  ]
+                })
+              ];
+            case 3:
+              _state.sent();
+              return [
+                2
+              ];
+          }
+        });
+      })();
+    }
+  };
+};
+export {
+  createNetlifyPreset
+};

@@ -1,0 +1,219 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { jsx as _jsx } from "react/jsx-runtime";
+import { ROUTE_MANIFEST } from "@modern-js/utils/universal/constants";
+import React, { useContext, useMemo } from "react";
+import { hydrateRoot as ModernHydrateRoot } from "./browser/hydrate";
+import { getGlobalAppInit } from "./context";
+import { RuntimeReactContext } from "./context/runtime";
+import { createLoaderManager } from "./loader/loaderManager";
+import { registerPlugin } from "./plugin";
+import { getGlobalRunner } from "./plugin/runner";
+import { wrapRuntimeContextProvider } from "./react/wrapper";
+var IS_REACT18 = process.env.IS_REACT18 === "true";
+function isClientArgs(id) {
+  return typeof id === "string" || typeof HTMLElement !== "undefined" && _instanceof(id, HTMLElement);
+}
+var getInitialContext = function(runner) {
+  return {
+    loaderManager: createLoaderManager({}),
+    runner,
+    isBrowser: true,
+    routeManifest: typeof window !== "undefined" && window[ROUTE_MANIFEST]
+  };
+};
+var createApp = function(param) {
+  var plugins = param.plugins, runtime = param.runtime, globalProps = param.props;
+  var runner = registerPlugin(plugins, {
+    plugins: []
+  }, runtime);
+  return function(App) {
+    var WrapperComponent = function(props) {
+      return /* @__PURE__ */ React.createElement(App || React.Fragment, App ? _object_spread({}, props) : null, App ? props.children : React.Children.map(props.children, function(child) {
+        return /* @__PURE__ */ React.isValidElement(child) ? /* @__PURE__ */ React.cloneElement(child, _object_spread({}, child.props, props)) : child;
+      }));
+    };
+    var WrapperApp = runner.wrapRoot(WrapperComponent);
+    var WrapComponent = function(props) {
+      var mergedProps = _object_spread({}, props, globalProps);
+      return /* @__PURE__ */ _jsx(WrapperApp, _object_spread({}, mergedProps));
+    };
+    return WrapComponent;
+  };
+};
+var bootstrap = function() {
+  var _ref = _async_to_generator(function(BootApp, id, root, ReactDOM) {
+    var App, runner, context, runBeforeRender, isBrowser, _ssrData_data, _ssrData_data1, ssrData, loadersData, initialLoadersState, initialData, rootElement, ModernRender, ModernHydrate;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          App = BootApp;
+          runner = getGlobalRunner();
+          context = getInitialContext(runner);
+          runBeforeRender = function() {
+            var _ref2 = _async_to_generator(function(context2) {
+              var init;
+              return _ts_generator(this, function(_state2) {
+                switch (_state2.label) {
+                  case 0:
+                    return [
+                      4,
+                      runner.beforeRender(context2)
+                    ];
+                  case 1:
+                    _state2.sent();
+                    init = getGlobalAppInit();
+                    return [
+                      2,
+                      init === null || init === void 0 ? void 0 : init(context2)
+                    ];
+                }
+              });
+            });
+            return function runBeforeRender2(context2) {
+              return _ref2.apply(this, arguments);
+            };
+          }();
+          if (!id) {
+            return [
+              2,
+              wrapRuntimeContextProvider(/* @__PURE__ */ _jsx(App, {}), context)
+            ];
+          }
+          isBrowser = typeof window !== "undefined" && window.name !== "nodejs";
+          if (!isBrowser)
+            return [
+              3,
+              4
+            ];
+          if (!isClientArgs(id))
+            return [
+              3,
+              2
+            ];
+          ssrData = window._SSR_DATA;
+          loadersData = (ssrData === null || ssrData === void 0 ? void 0 : (_ssrData_data = ssrData.data) === null || _ssrData_data === void 0 ? void 0 : _ssrData_data.loadersData) || {};
+          initialLoadersState = Object.keys(loadersData).reduce(function(res, key) {
+            var loaderData = loadersData[key];
+            if ((loaderData === null || loaderData === void 0 ? void 0 : loaderData.loading) !== false) {
+              return res;
+            }
+            res[key] = loaderData;
+            return res;
+          }, {});
+          Object.assign(context, _object_spread({
+            loaderManager: createLoaderManager(initialLoadersState, {
+              skipStatic: true
+            })
+          }, ssrData ? {
+            ssrContext: ssrData === null || ssrData === void 0 ? void 0 : ssrData.context
+          } : {}));
+          context.initialData = ssrData === null || ssrData === void 0 ? void 0 : (_ssrData_data1 = ssrData.data) === null || _ssrData_data1 === void 0 ? void 0 : _ssrData_data1.initialData;
+          return [
+            4,
+            runBeforeRender(context)
+          ];
+        case 1:
+          initialData = _state.sent();
+          if (initialData) {
+            context.initialData = initialData;
+          }
+          rootElement = typeof id !== "string" ? id : document.getElementById(id || "root");
+          if (!ReactDOM) {
+            throw Error("The `bootstrap` need provide `ReactDOM` parameter");
+          }
+          ModernRender = function(App2) {
+            if (IS_REACT18) {
+              if (root) {
+                root.render(App2);
+                return root;
+              }
+              if (ReactDOM.createRoot) {
+                var _$root = ReactDOM.createRoot(rootElement);
+                _$root.render(App2);
+                return _$root;
+              } else {
+                throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `createRoot` method");
+              }
+            } else {
+              if (!ReactDOM.render) {
+                throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `render` method");
+              }
+              ReactDOM.render(App2, rootElement);
+              return rootElement;
+            }
+          };
+          ModernHydrate = function(App2, callback) {
+            if (IS_REACT18) {
+              if (!ReactDOM.hydrateRoot) {
+                throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `hydrateRoot` method");
+              }
+              ReactDOM.hydrateRoot(rootElement, App2);
+              return rootElement;
+            }
+            if (!ReactDOM.hydrate) {
+              throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `hydrate` method");
+            }
+            ReactDOM.hydrate(App2, rootElement, callback);
+            return rootElement;
+          };
+          if (ssrData) {
+            return [
+              2,
+              ModernHydrateRoot(/* @__PURE__ */ _jsx(App, {}), context, ModernRender, ModernHydrate)
+            ];
+          }
+          return [
+            2,
+            ModernRender(wrapRuntimeContextProvider(/* @__PURE__ */ _jsx(App, {}), context))
+          ];
+        case 2:
+          throw Error("`bootstrap` needs id in browser environment, it needs to be string or element");
+        case 3:
+          return [
+            3,
+            5
+          ];
+        case 4:
+          throw Error("Bootstrap function not support ssr render");
+        case 5:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function bootstrap2(BootApp, id, root, ReactDOM) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var useRuntimeContext = function() {
+  var _context_ssrContext, _context_ssrContext1;
+  var context = useContext(RuntimeReactContext);
+  var baseSSRContext = context.ssrContext;
+  var tSSRContext = baseSSRContext ? {
+    isBrowser: context.isBrowser,
+    request: baseSSRContext.request || {},
+    response: baseSSRContext.response || {},
+    logger: baseSSRContext.logger || {}
+  } : {};
+  var pickedContext = _object_spread_props(_object_spread({}, context), {
+    context: tSSRContext,
+    request: (_context_ssrContext = context.ssrContext) === null || _context_ssrContext === void 0 ? void 0 : _context_ssrContext.request,
+    response: (_context_ssrContext1 = context.ssrContext) === null || _context_ssrContext1 === void 0 ? void 0 : _context_ssrContext1.response
+  });
+  var memoizedContext = useMemo(function() {
+    return context.runner.pickContext(pickedContext);
+  }, [
+    context
+  ]);
+  return memoizedContext;
+};
+export {
+  bootstrap,
+  createApp,
+  useRuntimeContext
+};

@@ -1,0 +1,148 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { transformNestedRoutes } from "@modern-js/runtime-utils/browser";
+import { createRequestContext, reporterCtx } from "@modern-js/runtime-utils/node";
+import { UNSAFE_DEFERRED_SYMBOL as DEFERRED_SYMBOL, createStaticHandler, isRouteErrorResponse, json } from "@modern-js/runtime-utils/remix-router";
+import { matchEntry } from "@modern-js/runtime-utils/server";
+import { time } from "@modern-js/runtime-utils/time";
+import { isPlainObject } from "@modern-js/utils/lodash";
+import { LOADER_REPORTER_NAME } from "@modern-js/utils/universal/constants";
+import { CONTENT_TYPE_DEFERRED, LOADER_ID_PARAM } from "../common/constants";
+import { errorResponseToJson, serializeError } from "./errors";
+import { createDeferredReadableStream } from "./response";
+var redirectStatusCodes = /* @__PURE__ */ new Set([
+  301,
+  302,
+  303,
+  307,
+  308
+]);
+function isRedirectResponse(status) {
+  return redirectStatusCodes.has(status);
+}
+function isResponse(value) {
+  return value != null && typeof value.status === "number" && typeof value.statusText === "string" && _type_of(value.headers) === "object" && typeof value.body !== "undefined";
+}
+function convertModernRedirectResponse(headers, basename) {
+  var newHeaders = new Headers(headers);
+  var redirectUrl = headers.get("Location");
+  if (basename !== "/") {
+    redirectUrl = redirectUrl.replace(basename, "");
+  }
+  newHeaders.set("X-Modernjs-Redirect", redirectUrl);
+  newHeaders.delete("Location");
+  return new Response(null, {
+    status: 204,
+    headers: newHeaders
+  });
+}
+var handleRequest = function() {
+  var _ref = _async_to_generator(function(param) {
+    var request, serverRoutes, routesConfig, context, onTiming, url, routeId, entry, basename, end, reporter, loaderContext, routes, queryRoute, requestContext, response, deferredData, body, init, headers, cost, error, errorInstance;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          request = param.request, serverRoutes = param.serverRoutes, routesConfig = param.routes, context = param.context, onTiming = param.onTiming;
+          url = new URL(request.url);
+          routeId = url.searchParams.get(LOADER_ID_PARAM);
+          entry = matchEntry(url.pathname, serverRoutes);
+          if (!routeId || !entry) {
+            return [
+              2
+            ];
+          }
+          basename = entry.urlPath;
+          end = time();
+          reporter = context.reporter, loaderContext = context.loaderContext;
+          routes = transformNestedRoutes(routesConfig, reporter);
+          queryRoute = createStaticHandler(routes, {
+            basename
+          }).queryRoute;
+          requestContext = createRequestContext(loaderContext);
+          requestContext.set(reporterCtx, reporter);
+          _state.label = 1;
+        case 1:
+          _state.trys.push([
+            1,
+            3,
+            ,
+            4
+          ]);
+          return [
+            4,
+            queryRoute(request, {
+              routeId,
+              requestContext
+            })
+          ];
+        case 2:
+          response = _state.sent();
+          if (isResponse(response) && isRedirectResponse(response.status)) {
+            response = convertModernRedirectResponse(response.headers, basename);
+          } else if (isPlainObject(response) && DEFERRED_SYMBOL in response) {
+            deferredData = response[DEFERRED_SYMBOL];
+            body = createDeferredReadableStream(deferredData, request.signal);
+            init = deferredData.init || {};
+            if (init.status && isRedirectResponse(init.status)) {
+              if (!init.headers) {
+                throw new Error("redirect response includes no headers");
+              }
+              response = convertModernRedirectResponse(new Headers(init.headers), basename);
+            } else {
+              headers = new Headers(init.headers);
+              headers.set("Content-Type", "".concat(CONTENT_TYPE_DEFERRED, "; charset=UTF-8"));
+              init.headers = headers;
+              response = new Response(body, init);
+            }
+          } else {
+            response = isResponse(response) ? response : new Response(JSON.stringify(response), {
+              headers: {
+                "Content-Type": "application/json; charset=utf-8"
+              }
+            });
+          }
+          cost = end();
+          onTiming === null || onTiming === void 0 ? void 0 : onTiming("".concat(LOADER_REPORTER_NAME, "-navigation"), cost);
+          return [
+            3,
+            4
+          ];
+        case 3:
+          error = _state.sent();
+          if (isResponse(error)) {
+            error.headers.set("X-Modernjs-Catch", "yes");
+            response = error;
+          } else if (isRouteErrorResponse(error)) {
+            response = errorResponseToJson(error);
+          } else {
+            errorInstance = _instanceof(error, Error) || _instanceof(error, DOMException) ? error : new Error("Unexpected Server Error");
+            response = json(serializeError(errorInstance), {
+              status: 500,
+              headers: {
+                "X-Modernjs-Error": "yes"
+              }
+            });
+          }
+          return [
+            3,
+            4
+          ];
+        case 4:
+          return [
+            2,
+            response
+          ];
+      }
+    });
+  });
+  return function handleRequest2(_) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  handleRequest,
+  isRedirectResponse,
+  isResponse
+};

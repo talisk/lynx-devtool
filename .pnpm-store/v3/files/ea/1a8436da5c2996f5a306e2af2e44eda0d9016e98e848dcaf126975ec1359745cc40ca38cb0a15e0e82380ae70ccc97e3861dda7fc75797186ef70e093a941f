@@ -1,0 +1,106 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var builder_exports = {};
+__export(builder_exports, {
+  checkSwcHelpers: () => checkSwcHelpers,
+  getAllDeps: () => getAllDeps,
+  normalizeSlashes: () => normalizeSlashes,
+  resolvePathAndQuery: () => resolvePathAndQuery
+});
+module.exports = __toCommonJS(builder_exports);
+var import_path = __toESM(require("path"));
+var import_querystring = __toESM(require("querystring"));
+var import_utils = require("@modern-js/utils");
+const getAllDeps = async (appDirectory, options = {}) => {
+  try {
+    const json = JSON.parse(import_utils.fs.readFileSync(import_path.default.resolve(appDirectory, "./package.json"), "utf8"));
+    let deps = [];
+    if (options.dependencies) {
+      deps = [
+        ...deps,
+        ...Object.keys(json.dependencies || {})
+      ];
+    }
+    if (options.devDependencies) {
+      deps = [
+        ...deps,
+        ...Object.keys(json.devDependencies || {})
+      ];
+    }
+    if (options.peerDependencies) {
+      deps = [
+        ...deps,
+        ...Object.keys(json.peerDependencies || {})
+      ];
+    }
+    return deps;
+  } catch (e) {
+    import_utils.logger.warn("package.json is broken");
+    return [];
+  }
+};
+const checkSwcHelpers = async (options) => {
+  const { appDirectory, externalHelpers } = options;
+  if (externalHelpers === false) {
+    return;
+  }
+  const deps = await getAllDeps(appDirectory, {
+    dependencies: true,
+    devDependencies: true
+  });
+  const swcHelpersPkgName = "@swc/helpers";
+  if (!deps.includes(swcHelpersPkgName)) {
+    const local = await Promise.resolve().then(() => __toESM(require("../locale")));
+    throw new Error(local.i18n.t(local.localeKeys.errors.externalHelpers));
+  }
+};
+const normalizeSlashes = (file) => {
+  return file.split(import_path.default.win32.sep).join("/");
+};
+const resolvePathAndQuery = (originalPath) => {
+  const [filePath, queryStr] = originalPath.split("?");
+  const query = import_querystring.default.parse(queryStr !== null && queryStr !== void 0 ? queryStr : "");
+  for (const key of Object.keys(query)) {
+    if (query[key] === "") {
+      query[key] = true;
+    }
+  }
+  return {
+    query,
+    originalFilePath: filePath,
+    rawQuery: queryStr
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  checkSwcHelpers,
+  getAllDeps,
+  normalizeSlashes,
+  resolvePathAndQuery
+});

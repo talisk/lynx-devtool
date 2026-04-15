@@ -1,0 +1,7 @@
+import type { InternalContext } from '@modern-js/plugin-v2';
+import type { AppTools } from '../types';
+/**
+ * old plugin useHookRunners function result
+ */
+export declare function getHookRunners(context: InternalContext<AppTools<'shared'>>): Record<string, any>;
+export declare function handleSetupResult(setupResult: Record<string, (...args: any) => any>, api: Record<string, any>): void;

@@ -1,0 +1,12 @@
+import type { AppTools, AppToolsOptions, CliPluginFuture } from './types';
+import { initAppContext } from './utils/initAppContext';
+export * from './defineConfig';
+export declare const appTools: (options?: AppToolsOptions) => CliPluginFuture<AppTools<'shared'>>;
+export { defineConfig, defineLegacyConfig } from './defineConfig';
+export { mergeConfig } from '@modern-js/core';
+export type { RuntimeUserConfig } from './types/config';
+export { dev } from './commands/dev';
+export type { DevOptions } from './utils/types';
+export * from './types';
+export { initAppContext };
+export default appTools;

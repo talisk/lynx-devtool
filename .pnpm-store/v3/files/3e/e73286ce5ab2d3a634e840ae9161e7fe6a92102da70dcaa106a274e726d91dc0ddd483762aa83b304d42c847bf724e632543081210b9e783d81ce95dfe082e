@@ -1,0 +1,194 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.WebSocketClient = void 0;
+const logger_1 = require("../utils/logger");
+const Client_1 = require("../connector/Client");
+const type_1 = require("../utils/type");
+class WebSocketClient extends Client_1.Client {
+    constructor(server, info, socket) {
+        super();
+        this.server = server;
+        this.info = info;
+        this.socket = socket;
+        this.pendingRequests = new Map();
+        socket.on("message", this.handleMessage.bind(this));
+        socket.on("close", this.handleClose.bind(this));
+    }
+    clientId() {
+        return this.info.id;
+    }
+    type() {
+        return this.info.type;
+    }
+    sendMessage(message) {
+        this.socket.send(message);
+    }
+    close() {
+        this.socket.close();
+    }
+    handleListClients() {
+        if (this.info.type !== "Driver") {
+            return;
+        }
+        const wsClients = this.server.getAllWebsocketAppClients();
+        const data = new Array();
+        wsClients.forEach((client) => {
+            if (client.clientId() === this.clientId())
+                return;
+            data.push({
+                id: client.clientId(),
+                type: client.info.type,
+                info: Object.assign(Object.assign({}, client.info.raw_info), { network: "WiFi" }),
+            });
+        });
+        const usbClients = this.server.getAllUsbClients();
+        usbClients.forEach((client) => {
+            if (client.clientId() === this.clientId())
+                return;
+            data.push({
+                id: client.clientId(),
+                type: "runtime",
+                info: Object.assign(Object.assign({}, client.info.query.raw_info), { deviceName: client.info.query.device, osType: client.info.query.os, deviceModel: client.info.query.device_model, network: "USB" }),
+            });
+        });
+        const response = {
+            event: "ClientList",
+            data: data,
+        };
+        const jsonResponse = JSON.stringify(response);
+        logger_1.defaultLogger.debug("Driver: ClientList:" + jsonResponse);
+        this.socket.send(jsonResponse);
+    }
+    handleClose() {
+        this.server.handleDisconnect(this.clientId());
+    }
+    isBufferClass(data) {
+        if (Array.isArray(data) && data.every((item) => item instanceof Buffer)) {
+            logger_1.defaultLogger.debug("handleMessage received data with type 'Buffer[]'");
+            return true;
+        }
+        else if (data instanceof Buffer) {
+            logger_1.defaultLogger.debug("handleMessage received data with type 'Buffer'");
+            return true;
+        }
+        else if (data instanceof ArrayBuffer) {
+            logger_1.defaultLogger.debug("handleMessage received data with type 'ArrayBuffer'");
+            return true;
+        }
+        return false;
+    }
+    handleMessage(data) {
+        var _a, _b;
+        let dataString = "";
+        if (this.isBufferClass(data)) {
+            dataString = data.toString();
+        }
+        else if (typeof data === "string") {
+            dataString = data;
+            logger_1.defaultLogger.debug("handleMessage received data with type 'string'");
+        }
+        const message = JSON.parse(dataString);
+        if (this.type() === "Driver") {
+            this.server.emitEvent("ws-web-message", this.clientId(), dataString);
+        }
+        else {
+            this.server.emitEvent("ws-client-message", this.clientId(), dataString);
+        }
+        if (message.event === "ListClients") {
+            this.handleListClients();
+        }
+        else if (message.event === "Ping") {
+            this.handlePing();
+        }
+        else if (message.event === "Customized") {
+            this.handleCustomizedMessage(message, dataString);
+            try {
+                const payload = (_b = (_a = message === null || message === void 0 ? void 0 : message.data) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.message;
+                if (typeof payload === "string") {
+                    const cdpMessage = JSON.parse(payload);
+                    if (cdpMessage === null || cdpMessage === void 0 ? void 0 : cdpMessage.id) {
+                        const key = cdpMessage.id.toString();
+                        const pending = this.pendingRequests.get(key);
+                        if (pending) {
+                            this.pendingRequests.delete(key);
+                            pending.resolve(payload);
+                        }
+                    }
+                }
+                else {
+                    logger_1.defaultLogger.debug("webSocketClient handleCustomizedMessage invalid message:" +
+                        JSON.stringify(message));
+                }
+            }
+            catch (error) {
+                logger_1.defaultLogger.debug("webSocketClient handleCustomizedMessage parse error:" +
+                    (error === null || error === void 0 ? void 0 : error.message));
+            }
+        }
+    }
+    handleCustomizedMessage(data, message) {
+        var _a, _b, _c, _d, _e;
+        if (this.type() === "Driver") {
+            const id = (_c = (_b = (_a = data.data) === null || _a === void 0 ? void 0 : _a.data) === null || _b === void 0 ? void 0 : _b.client_id) !== null && _c !== void 0 ? _c : -1;
+            if (id == -1) {
+                return;
+            }
+            this.server.sendMessageToApp(id, message);
+        }
+        else {
+            const id = (_e = (_d = data.data) === null || _d === void 0 ? void 0 : _d.sender) !== null && _e !== void 0 ? _e : -1;
+            if (id == -1) {
+                return;
+            }
+            this.server.sendMessageToWeb(message);
+        }
+    }
+    handlePing() {
+        if (this.info.type !== "Driver") {
+            return;
+        }
+        const response = {
+            event: "Pong",
+        };
+        this.socket.send(JSON.stringify(response));
+    }
+    sendCustomizedMessage(method, params = "", sessionId = -1, type = "CDP") {
+        const id = Client_1.Client.messageIdCounter++;
+        const msg = {
+            event: type_1.SocketEvent.Customized,
+            data: {
+                type: type,
+                data: {
+                    client_id: -1,
+                    session_id: sessionId,
+                    message: {
+                        id: id,
+                        method: method,
+                        params: params,
+                    },
+                },
+                sender: 0,
+            },
+        };
+        return new Promise((resolve, reject) => {
+            const key = id.toString();
+            const timer = setTimeout(() => {
+                this.pendingRequests.delete(key);
+                reject(new Error(`Timeout: 5s no response for message-id ${JSON.stringify(msg)}`));
+            }, 5000);
+            this.pendingRequests.set(key, {
+                resolve: (message) => {
+                    clearTimeout(timer);
+                    resolve(message);
+                },
+                reject: (err) => {
+                    clearTimeout(timer);
+                    reject(err);
+                },
+            });
+            this.socket.send(JSON.stringify(msg));
+        });
+    }
+}
+exports.WebSocketClient = WebSocketClient;
+//# sourceMappingURL=WebSocketConnection.js.map

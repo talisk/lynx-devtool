@@ -1,0 +1,214 @@
+import { cutNameByHyphen } from "@modern-js/utils/universal";
+import { TrieRouter } from "hono/router/trie-router";
+import { REPLACE_REG, X_MODERNJS_RENDER } from "../../constants";
+import { uniqueKeyByRoute } from "../../utils";
+import { ErrorDigest, createErrorHtml, getPathname, getRuntimeEnv, onError as onErrorFn, parseHeaders, parseQuery, sortRoutes, transformResponse } from "../../utils";
+import { dataHandler } from "./dataHandler";
+import { ssrRender } from "./ssrRender";
+const DYNAMIC_ROUTE_REG = /\/:./;
+function getRouter(routes) {
+  const dynamicRoutes = [];
+  const normalRoutes = [];
+  routes.forEach((route) => {
+    if (DYNAMIC_ROUTE_REG.test(route.urlPath)) {
+      dynamicRoutes.push(route);
+    } else {
+      normalRoutes.push(route);
+    }
+  });
+  const finalRoutes = [
+    ...normalRoutes.sort(sortRoutes),
+    ...dynamicRoutes.sort(sortRoutes)
+  ];
+  const router = new TrieRouter();
+  for (const route of finalRoutes) {
+    const { urlPath: originUrlPath } = route;
+    const urlPath = originUrlPath.endsWith("/") ? `${originUrlPath}*` : `${originUrlPath}/*`;
+    router.add("*", urlPath, route);
+  }
+  return router;
+}
+function matchRoute(router, pathname) {
+  const matched = router.match("*", pathname);
+  const result = matched[0][0];
+  return result || [];
+}
+function getHeadersWithoutCookie(headers) {
+  const _headers = {
+    ...headers,
+    cookie: void 0
+  };
+  delete _headers.cookie;
+  return _headers;
+}
+async function createRender({ routes, pwd, metaName, staticGenerate, cacheConfig, forceCSR, config, onFallback: onFallbackFn }) {
+  const router = getRouter(routes);
+  return async (req, { logger, reporter, metrics, monitors, nodeReq, templates, serverManifest, locals, matchPathname, loaderContext }) => {
+    const forMatchpathname = matchPathname !== null && matchPathname !== void 0 ? matchPathname : getPathname(req);
+    const [routeInfo, params] = matchRoute(router, forMatchpathname);
+    const framework = metaName || "modern-js";
+    const fallbackHeader = `x-${cutNameByHyphen(framework)}-ssr-fallback`;
+    let fallbackReason = null;
+    const onFallback = async (reason, error) => {
+      fallbackReason = reason;
+      return onFallbackFn === null || onFallbackFn === void 0 ? void 0 : onFallbackFn(reason, {
+        logger,
+        reporter,
+        metrics
+      }, error);
+    };
+    if (!routeInfo) {
+      return new Response(createErrorHtml(404), {
+        status: 404,
+        headers: {
+          "content-type": "text/html; charset=UTF-8"
+        }
+      });
+    }
+    const html = templates[uniqueKeyByRoute(routeInfo)];
+    if (!html) {
+      return new Response(createErrorHtml(404), {
+        status: 404,
+        headers: {
+          "content-type": "text/html; charset=UTF-8"
+        }
+      });
+    }
+    const renderMode = await getRenderMode(req, fallbackHeader, routeInfo.isSSR, forceCSR, nodeReq, onFallback);
+    const headerData = parseHeaders(req);
+    const onError = (e) => {
+      monitors === null || monitors === void 0 ? void 0 : monitors.error(`SSR Error - ${e instanceof Error ? e.name : e}, error = %s, req.url = %s, req.headers = %o`, e instanceof Error ? e.stack || e.message : e, forMatchpathname, getHeadersWithoutCookie(headerData));
+    };
+    const onTiming = (name, dur) => {
+      monitors === null || monitors === void 0 ? void 0 : monitors.timing(name, dur, "SSR");
+    };
+    const onBoundError = async (e) => {
+      onErrorFn(ErrorDigest.ERENDER, e, monitors, req);
+      await (onFallback === null || onFallback === void 0 ? void 0 : onFallback("error", e));
+    };
+    const renderOptions = {
+      pwd,
+      html,
+      routeInfo,
+      staticGenerate: staticGenerate || false,
+      config,
+      nodeReq,
+      cacheConfig,
+      reporter,
+      serverRoutes: routes,
+      params,
+      logger,
+      metrics,
+      locals,
+      serverManifest,
+      loaderContext: loaderContext || /* @__PURE__ */ new Map(),
+      onError,
+      onTiming
+    };
+    let response;
+    switch (renderMode) {
+      case "data":
+        response = await dataHandler(req, renderOptions) || await renderHandler(req, renderOptions, "ssr", onBoundError);
+        break;
+      case "ssr":
+      case "csr":
+        response = await renderHandler(req, renderOptions, renderMode, onBoundError);
+        break;
+      default:
+        throw new Error(`Unknown render mode: ${renderMode}`);
+    }
+    if (fallbackReason) {
+      response.headers.set(fallbackHeader, `1;reason=${fallbackReason}`);
+    }
+    return response;
+  };
+}
+async function renderHandler(request, options, mode, onError) {
+  var _options_config_server;
+  const serverData = {
+    router: {
+      baseUrl: options.routeInfo.urlPath,
+      params: options.params
+    }
+  };
+  let response = null;
+  const { serverManifest } = options;
+  const ssrByRouteIds = (_options_config_server = options.config.server) === null || _options_config_server === void 0 ? void 0 : _options_config_server.ssrByRouteIds;
+  const runtimeEnv = getRuntimeEnv();
+  if (serverManifest.nestedRoutesJson && ssrByRouteIds && (ssrByRouteIds === null || ssrByRouteIds === void 0 ? void 0 : ssrByRouteIds.length) > 0 && runtimeEnv === "node") {
+    const { nestedRoutesJson } = serverManifest;
+    const routes = nestedRoutesJson === null || nestedRoutesJson === void 0 ? void 0 : nestedRoutesJson[options.routeInfo.entryName];
+    if (routes) {
+      const urlPath = "node:url";
+      const { pathToFileURL } = await import(urlPath);
+      const { matchRoutes } = await import(pathToFileURL(require.resolve("@modern-js/runtime-utils/remix-router")).href);
+      const url = new URL(request.url);
+      const matchedRoutes = matchRoutes(routes, url.pathname, options.routeInfo.urlPath);
+      if (!matchedRoutes) {
+        response = csrRender(options.html);
+      } else {
+        var _lastMatch_route;
+        const lastMatch = matchedRoutes[matchedRoutes.length - 1];
+        if (!(lastMatch === null || lastMatch === void 0 ? void 0 : (_lastMatch_route = lastMatch.route) === null || _lastMatch_route === void 0 ? void 0 : _lastMatch_route.id) || !ssrByRouteIds.includes(lastMatch.route.id)) {
+          response = csrRender(options.html);
+        }
+      }
+    }
+  }
+  if (mode === "ssr" && !response) {
+    try {
+      response = await ssrRender(request, options);
+    } catch (e) {
+      await onError(e);
+      response = csrRender(options.html);
+    }
+  } else {
+    response = csrRender(options.html);
+  }
+  const newRes = transformResponse(response, injectServerData(serverData));
+  const { routeInfo } = options;
+  applyExtendHeaders(newRes, routeInfo);
+  return newRes;
+  function applyExtendHeaders(r, route) {
+    Object.entries(route.responseHeaders || {}).forEach(([k, v]) => {
+      r.headers.set(k, v);
+    });
+  }
+}
+async function getRenderMode(req, fallbackHeader, isSSR, forceCSR, nodeReq, onFallback) {
+  const query = parseQuery(req);
+  if (isSSR) {
+    if (query.__loader) {
+      return "data";
+    }
+    if (forceCSR && (query.csr || req.headers.get(fallbackHeader) || (nodeReq === null || nodeReq === void 0 ? void 0 : nodeReq.headers[fallbackHeader]))) {
+      if (query.csr) {
+        await (onFallback === null || onFallback === void 0 ? void 0 : onFallback("query"));
+      } else {
+        await (onFallback === null || onFallback === void 0 ? void 0 : onFallback("header"));
+      }
+      return "csr";
+    }
+    return "ssr";
+  } else {
+    return "csr";
+  }
+}
+function csrRender(html) {
+  return new Response(html, {
+    status: 200,
+    headers: new Headers({
+      "content-type": "text/html; charset=UTF-8",
+      [X_MODERNJS_RENDER]: "client"
+    })
+  });
+}
+function injectServerData(serverData) {
+  const { head } = REPLACE_REG.before;
+  const searchValue = new RegExp(head);
+  const replcaeCb = (beforeHead) => `${beforeHead}<script type="application/json" id="__MODERN_SERVER_DATA__">${JSON.stringify(serverData)}</script>`;
+  return (template) => template.replace(searchValue, replcaeCb);
+}
+export {
+  createRender
+};

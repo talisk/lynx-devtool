@@ -1,0 +1,35 @@
+import { WebSocket } from "ws";
+import { WebSocketClientInfo, WebSocketClient } from "./WebSocketConnection";
+import { DebugRouterConnector } from "../connector";
+import { UsbClient } from "../usb/Client";
+import { BaseDevice } from "../device/BaseDevice";
+import { DebugerRouterDriverEvents } from "../utils/type";
+export declare class WebSocketController {
+    private driver;
+    private port;
+    private host;
+    private roomId;
+    private wssPath;
+    private server;
+    private websocketAppClients;
+    private webClients;
+    constructor(driver: DebugRouterConnector, option: {
+        port: number;
+        host: string;
+        roomId?: string;
+        callback?: () => void;
+    });
+    close(): void;
+    handleDisconnect(id: number): void;
+    handleConnection(socket: WebSocket): Promise<void>;
+    onConnection(socket: WebSocket): Promise<WebSocketClientInfo | undefined>;
+    sendMessageToWeb(message: string): void;
+    sendMessageToApp(id: number, message: string): void;
+    sendClientList(): void;
+    sendDeviceList(): void;
+    getAllUsbClients(): UsbClient[];
+    getAllDevices(): Promise<BaseDevice[]>;
+    getAllWebsocketAppClients(): Map<number, WebSocketClient>;
+    getAllWebsocketWebClients(): Map<number, WebSocketClient>;
+    emitEvent(event: keyof DebugerRouterDriverEvents, id: number, message: string): void;
+}

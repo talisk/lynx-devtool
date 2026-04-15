@@ -1,0 +1,9 @@
+export { createLoadedConfig } from './config/createLoadedConfig';
+export { initAppDir } from './utils/initAppDir';
+export declare const cli: {
+    init: (options: import("./types").CLIRunOptions) => Promise<{
+        appContext: import("../..").InternalContext<import("../..").CLIPluginExtends<{}, {}, {}, {}, {}>>;
+    }>;
+    run: (options: import("./types").CLIRunOptions) => Promise<void>;
+    getPrevInitOptions: () => import("./types").CLIRunOptions;
+};

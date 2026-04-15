@@ -1,0 +1,161 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+import { ROUTE_MANIFEST } from "@modern-js/utils/universal/constants";
+import React, { useContext, useMemo } from "react";
+import { hydrateRoot as ModernHydrateRoot } from "./browser/hydrate";
+import { getGlobalAppInit } from "./context";
+import { RuntimeReactContext } from "./context/runtime";
+import { createLoaderManager } from "./loader/loaderManager";
+import { registerPlugin } from "./plugin";
+import { getGlobalRunner } from "./plugin/runner";
+import { wrapRuntimeContextProvider } from "./react/wrapper";
+const IS_REACT18 = process.env.IS_REACT18 === "true";
+function isClientArgs(id) {
+  return typeof id === "string" || typeof HTMLElement !== "undefined" && id instanceof HTMLElement;
+}
+const getInitialContext = (runner) => ({
+  loaderManager: createLoaderManager({}),
+  runner,
+  isBrowser: true,
+  routeManifest: typeof window !== "undefined" && window[ROUTE_MANIFEST]
+});
+const createApp = ({ plugins, runtime, props: globalProps }) => {
+  const runner = registerPlugin(plugins, {
+    plugins: []
+  }, runtime);
+  return (App) => {
+    const WrapperComponent = (props) => {
+      return /* @__PURE__ */ React.createElement(App || React.Fragment, App ? {
+        ...props
+      } : null, App ? props.children : React.Children.map(props.children, (child) => /* @__PURE__ */ React.isValidElement(child) ? /* @__PURE__ */ React.cloneElement(child, {
+        ...child.props,
+        ...props
+      }) : child));
+    };
+    const WrapperApp = runner.wrapRoot(WrapperComponent);
+    const WrapComponent = (props) => {
+      const mergedProps = {
+        ...props,
+        ...globalProps
+      };
+      return /* @__PURE__ */ _jsx(WrapperApp, {
+        ...mergedProps
+      });
+    };
+    return WrapComponent;
+  };
+};
+const bootstrap = async (BootApp, id, root, ReactDOM) => {
+  const App = BootApp;
+  const runner = getGlobalRunner();
+  const context = getInitialContext(runner);
+  const runBeforeRender = async (context2) => {
+    await runner.beforeRender(context2);
+    const init = getGlobalAppInit();
+    return init === null || init === void 0 ? void 0 : init(context2);
+  };
+  if (!id) {
+    return wrapRuntimeContextProvider(/* @__PURE__ */ _jsx(App, {}), context);
+  }
+  const isBrowser = typeof window !== "undefined" && window.name !== "nodejs";
+  if (isBrowser) {
+    if (isClientArgs(id)) {
+      var _ssrData_data, _ssrData_data1;
+      const ssrData = window._SSR_DATA;
+      const loadersData = (ssrData === null || ssrData === void 0 ? void 0 : (_ssrData_data = ssrData.data) === null || _ssrData_data === void 0 ? void 0 : _ssrData_data.loadersData) || {};
+      const initialLoadersState = Object.keys(loadersData).reduce((res, key) => {
+        const loaderData = loadersData[key];
+        if ((loaderData === null || loaderData === void 0 ? void 0 : loaderData.loading) !== false) {
+          return res;
+        }
+        res[key] = loaderData;
+        return res;
+      }, {});
+      Object.assign(context, {
+        loaderManager: createLoaderManager(initialLoadersState, {
+          skipStatic: true
+        }),
+        ...ssrData ? {
+          ssrContext: ssrData === null || ssrData === void 0 ? void 0 : ssrData.context
+        } : {}
+      });
+      context.initialData = ssrData === null || ssrData === void 0 ? void 0 : (_ssrData_data1 = ssrData.data) === null || _ssrData_data1 === void 0 ? void 0 : _ssrData_data1.initialData;
+      const initialData = await runBeforeRender(context);
+      if (initialData) {
+        context.initialData = initialData;
+      }
+      const rootElement = typeof id !== "string" ? id : document.getElementById(id || "root");
+      if (!ReactDOM) {
+        throw Error("The `bootstrap` need provide `ReactDOM` parameter");
+      }
+      const ModernRender = (App2) => {
+        if (IS_REACT18) {
+          if (root) {
+            root.render(App2);
+            return root;
+          }
+          if (ReactDOM.createRoot) {
+            const root2 = ReactDOM.createRoot(rootElement);
+            root2.render(App2);
+            return root2;
+          } else {
+            throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `createRoot` method");
+          }
+        } else {
+          if (!ReactDOM.render) {
+            throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `render` method");
+          }
+          ReactDOM.render(App2, rootElement);
+          return rootElement;
+        }
+      };
+      const ModernHydrate = (App2, callback) => {
+        if (IS_REACT18) {
+          if (!ReactDOM.hydrateRoot) {
+            throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `hydrateRoot` method");
+          }
+          ReactDOM.hydrateRoot(rootElement, App2);
+          return rootElement;
+        }
+        if (!ReactDOM.hydrate) {
+          throw Error("The `bootstrap` `ReactDOM` parameter needs to provide the `hydrate` method");
+        }
+        ReactDOM.hydrate(App2, rootElement, callback);
+        return rootElement;
+      };
+      if (ssrData) {
+        return ModernHydrateRoot(/* @__PURE__ */ _jsx(App, {}), context, ModernRender, ModernHydrate);
+      }
+      return ModernRender(wrapRuntimeContextProvider(/* @__PURE__ */ _jsx(App, {}), context));
+    } else {
+      throw Error("`bootstrap` needs id in browser environment, it needs to be string or element");
+    }
+  } else {
+    throw Error("Bootstrap function not support ssr render");
+  }
+};
+const useRuntimeContext = () => {
+  var _context_ssrContext, _context_ssrContext1;
+  const context = useContext(RuntimeReactContext);
+  const baseSSRContext = context.ssrContext;
+  const tSSRContext = baseSSRContext ? {
+    isBrowser: context.isBrowser,
+    request: baseSSRContext.request || {},
+    response: baseSSRContext.response || {},
+    logger: baseSSRContext.logger || {}
+  } : {};
+  const pickedContext = {
+    ...context,
+    context: tSSRContext,
+    request: (_context_ssrContext = context.ssrContext) === null || _context_ssrContext === void 0 ? void 0 : _context_ssrContext.request,
+    response: (_context_ssrContext1 = context.ssrContext) === null || _context_ssrContext1 === void 0 ? void 0 : _context_ssrContext1.response
+  };
+  const memoizedContext = useMemo(() => context.runner.pickContext(pickedContext), [
+    context
+  ]);
+  return memoizedContext;
+};
+export {
+  bootstrap,
+  createApp,
+  useRuntimeContext
+};

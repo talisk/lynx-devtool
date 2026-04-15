@@ -1,0 +1,132 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _class_call_check } from "@swc/helpers/_/_class_call_check";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { MAIN_ENTRY_NAME } from "@modern-js/utils/universal/constants";
+import { X_MODERNJS_RENDER } from "../../constants";
+import { getPathname, parseHeaders } from "../../utils";
+import { getCacheResult, matchCacheControl } from "./ssrCache";
+var SERVER_RUNTIME_ENTRY = "requestHandler";
+function ssrRender(request, _) {
+  return _ssrRender.apply(this, arguments);
+}
+function _ssrRender() {
+  _ssrRender = _async_to_generator(function(request, param) {
+    var routeInfo, html, userConfig, staticGenerate, nodeReq, serverManifest, locals, params, loaderContext, reporter, cacheConfig, logger, metrics, onError, onTiming, _serverManifest_renderBundles, entryName, loadableStats, routeManifest, headers, key, renderBundle, requestHandler, config, requestHandlerOptions, cacheControl, response;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          routeInfo = param.routeInfo, html = param.html, userConfig = param.config, staticGenerate = param.staticGenerate, nodeReq = param.nodeReq, serverManifest = param.serverManifest, locals = param.locals, params = param.params, loaderContext = param.loaderContext, reporter = param.reporter, cacheConfig = param.cacheConfig, logger = param.logger, metrics = param.metrics, onError = param.onError, onTiming = param.onTiming;
+          entryName = routeInfo.entryName;
+          loadableStats = serverManifest.loadableStats || {};
+          routeManifest = serverManifest.routeManifest || {};
+          headers = parseHeaders(request);
+          if (nodeReq) {
+            for (var key2 in nodeReq.headers) {
+              if (!headers[key2]) {
+                headers[key2] = nodeReq.headers[key2];
+              }
+            }
+          }
+          renderBundle = (_serverManifest_renderBundles = serverManifest.renderBundles) === null || _serverManifest_renderBundles === void 0 ? void 0 : _serverManifest_renderBundles[entryName || MAIN_ENTRY_NAME];
+          if (!renderBundle) {
+            throw new Error("Can't found renderBundle ".concat(entryName || MAIN_ENTRY_NAME));
+          }
+          return [
+            4,
+            renderBundle[SERVER_RUNTIME_ENTRY]
+          ];
+        case 1:
+          requestHandler = _state.sent();
+          config = createRequestHandlerConfig(userConfig);
+          requestHandlerOptions = {
+            resource: {
+              route: routeInfo,
+              loadableStats,
+              routeManifest,
+              htmlTemplate: html,
+              entryName: entryName || MAIN_ENTRY_NAME
+            },
+            params,
+            loaderContext,
+            config,
+            locals,
+            reporter,
+            staticGenerate,
+            logger,
+            metrics,
+            onError,
+            onTiming
+          };
+          return [
+            4,
+            matchCacheControl(cacheConfig === null || cacheConfig === void 0 ? void 0 : cacheConfig.strategy, nodeReq || new IncomingMessgeProxy(request))
+          ];
+        case 2:
+          cacheControl = _state.sent();
+          if (!cacheControl)
+            return [
+              3,
+              4
+            ];
+          return [
+            4,
+            getCacheResult(request, {
+              cacheControl,
+              container: cacheConfig === null || cacheConfig === void 0 ? void 0 : cacheConfig.container,
+              requestHandler,
+              requestHandlerOptions
+            })
+          ];
+        case 3:
+          response = _state.sent();
+          return [
+            3,
+            6
+          ];
+        case 4:
+          return [
+            4,
+            requestHandler(request, requestHandlerOptions)
+          ];
+        case 5:
+          response = _state.sent();
+          _state.label = 6;
+        case 6:
+          response.headers.set(X_MODERNJS_RENDER, "server");
+          response.headers.set("content-type", "text/html; charset=UTF-8");
+          return [
+            2,
+            response
+          ];
+      }
+    });
+  });
+  return _ssrRender.apply(this, arguments);
+}
+var IncomingMessgeProxy = function IncomingMessgeProxy2(req) {
+  "use strict";
+  var _this = this;
+  _class_call_check(this, IncomingMessgeProxy2);
+  this.headers = {};
+  req.headers.forEach(function(value, key) {
+    _this.headers[key] = value;
+  });
+  this.method = req.method;
+  this.url = getPathname(req);
+};
+function createRequestHandlerConfig(userConfig) {
+  var output = userConfig.output, server = userConfig.server, security = userConfig.security, html = userConfig.html;
+  return {
+    ssr: server === null || server === void 0 ? void 0 : server.ssr,
+    ssrByEntries: server === null || server === void 0 ? void 0 : server.ssrByEntries,
+    nonce: security === null || security === void 0 ? void 0 : security.nonce,
+    enableInlineScripts: output === null || output === void 0 ? void 0 : output.enableInlineScripts,
+    enableInlineStyles: output === null || output === void 0 ? void 0 : output.enableInlineStyles,
+    crossorigin: html === null || html === void 0 ? void 0 : html.crossorigin,
+    scriptLoading: html === null || html === void 0 ? void 0 : html.scriptLoading,
+    useJsonScript: server === null || server === void 0 ? void 0 : server.useJsonScript
+  };
+}
+export {
+  ssrRender
+};

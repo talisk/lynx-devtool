@@ -1,0 +1,177 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AdbValidator = exports.getAdbToolPath = exports.getAdbInstance = void 0;
+const child_process_1 = __importDefault(require("child_process"));
+const fs_extra_1 = require("fs-extra");
+const path_1 = require("path");
+const logger_1 = require("./logger");
+const axios_1 = __importDefault(require("axios"));
+const adbkit_1 = __importDefault(require("@devicefarmer/adbkit"));
+const unzip = __importStar(require("unzipper"));
+const fs_1 = __importDefault(require("fs"));
+let adbPath = null;
+function getAdbInstance(adbOption) {
+    var _a, _b;
+    return __awaiter(this, void 0, void 0, function* () {
+        const host = (_a = adbOption === null || adbOption === void 0 ? void 0 : adbOption.host) !== null && _a !== void 0 ? _a : "127.0.0.1";
+        const port = (_b = adbOption === null || adbOption === void 0 ? void 0 : adbOption.port) !== null && _b !== void 0 ? _b : 5037;
+        const validator = new AdbValidator();
+        const isValid = yield validator.validate();
+        if (isValid) {
+            logger_1.defaultLogger.debug("You already have an adb tool");
+        }
+        else if (process.platform === "darwin") {
+            validator.fix();
+        }
+        else {
+            logger_1.defaultLogger.debug("Linux and Win are not supported yet, we'll support them later.");
+        }
+        const adbClient = adbPath === null
+            ? adbkit_1.default.createClient({
+                host,
+                port,
+            })
+            : adbkit_1.default.createClient({
+                host,
+                port,
+                bin: process.platform !== "win32"
+                    ? (0, path_1.join)(adbPath, "adb")
+                    : (0, path_1.join)(adbPath, "adb.exe"),
+            });
+        return adbClient;
+    });
+}
+exports.getAdbInstance = getAdbInstance;
+function getAdbToolPath() {
+    if (process.platform === "darwin") {
+        return (0, path_1.join)(process.env["HOME"], ".DebugRouterConnector/adb-tool");
+    }
+    return null;
+}
+exports.getAdbToolPath = getAdbToolPath;
+function exeCmd(cmd) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve, reject) => {
+            child_process_1.default.exec(cmd, (error, stdout, stderr) => {
+                if (error == null) {
+                    resolve(stdout);
+                }
+                else {
+                    reject(new Error(`Command "${cmd}" failed with error: ${stderr}`));
+                }
+            });
+        });
+    });
+}
+class AdbValidator {
+    validate() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                const stdout = yield exeCmd("adb --version");
+                logger_1.defaultLogger.debug("adb tool info :" + stdout);
+                return true;
+            }
+            catch (error) {
+                const message = error.message;
+                logger_1.defaultLogger.debug(message);
+            }
+            const homeDir = process.env["HOME"];
+            const adb_tool_path = `${homeDir}/.DebugRouterConnector/adb-tool/adb`;
+            if (fs_1.default.existsSync((0, path_1.dirname)(adb_tool_path))) {
+                logger_1.defaultLogger.debug(adb_tool_path);
+                const cmd = adb_tool_path + " --version";
+                try {
+                    const stdout = yield exeCmd(cmd);
+                    logger_1.defaultLogger.debug("adb tool info :" + stdout);
+                    adbPath = `${homeDir}/.DebugRouterConnector/adb-tool/`;
+                    return true;
+                }
+                catch (error) {
+                    const message = error.message;
+                    logger_1.defaultLogger.debug(message);
+                }
+            }
+            return false;
+        });
+    }
+    fix() {
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                yield this.tryInstallAdbTool();
+                return true;
+            }
+            catch (err) {
+                logger_1.defaultLogger.debug(err);
+            }
+            return false;
+        });
+    }
+    tryInstallAdbTool() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const adbAddress = "https://dl.google.com/android/repository/platform-tools-latest-darwin.zip";
+            const homeDir = process.env["HOME"];
+            const path = `${homeDir}/.DebugRouterConnector/platform-tools.zip`;
+            const tmpDir = (0, path_1.join)((0, path_1.dirname)(path), "platform-tools");
+            adbPath = (0, path_1.join)((0, path_1.dirname)(path), "adb-tool");
+            yield (0, fs_extra_1.ensureDir)((0, path_1.dirname)(path));
+            yield (0, fs_extra_1.ensureDir)(adbPath);
+            const stream = (0, fs_extra_1.createWriteStream)(path);
+            (yield axios_1.default.get(adbAddress, { responseType: "stream" }))
+                .data.pipe(stream);
+            yield new Promise((resolve, reject) => {
+                stream.on("finish", resolve);
+                stream.on("error", reject);
+            });
+            yield fs_1.default
+                .createReadStream(path)
+                .pipe(unzip.Extract({ path: (0, path_1.dirname)(path) }))
+                .on("error", (err) => {
+                logger_1.defaultLogger.debug(err);
+            })
+                .on("close", () => {
+                logger_1.defaultLogger.debug("Extraction complete");
+            });
+            yield (0, fs_extra_1.remove)(path);
+            yield (0, fs_extra_1.copy)(`${tmpDir}/adb`, `${adbPath}/adb`);
+            fs_1.default.chmodSync(`${adbPath}/adb`, 0o777);
+            logger_1.defaultLogger.debug("ADB tool installed successfully!");
+        });
+    }
+}
+exports.AdbValidator = AdbValidator;
+//# sourceMappingURL=adb.validator.js.map

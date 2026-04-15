@@ -1,0 +1,40 @@
+import path from "path";
+import { initHooks } from "./hooks";
+function initAppContext(params) {
+  const { appDirectory, srcDir = "src", distDir = "dist" } = params;
+  return {
+    packageName: params.packageName,
+    configFile: params.configFile,
+    command: params.command,
+    isProd: process.env.NODE_ENV === "production",
+    appDirectory,
+    srcDirectory: path.resolve(appDirectory, srcDir),
+    distDirectory: "",
+    nodeModulesDirectory: path.resolve(appDirectory, "node_modules"),
+    plugins: params.plugins
+  };
+}
+async function createContext({ appContext, config, normalizedConfig }) {
+  const { plugins } = appContext;
+  const extendsHooks = {};
+  plugins.forEach((plugin) => {
+    const { registryHooks = {} } = plugin;
+    Object.keys(registryHooks).forEach((hookName) => {
+      extendsHooks[hookName] = registryHooks[hookName];
+    });
+  });
+  return {
+    ...appContext,
+    hooks: {
+      ...initHooks(),
+      ...extendsHooks
+    },
+    extendsHooks,
+    config,
+    normalizedConfig
+  };
+}
+export {
+  createContext,
+  initAppContext
+};

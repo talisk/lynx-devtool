@@ -1,0 +1,3 @@
+import type { AppNormalizedConfig } from '../../types';
+import type { AppToolsContext } from '../../types/new';
+export declare function initialNormalizedConfig(config: AppNormalizedConfig<'shared'>, appContext: AppToolsContext<'shared'>, bundler: 'webpack' | 'rspack'): AppNormalizedConfig<'shared'>;

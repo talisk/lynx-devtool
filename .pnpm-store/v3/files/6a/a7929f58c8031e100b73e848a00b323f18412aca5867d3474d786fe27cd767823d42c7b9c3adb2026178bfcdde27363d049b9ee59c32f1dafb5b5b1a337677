@@ -1,0 +1,2 @@
+import type { IAbstractSocketConnection } from "../socket.model";
+export declare function quickRegister(socket: IAbstractSocketConnection, extraDescriptors?: Record<string, any>): Promise<number>;

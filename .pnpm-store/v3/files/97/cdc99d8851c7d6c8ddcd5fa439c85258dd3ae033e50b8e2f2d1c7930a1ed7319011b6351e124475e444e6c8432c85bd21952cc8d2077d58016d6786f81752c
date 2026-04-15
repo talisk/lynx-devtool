@@ -1,0 +1,17 @@
+import { decodeSocketMessage } from "../message";
+export function waitEvent(socket, event) {
+    return new Promise((resolve, reject) => {
+        const messageListener = (data) => {
+            const message = decodeSocketMessage(data, event);
+            if (message != null) {
+                socket.off("message", messageListener);
+                socket.off("close", closeListener);
+                resolve(message);
+            }
+        };
+        const closeListener = (event) => reject({ code: event === null || event === void 0 ? void 0 : event.code, reason: event === null || event === void 0 ? void 0 : event.reason });
+        socket.on("message", messageListener);
+        socket.on("close", closeListener);
+    });
+}
+//# sourceMappingURL=wait-event.js.map

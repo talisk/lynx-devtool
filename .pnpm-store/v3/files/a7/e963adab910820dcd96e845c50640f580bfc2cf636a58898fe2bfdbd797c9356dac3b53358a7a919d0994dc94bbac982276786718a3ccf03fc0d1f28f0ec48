@@ -1,0 +1,131 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { provider } from "std-env";
+import { createNetlifyPreset } from "./platforms/netlify";
+import { createNodePreset } from "./platforms/node";
+import { createVercelPreset } from "./platforms/vercel";
+import { getProjectUsage } from "./utils";
+var deployPresets = {
+  node: createNodePreset,
+  vercel: createVercelPreset,
+  netlify: createNetlifyPreset
+};
+function getDeployPreset(appContext, modernConfig, deployTarget) {
+  return _getDeployPreset.apply(this, arguments);
+}
+function _getDeployPreset() {
+  _getDeployPreset = _async_to_generator(function(appContext, modernConfig, deployTarget) {
+    var appDirectory, distDirectory, _getProjectUsage, useSSR, useAPI, useWebServer, needModernServer, createPreset;
+    return _ts_generator(this, function(_state) {
+      appDirectory = appContext.appDirectory, distDirectory = appContext.distDirectory;
+      _getProjectUsage = getProjectUsage(appDirectory, distDirectory), useSSR = _getProjectUsage.useSSR, useAPI = _getProjectUsage.useAPI, useWebServer = _getProjectUsage.useWebServer;
+      needModernServer = useSSR || useAPI || useWebServer;
+      createPreset = deployPresets[deployTarget];
+      if (!createPreset) {
+        throw new Error("Unknown deploy target: '".concat(deployTarget, "'. MODERNJS_DEPLOY should be 'node', 'vercel', or 'netlify'."));
+      }
+      return [
+        2,
+        createPreset(appContext, modernConfig, needModernServer)
+      ];
+    });
+  });
+  return _getDeployPreset.apply(this, arguments);
+}
+function deploy_default() {
+  return {
+    name: "@modern-js/plugin-deploy",
+    setup: function(api) {
+      var deployTarget = process.env.MODERNJS_DEPLOY || provider || "node";
+      api.deploy(/* @__PURE__ */ _async_to_generator(function() {
+        var appContext, metaName, modernConfig, deployPreset, _tmp, _tmp1, _tmp2, _tmp3;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              appContext = api.getAppContext();
+              metaName = appContext.metaName;
+              if (metaName !== "modern-js" && !process.env.MODERNJS_DEPLOY) {
+                return [
+                  2
+                ];
+              }
+              modernConfig = api.getNormalizedConfig();
+              return [
+                4,
+                getDeployPreset(appContext, modernConfig, deployTarget)
+              ];
+            case 1:
+              deployPreset = _state.sent();
+              _tmp = deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.prepare;
+              if (!_tmp)
+                return [
+                  3,
+                  3
+                ];
+              return [
+                4,
+                deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.prepare()
+              ];
+            case 2:
+              _tmp = _state.sent();
+              _state.label = 3;
+            case 3:
+              _tmp;
+              _tmp1 = deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.writeOutput;
+              if (!_tmp1)
+                return [
+                  3,
+                  5
+                ];
+              return [
+                4,
+                deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.writeOutput()
+              ];
+            case 4:
+              _tmp1 = _state.sent();
+              _state.label = 5;
+            case 5:
+              _tmp1;
+              _tmp2 = deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.genEntry;
+              if (!_tmp2)
+                return [
+                  3,
+                  7
+                ];
+              return [
+                4,
+                deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.genEntry()
+              ];
+            case 6:
+              _tmp2 = _state.sent();
+              _state.label = 7;
+            case 7:
+              _tmp2;
+              _tmp3 = deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.end;
+              if (!_tmp3)
+                return [
+                  3,
+                  9
+                ];
+              return [
+                4,
+                deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.end()
+              ];
+            case 8:
+              _tmp3 = _state.sent();
+              _state.label = 9;
+            case 9:
+              _tmp3;
+              return [
+                2
+              ];
+          }
+        });
+      }));
+    }
+  };
+}
+;
+export {
+  deploy_default as default
+};

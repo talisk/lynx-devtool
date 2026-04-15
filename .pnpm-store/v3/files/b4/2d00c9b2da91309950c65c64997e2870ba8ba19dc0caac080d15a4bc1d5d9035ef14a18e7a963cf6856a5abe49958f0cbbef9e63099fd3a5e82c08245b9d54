@@ -1,0 +1,13 @@
+/// <reference types="node" />
+/// <reference types="node" />
+import { Duplex } from "stream";
+export default class Parser {
+    stream: Duplex;
+    private ended;
+    constructor(stream: Duplex);
+    end(): Promise<boolean>;
+    readAscii(howMany: number): Promise<string>;
+    readLength(): Promise<number>;
+    readBytes(howMany: number): Promise<Buffer>;
+    readValue(): Promise<Buffer>;
+}

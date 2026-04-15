@@ -1,0 +1,179 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name2 in all)
+    __defProp(target, name2, { get: all[name2], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var swc_exports = {};
+__export(swc_exports, {
+  swcRenderChunk: () => swcRenderChunk,
+  swcTransform: () => swcTransform
+});
+module.exports = __toCommonJS(swc_exports);
+var import_path = require("path");
+var import_swc_plugins = require("@modern-js/swc-plugins");
+var import_loader = require("../../constants/loader");
+var import_utils = require("../../utils");
+const name = "swc:transform";
+const getSwcTarget = (target) => {
+  const list = [
+    "es3",
+    "es5",
+    "es2015",
+    "es2016",
+    "es2017",
+    "es2018",
+    "es2019",
+    "es2020",
+    "es2021",
+    "es2022"
+  ];
+  if (list.includes(target)) {
+    return target;
+  }
+  if (target === "next") {
+    return "es2022";
+  }
+  if (target === "es6") {
+    return "es2015";
+  }
+  return "es2022";
+};
+const swcTransform = (userTsconfig) => ({
+  name,
+  apply(compiler) {
+    var _userTsconfig_compilerOptions, _userTsconfig_compilerOptions1, _userTsconfig_compilerOptions2;
+    const tsUseDefineForClassFields = userTsconfig === null || userTsconfig === void 0 ? void 0 : (_userTsconfig_compilerOptions = userTsconfig.compilerOptions) === null || _userTsconfig_compilerOptions === void 0 ? void 0 : _userTsconfig_compilerOptions.useDefineForClassFields;
+    var _userTsconfig_compilerOptions_emitDecoratorMetadata;
+    const emitDecoratorMetadata = (_userTsconfig_compilerOptions_emitDecoratorMetadata = userTsconfig === null || userTsconfig === void 0 ? void 0 : (_userTsconfig_compilerOptions1 = userTsconfig.compilerOptions) === null || _userTsconfig_compilerOptions1 === void 0 ? void 0 : _userTsconfig_compilerOptions1.emitDecoratorMetadata) !== null && _userTsconfig_compilerOptions_emitDecoratorMetadata !== void 0 ? _userTsconfig_compilerOptions_emitDecoratorMetadata : false;
+    let useDefineForClassFields;
+    let tsTarget = userTsconfig === null || userTsconfig === void 0 ? void 0 : (_userTsconfig_compilerOptions2 = userTsconfig.compilerOptions) === null || _userTsconfig_compilerOptions2 === void 0 ? void 0 : _userTsconfig_compilerOptions2.target;
+    tsTarget = tsTarget ? tsTarget.toLowerCase() : void 0;
+    if (tsUseDefineForClassFields !== void 0) {
+      useDefineForClassFields = tsUseDefineForClassFields;
+    } else if (tsTarget !== void 0) {
+      useDefineForClassFields = (0, import_utils.tsTargetAtOrAboveES2022)(tsTarget);
+    } else {
+      useDefineForClassFields = true;
+    }
+    const { transformImport, transformLodash, externalHelpers, loader: userLoader } = compiler.config;
+    compiler.hooks.transform.tapPromise({
+      name
+    }, async (source) => {
+      const { path } = source;
+      const isTs = (0, import_utils.isTsLoader)(source.loader) || (0, import_utils.isTsExt)(path);
+      const ext = (0, import_path.extname)(path);
+      var _source_loader, _ref;
+      const loader = (_ref = (_source_loader = source.loader) !== null && _source_loader !== void 0 ? _source_loader : userLoader[ext]) !== null && _ref !== void 0 ? _ref : import_loader.loaderMap[ext];
+      const enableJsx = loader === "tsx" || loader === "jsx";
+      if ((0, import_utils.isJsExt)(path) || (0, import_utils.isJsLoader)(source.loader)) {
+        const { target, jsx } = compiler.config;
+        const swcCompilerOptions = {
+          sourceMaps: Boolean(compiler.config.sourceMap),
+          inputSourceMap: false,
+          swcrc: false,
+          configFile: false,
+          jsc: {
+            parser: isTs ? {
+              syntax: "typescript",
+              tsx: enableJsx,
+              decorators: true
+            } : {
+              syntax: "ecmascript",
+              jsx: enableJsx,
+              decorators: true
+            },
+            transform: {
+              react: {
+                runtime: jsx === "transform" ? "classic" : "automatic"
+              },
+              useDefineForClassFields,
+              legacyDecorator: emitDecoratorMetadata ? true : void 0,
+              decoratorMetadata: emitDecoratorMetadata ? true : void 0
+            },
+            externalHelpers,
+            target: getSwcTarget(target)
+          },
+          isModule: "unknown",
+          extensions: {
+            pluginImport: transformImport,
+            lodash: transformLodash ? {
+              cwd: compiler.context.root,
+              ids: [
+                "lodash",
+                "lodash-es"
+              ]
+            } : void 0
+          }
+        };
+        const swcCompiler = new import_swc_plugins.Compiler(swcCompilerOptions);
+        const result = await swcCompiler.transform((0, import_path.basename)(path), source.code);
+        return {
+          ...source,
+          code: result.code,
+          map: typeof result.map === "string" ? JSON.parse(result.map) : result.map
+        };
+      }
+      return source;
+    });
+  }
+});
+const JS_REGEX = /\.(?:js|mjs|cjs)$/;
+const swcRenderChunk = {
+  name: "swc:renderChunk",
+  apply(compiler) {
+    compiler.hooks.renderChunk.tapPromise({
+      name: "swc:renderChunk"
+    }, async (chunk) => {
+      if (JS_REGEX.test(chunk.fileName) && chunk.type === "chunk") {
+        const { umdModuleName, format } = compiler.config;
+        const name2 = typeof umdModuleName === "function" ? umdModuleName(chunk.fileName) : umdModuleName;
+        const swcCompiler = new import_swc_plugins.Compiler({
+          sourceMaps: Boolean(compiler.config.sourceMap),
+          inputSourceMap: false,
+          swcrc: false,
+          configFile: false,
+          extensions: {},
+          jsc: {
+            target: getSwcTarget(compiler.config.target),
+            parser: {
+              syntax: "ecmascript"
+            }
+          },
+          module: format === "umd" ? {
+            type: "umd"
+          } : void 0,
+          // If `chunk.contents` is recognized as [Script](https://swc.rs/docs/configuration/compilation#ismodule),
+          // then it will not be converted to umd format content.
+          // so we need to set `isModule` to `true`.
+          // eg: when `autoExternal` is false, then chunk.contents will be recognized as [Script]
+          isModule: format === "umd" ? true : "unknown"
+        });
+        const result = await swcCompiler.transform(name2, chunk.contents.toString());
+        return {
+          ...chunk,
+          contents: result.code,
+          map: typeof result.map === "string" ? JSON.parse(result.map) : result.map
+        };
+      }
+      return chunk;
+    });
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  swcRenderChunk,
+  swcTransform
+});

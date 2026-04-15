@@ -1,0 +1,21 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DefaultMultiOpenCallback = exports.MultiOpenStatus = void 0;
+const logger_1 = require("../utils/logger");
+var MultiOpenStatus;
+(function (MultiOpenStatus) {
+    MultiOpenStatus[MultiOpenStatus["attached"] = 0] = "attached";
+    MultiOpenStatus[MultiOpenStatus["unattached"] = 1] = "unattached";
+    MultiOpenStatus[MultiOpenStatus["unInit"] = 2] = "unInit";
+})(MultiOpenStatus = exports.MultiOpenStatus || (exports.MultiOpenStatus = {}));
+class DefaultMultiOpenCallback {
+    statusChanged(status) {
+        if (status === MultiOpenStatus.attached) {
+            logger_1.defaultLogger.debug("connector attached");
+            return;
+        }
+        logger_1.defaultLogger.debug("connector unattached");
+    }
+}
+exports.DefaultMultiOpenCallback = DefaultMultiOpenCallback;
+//# sourceMappingURL=MultiOpenCallBack.js.map

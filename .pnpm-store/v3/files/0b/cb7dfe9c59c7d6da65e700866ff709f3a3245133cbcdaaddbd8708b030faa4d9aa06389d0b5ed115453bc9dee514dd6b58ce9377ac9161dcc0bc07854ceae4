@@ -1,0 +1,9 @@
+interface ReleaseOptions {
+    tag: string;
+    ignoreScripts: boolean;
+    gitChecks: boolean;
+    otp: string;
+    provenance: boolean;
+}
+export declare function release(options: ReleaseOptions): Promise<void>;
+export {};

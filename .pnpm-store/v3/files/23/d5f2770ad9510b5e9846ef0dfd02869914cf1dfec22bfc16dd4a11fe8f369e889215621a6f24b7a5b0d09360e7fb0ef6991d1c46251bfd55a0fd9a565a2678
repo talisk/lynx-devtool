@@ -1,0 +1,75 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var hono_exports = {};
+__export(hono_exports, {
+  connectMid2HonoMid: () => connectMid2HonoMid,
+  httpCallBack2HonoMid: () => httpCallBack2HonoMid
+});
+module.exports = __toCommonJS(hono_exports);
+var import_helper = require("./helper");
+const httpCallBack2HonoMid = (handler) => {
+  return async (context, next) => {
+    const { req, res } = context.env.node;
+    const onPipe = () => {
+      res._modernBodyPiped = true;
+    };
+    res.once("pipe", onPipe);
+    req.__honoRequest = context.req;
+    req.__templates = context.get("templates") || {};
+    req.__serverManifest = context.get("serverManifest") || {};
+    try {
+      await handler(req, res);
+    } finally {
+      delete req.__honoRequest;
+      delete req.__templates;
+      delete req.__serverManifest;
+      res.removeListener("pipe", onPipe);
+    }
+    if ((0, import_helper.isResFinalized)(res)) {
+      context.finalized = true;
+    } else {
+      await next();
+    }
+  };
+};
+const noop = () => {
+};
+const connectMid2HonoMid = (handler) => {
+  return async (context, next) => {
+    return new Promise((resolve, reject) => {
+      const { req, res } = context.env.node;
+      if (handler.length < 3) {
+        resolve(handler(req, res, noop));
+      } else {
+        handler(req, res, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(next());
+          }
+        });
+      }
+    });
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  connectMid2HonoMid,
+  httpCallBack2HonoMid
+});

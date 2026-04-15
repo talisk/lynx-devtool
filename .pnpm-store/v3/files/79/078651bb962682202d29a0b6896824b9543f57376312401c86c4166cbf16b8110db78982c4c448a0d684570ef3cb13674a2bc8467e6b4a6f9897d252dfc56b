@@ -1,0 +1,15 @@
+import { DeviceManager } from "../DeviceManager";
+import { DebugRouterConnector } from "../../connector";
+import { DeviceWatchStatusSocket } from "./DeviceWatchStatusSocket";
+export default class IOSDeviceManager extends DeviceManager {
+    private readonly LOCKDOWN_PORT;
+    private listener;
+    constructor(driver: DebugRouterConnector);
+    private createDevice;
+    private reWatchIOSDevices;
+    private createUsbmuxListener;
+    watchDevices(): Promise<void>;
+    handleDeviceConnect(udid: string, statusSocket: DeviceWatchStatusSocket): Promise<void>;
+    private makeParse;
+    registerDevice(udid: string, title: string): Promise<void>;
+}

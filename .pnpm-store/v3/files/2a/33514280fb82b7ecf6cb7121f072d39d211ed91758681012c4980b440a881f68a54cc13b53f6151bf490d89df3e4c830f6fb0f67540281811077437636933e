@@ -1,0 +1,86 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var serverBuild_exports = {};
+__export(serverBuild_exports, {
+  default: () => serverBuild_default
+});
+module.exports = __toCommonJS(serverBuild_exports);
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+var import_server_utils = require("@modern-js/server-utils");
+var import_utils = require("@modern-js/utils");
+const TS_CONFIG_FILENAME = "tsconfig.json";
+function checkHasCache(appDir) {
+  const tsFilepath = import_path.default.resolve(appDir, import_utils.SERVER_DIR, "cache.ts");
+  const jsfilepath = import_path.default.resolve(appDir, import_utils.SERVER_DIR, "cache.js");
+  return import_fs.default.existsSync(tsFilepath) || import_fs.default.existsSync(jsfilepath);
+}
+function checkHasConfig(appDir, metaName = "modern-js") {
+  const meta = (0, import_utils.getMeta)(metaName);
+  const tsFilepath = import_path.default.resolve(appDir, import_utils.SERVER_DIR, `${meta}.server.ts`);
+  const jsfilepath = import_path.default.resolve(appDir, import_utils.SERVER_DIR, `${meta}.server.js`);
+  return import_fs.default.existsSync(tsFilepath) || import_fs.default.existsSync(jsfilepath);
+}
+var serverBuild_default = () => ({
+  name: "@modern-js/server-build",
+  setup(api) {
+    api.onAfterBuild(async () => {
+      const { appDirectory, distDirectory, metaName } = api.getAppContext();
+      if (!checkHasCache(appDirectory) && !checkHasConfig(appDirectory, metaName)) {
+        return;
+      }
+      const modernConfig = api.getNormalizedConfig();
+      const distDir = import_path.default.resolve(distDirectory);
+      const serverDir = import_path.default.resolve(appDirectory, import_utils.SERVER_DIR);
+      const sharedDir = import_path.default.resolve(appDirectory, import_utils.SHARED_DIR);
+      const tsconfigPath = import_path.default.resolve(appDirectory, TS_CONFIG_FILENAME);
+      const sourceDirs = [];
+      if (import_fs.default.existsSync(serverDir)) {
+        sourceDirs.push(serverDir);
+        if (import_fs.default.existsSync(sharedDir)) {
+          sourceDirs.push(sharedDir);
+        }
+      }
+      const { server } = modernConfig;
+      const { alias } = modernConfig.source;
+      const { babel } = modernConfig.tools;
+      if (sourceDirs.length > 0) {
+        await (0, import_server_utils.compile)(appDirectory, {
+          server,
+          alias,
+          babelConfig: babel
+        }, {
+          sourceDirs,
+          distDir,
+          tsconfigPath
+        });
+      }
+    });
+  }
+});

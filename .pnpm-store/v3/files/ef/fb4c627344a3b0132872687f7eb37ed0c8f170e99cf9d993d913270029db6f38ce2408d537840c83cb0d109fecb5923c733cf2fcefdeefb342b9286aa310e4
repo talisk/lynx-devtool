@@ -1,0 +1,7 @@
+export interface RushConfigurationProject {
+    readonly packageName: string;
+    readonly projectFolder: string;
+}
+export interface IRushConfig {
+    projects?: RushConfigurationProject[];
+}

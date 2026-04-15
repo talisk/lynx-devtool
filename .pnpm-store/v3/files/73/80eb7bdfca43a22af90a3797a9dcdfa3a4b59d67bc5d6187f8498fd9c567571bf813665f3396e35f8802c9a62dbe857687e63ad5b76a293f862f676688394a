@@ -1,0 +1,49 @@
+import * as __WEBPACK_EXTERNAL_MODULE_node_path__ from "node:path";
+import * as __WEBPACK_EXTERNAL_MODULE_node_util__ from "node:util";
+import * as __WEBPACK_EXTERNAL_MODULE__svgr_core__ from "@svgr/core";
+import * as __WEBPACK_EXTERNAL_MODULE__svgr_plugin_jsx__ from "@svgr/plugin-jsx";
+import * as __WEBPACK_EXTERNAL_MODULE__svgr_plugin_svgo__ from "@svgr/plugin-svgo";
+/**
+ * Copyright (c) 2017, Smooth Code
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ * modified from https://github.com/gregberge/svgr/blob/7595d378b73d4826a4cead165b3f32386b07315b/packages/webpack/src/index.ts
+ */ const transformSvg = (0, __WEBPACK_EXTERNAL_MODULE_node_util__.callbackify)(async (contents, config, state)=>(0, __WEBPACK_EXTERNAL_MODULE__svgr_core__.transform)(contents, config, state));
+function svgrLoader(contents) {
+    this?.cacheable();
+    const callback = this.async();
+    const options = this.getOptions();
+    const previousExport = (()=>{
+        if (contents.startsWith('export ')) return contents;
+        const exportMatches = contents.match(/^module.exports\s*=\s*(.*)/);
+        return exportMatches ? `export default ${exportMatches[1]}` : null;
+    })();
+    const state = {
+        caller: {
+            name: '@rsbuild/plugin-svgr',
+            previousExport,
+            defaultPlugins: [
+                __WEBPACK_EXTERNAL_MODULE__svgr_plugin_svgo__["default"],
+                __WEBPACK_EXTERNAL_MODULE__svgr_plugin_jsx__["default"]
+            ]
+        },
+        filePath: (0, __WEBPACK_EXTERNAL_MODULE_node_path__.normalize)(this.resourcePath)
+    };
+    if (previousExport) this.fs.readFile(this.resourcePath, (err, result)=>{
+        if (err) {
+            callback(err);
+            return;
+        }
+        transformSvg(String(result), options, state, (err, content)=>{
+            if (err) {
+                callback(err);
+                return;
+            }
+            callback(null, content);
+        });
+    });
+    else transformSvg(contents, options, state, callback);
+}
+/* ESM default export */ const loader_rslib_entry_ = svgrLoader;
+export { loader_rslib_entry_ as default };

@@ -1,0 +1,131 @@
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { merge } from "@modern-js/runtime-utils/merge";
+import { createRequestContext, reporterCtx } from "@modern-js/runtime-utils/node";
+import { StaticRouterProvider, createStaticRouter } from "@modern-js/runtime-utils/node/router";
+import { createStaticHandler } from "@modern-js/runtime-utils/remix-router";
+import { createRoutesFromElements } from "@modern-js/runtime-utils/router";
+import { time } from "@modern-js/runtime-utils/time";
+import { LOADER_REPORTER_NAME } from "@modern-js/utils/universal/constants";
+import { useContext } from "react";
+import { JSX_SHELL_STREAM_END_MARK } from "../../common";
+import { RuntimeReactContext } from "../../core";
+import { getGlobalLayoutApp, getGlobalRoutes } from "../../core/context";
+import DeferredDataScripts from "./DeferredDataScripts.node";
+import { beforeCreateRoutes as beforeCreateRoutesHook, modifyRoutes as modifyRoutesHook } from "./hooks";
+import { renderRoutes, urlJoin } from "./utils";
+function createRemixReuqest(request) {
+  const method = "GET";
+  const { headers } = request;
+  const controller = new AbortController();
+  return new Request(request.url, {
+    method,
+    headers,
+    signal: controller.signal
+  });
+}
+const routerPlugin = (userConfig = {}) => {
+  return {
+    name: "@modern-js/plugin-router",
+    registerHook: {
+      modifyRoutes: modifyRoutesHook,
+      beforeCreateRoutes: beforeCreateRoutesHook
+    },
+    setup: (api) => {
+      let finalRouteConfig = {};
+      return {
+        async beforeRender(context, interrupt) {
+          var _context_ssrContext, _context_ssrContext_onTiming, _context_ssrContext1;
+          const pluginConfig = api.useRuntimeConfigContext();
+          const { basename = "", routesConfig, createRoutes } = merge(pluginConfig.router || {}, userConfig);
+          finalRouteConfig = {
+            routes: getGlobalRoutes(),
+            globalApp: getGlobalLayoutApp(),
+            ...routesConfig
+          };
+          if (!finalRouteConfig.routes && !createRoutes) {
+            return;
+          }
+          const { request, mode: ssrMode, nonce, loaderFailureMode = "errorBoundary" } = context.ssrContext;
+          const { baseUrl } = request;
+          const _basename = baseUrl === "/" ? urlJoin(baseUrl, basename) : baseUrl;
+          const { reporter } = context.ssrContext;
+          const requestContext = createRequestContext((_context_ssrContext = context.ssrContext) === null || _context_ssrContext === void 0 ? void 0 : _context_ssrContext.loaderContext);
+          requestContext.set(reporterCtx, reporter);
+          const runner = api.useHookRunners();
+          await runner.beforeCreateRoutes(context);
+          let routes = createRoutes ? createRoutes() : createRoutesFromElements(renderRoutes({
+            routesConfig: finalRouteConfig,
+            ssrMode,
+            props: {
+              nonce
+            },
+            reporter
+          }));
+          routes = runner.modifyRoutes(routes);
+          const { query } = createStaticHandler(routes, {
+            basename: _basename
+          });
+          const remixRequest = createRemixReuqest(context.ssrContext.request.raw);
+          const end = time();
+          const routerContext = await query(remixRequest, {
+            requestContext
+          });
+          const cost = end();
+          (_context_ssrContext1 = context.ssrContext) === null || _context_ssrContext1 === void 0 ? void 0 : (_context_ssrContext_onTiming = _context_ssrContext1.onTiming) === null || _context_ssrContext_onTiming === void 0 ? void 0 : _context_ssrContext_onTiming.call(_context_ssrContext1, LOADER_REPORTER_NAME, cost);
+          if (routerContext instanceof Response) {
+            return interrupt(routerContext);
+          }
+          if (routerContext.statusCode >= 500 && routerContext.statusCode < 600 && // TODO: if loaderFailureMode is not 'errroBoundary', error log will not be printed.
+          loaderFailureMode === "clientRender") {
+            routerContext.statusCode = 200;
+            const errors = Object.values(routerContext.errors);
+            throw errors[0];
+          }
+          const router = createStaticRouter(routes, routerContext);
+          context.routerContext = routerContext;
+          context.remixRouter = router;
+          context.routes = routes;
+        },
+        wrapRoot: (App) => {
+          if (!finalRouteConfig) {
+            return App;
+          }
+          const getRouteApp = () => {
+            return () => {
+              const context = useContext(RuntimeReactContext);
+              const { remixRouter, routerContext, ssrContext } = context;
+              const { nonce, mode, useJsonScript } = ssrContext;
+              const routerWrapper = /* @__PURE__ */ _jsxs(_Fragment, {
+                children: [
+                  /* @__PURE__ */ _jsx(StaticRouterProvider, {
+                    router: remixRouter,
+                    context: routerContext,
+                    hydrate: false
+                  }),
+                  mode === "stream" && // ROUTER_DATA will inject in `packages/runtime/plugin-runtime/src/core/server/string/ssrData.ts` in string ssr
+                  // So we can inject it only when streaming ssr
+                  /* @__PURE__ */ _jsx(DeferredDataScripts, {
+                    nonce,
+                    context: routerContext,
+                    useJsonScript
+                  }),
+                  mode === "stream" && JSX_SHELL_STREAM_END_MARK
+                ]
+              });
+              return App ? /* @__PURE__ */ _jsx(App, {
+                children: routerWrapper
+              }) : routerWrapper;
+            };
+          };
+          return getRouteApp();
+        }
+      };
+    }
+  };
+};
+const modifyRoutes = () => {
+};
+export {
+  modifyRoutes,
+  routerPlugin
+};

@@ -1,0 +1,13 @@
+import type { InternalPlugins } from '@modern-js/types';
+export interface RunOptions {
+    cwd?: string;
+    configFile?: string;
+    packageJsonConfig?: string;
+    internalPlugins?: {
+        cli?: InternalPlugins;
+        autoLoad?: InternalPlugins;
+    };
+    initialLog?: string;
+    version: string;
+}
+export declare function run({ cwd, initialLog, version, internalPlugins, packageJsonConfig, configFile, }: RunOptions): Promise<void>;

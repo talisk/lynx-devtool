@@ -1,0 +1,11 @@
+import type { ISocketMessage, SocketEventMap, ITypedSocketMessage } from "./message.model";
+import type { SocketData } from "./socket.model";
+import { SocketEvents } from "./message.model";
+export declare function encodeSocketMessage<T extends SocketEvents>(message: ITypedSocketMessage<T>): string;
+export declare function encodeSocketMessage<T = void>(message: ISocketMessage<T> & {
+    event: Exclude<number, keyof SocketEventMap>;
+}): string;
+export declare function decodeSocketMessage(data: string | SocketData): ISocketMessage<unknown> | undefined;
+export declare function decodeSocketMessage<T extends SocketEvents>(data: string | SocketData, event: T): ITypedSocketMessage<T> | undefined;
+export declare function isTypedSocketMessage<T extends SocketEvents>(message: ISocketMessage<any> | undefined, event: T): message is ITypedSocketMessage<T>;
+export declare function isUnknownMessage(message: ISocketMessage<any> | undefined): message is undefined;

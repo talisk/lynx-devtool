@@ -1,0 +1,107 @@
+import { UsbClient } from "../usb/Client";
+import { BaseDevice } from "../device/BaseDevice";
+import { DeviceManager } from "../device/DeviceManager";
+import { DebugerRouterDriverEvents } from "../utils/type";
+import { WebSocketController } from "../websocket/WebSocketServer";
+import { DriverReportService } from "../report/interface/DriverReportService";
+import { Client } from "./Client";
+import { MultiOpenCallback } from "./MultiOpenCallBack";
+import { DriverClient } from "./DriverClient";
+export type devOption = {
+    manualConnect?: boolean;
+    enableAndroid?: boolean;
+    enableIOS?: boolean;
+    enableHarmony?: boolean;
+    enableDesktop?: boolean;
+    enableNetworkDevice?: boolean;
+    adbHostPort?: {
+        host?: string;
+        port?: number;
+    };
+    hdcHostPort?: {
+        host?: string;
+        port?: number;
+    };
+    usbConnectOpt?: {
+        retryTime: number;
+    };
+    enableWebSocket?: boolean;
+    websocketOption?: {
+        port?: number;
+        roomId?: string;
+    };
+    networkDeviceOpt?: {
+        ip: string;
+        port: number[];
+    };
+    reportService?: DriverReportService | null;
+};
+export declare class DebugRouterConnector {
+    private readonly events;
+    reportService: DriverReportService | null;
+    readonly devices: Map<string, BaseDevice>;
+    readonly usbClients: Map<number, UsbClient>;
+    private readonly manualConnect;
+    readonly enableWebSocket: boolean | undefined;
+    private selectedClient;
+    private nextClientId;
+    private enableAndroid;
+    private enableIOS;
+    private enableHarmony;
+    private enableDesktop;
+    private readonly enableNetworkDevice;
+    private readonly driverClient;
+    private readonly networkDeviceOpt;
+    readonly adbOption: any;
+    readonly hdcOption: any;
+    readonly usbConnectOpt: {
+        retryTime: number;
+    };
+    private multiOpenCallback;
+    private monitoring;
+    wssPort: number;
+    wssHost: string | undefined;
+    roomId: string | undefined;
+    wss: WebSocketController | null;
+    private currentStatus;
+    private devicesManager;
+    constructor(option?: devOption);
+    setMultiOpenCallback(callback: MultiOpenCallback): void;
+    prepareDriverDataDir(): void;
+    startMonitorMultiOpen(): void;
+    monitorLatestDriverProcessFile(): void;
+    private updateLatestProcess;
+    private monitorLatestDriverProcessFileSafely;
+    disableAllClients(): void;
+    startWatchAllClients(force?: boolean): void;
+    createClientId(): number;
+    connectDevices(timeout?: number, serial?: string | null, isAutoListenClients?: boolean): Promise<BaseDevice[]>;
+    connectUsbClients(deviceId: string, timeout?: number, waitTimeout?: boolean, clientName?: string | null): Promise<UsbClient[]>;
+    selecteUsbClient(id: number): void;
+    addDeviceManager(manager: DeviceManager): void;
+    private startDeviceListeners;
+    on<Event extends keyof DebugerRouterDriverEvents>(event: Event, callback: (payload: DebugerRouterDriverEvents[Event]) => void): void;
+    off<Event extends keyof DebugerRouterDriverEvents>(event: Event, callback: (payload: DebugerRouterDriverEvents[Event]) => void): void;
+    emit<Event extends keyof DebugerRouterDriverEvents>(event: Event, payload: DebugerRouterDriverEvents[Event]): void;
+    registerDevice(device: BaseDevice): void;
+    unregisterDevice(serial: string): void;
+    regiserUsbClient(client: UsbClient): void;
+    unregiserUsbClient(id: number): void;
+    getDevices(timeout?: number, serial?: string | null): Promise<BaseDevice[]>;
+    private findDevice;
+    getAllUsbClients(): UsbClient[];
+    getDeviceUsbClients(deviceId: string, timeout?: number, clientName?: string | null): Promise<UsbClient[]>;
+    private findUsbClient;
+    private isTargetClient;
+    private waitDeviceUsbCliens;
+    handleUsbMessage(id: number, message: string): void;
+    handleWsMessage(id: number, message: string): void;
+    handleUsbClienChange(): void;
+    handleUsbDeviceChange(): void;
+    getAllAppClients(): Client[];
+    sendMessageToWeb(message: string): void;
+    sendMessageToApp(id: number, message: string): void;
+    startWSServer(): Promise<void>;
+    private setOptionByEnv;
+    getDriverClient(): DriverClient;
+}

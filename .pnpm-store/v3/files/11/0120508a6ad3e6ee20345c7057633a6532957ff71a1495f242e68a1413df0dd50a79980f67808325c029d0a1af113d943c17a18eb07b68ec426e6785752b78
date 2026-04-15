@@ -1,0 +1,106 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var pluginManager_exports = {};
+__export(pluginManager_exports, {
+  PluginManager: () => PluginManager
+});
+module.exports = __toCommonJS(pluginManager_exports);
+var import_class_private_field_get = require("@swc/helpers/_/_class_private_field_get");
+var import_class_private_field_init = require("@swc/helpers/_/_class_private_field_init");
+var import_class_private_field_set = require("@swc/helpers/_/_class_private_field_set");
+var import_class_private_method_get = require("@swc/helpers/_/_class_private_method_get");
+var import_class_private_method_init = require("@swc/helpers/_/_class_private_method_init");
+var import_plugin = require("@modern-js/plugin");
+var import_utils = require("./utils");
+var _appContext = /* @__PURE__ */ new WeakMap(), _plugins = /* @__PURE__ */ new WeakMap(), _options = /* @__PURE__ */ new WeakMap(), _configContext = /* @__PURE__ */ new WeakMap(), _createCoreManager = /* @__PURE__ */ new WeakSet(), _initConfigContext = /* @__PURE__ */ new WeakSet();
+class PluginManager {
+  async init() {
+    const coreManager = (0, import_class_private_method_get._)(this, _createCoreManager, createCoreManager).call(this);
+    const runner = await coreManager.init();
+    await (0, import_class_private_method_get._)(this, _initConfigContext, initConfigContext).call(this, runner);
+    return runner;
+  }
+  addPlugins(plugins) {
+    (0, import_class_private_field_get._)(this, _plugins).push(...plugins);
+  }
+  constructor(options) {
+    (0, import_class_private_method_init._)(this, _createCoreManager);
+    (0, import_class_private_method_init._)(this, _initConfigContext);
+    (0, import_class_private_field_init._)(this, _appContext, {
+      writable: true,
+      value: void 0
+    });
+    (0, import_class_private_field_init._)(this, _plugins, {
+      writable: true,
+      value: void 0
+    });
+    (0, import_class_private_field_init._)(this, _options, {
+      writable: true,
+      value: void 0
+    });
+    (0, import_class_private_field_init._)(this, _configContext, {
+      writable: true,
+      value: void 0
+    });
+    (0, import_class_private_field_set._)(this, _plugins, []);
+    (0, import_class_private_field_set._)(this, _configContext, (0, import_plugin.createContext)({}));
+    (0, import_class_private_field_set._)(this, _appContext, options.appContext);
+    (0, import_class_private_field_set._)(this, _configContext, (0, import_plugin.createContext)(options.serverConfig || {}));
+    (0, import_class_private_field_set._)(this, _options, options);
+  }
+}
+function createCoreManager() {
+  var _class_private_field_get_serverConfig;
+  const hooks = {
+    config: (0, import_plugin.createAsyncWaterfall)(),
+    prepare: (0, import_plugin.createAsyncWaterfall)(),
+    reset: (0, import_plugin.createAsyncWorkflow)(),
+    prepareWebServer: (0, import_plugin.createAsyncPipeline)(),
+    fallback: (0, import_plugin.createParallelWorkflow)(),
+    prepareApiServer: (0, import_plugin.createAsyncPipeline)(),
+    afterMatch: (0, import_plugin.createAsyncPipeline)(),
+    afterRender: (0, import_plugin.createAsyncPipeline)(),
+    afterStreamingRender: (0, import_plugin.createAsyncPipeline)()
+  };
+  const pluginApi = {
+    useConfigContext: () => (0, import_class_private_field_get._)(this, _configContext).use().value,
+    useAppContext: () => (0, import_class_private_field_get._)(this, _appContext).use().value,
+    setAppContext: (c) => (0, import_class_private_field_get._)(this, _appContext).set(c)
+  };
+  const coreManager = (0, import_plugin.createAsyncManager)(hooks, pluginApi);
+  this.addPlugins(((_class_private_field_get_serverConfig = (0, import_class_private_field_get._)(this, _options).serverConfig) === null || _class_private_field_get_serverConfig === void 0 ? void 0 : _class_private_field_get_serverConfig.plugins) || []);
+  (0, import_class_private_field_get._)(this, _plugins).forEach((p) => {
+    const plugin = coreManager.createPlugin(p.setup, p);
+    coreManager.usePlugin(plugin);
+  });
+  return coreManager;
+}
+async function initConfigContext(runner) {
+  const { serverConfig, cliConfig } = (0, import_class_private_field_get._)(this, _options);
+  const mergedConfig = (0, import_utils.loadConfig)({
+    cliConfig,
+    serverConfig: serverConfig || {}
+  });
+  const finalServerConfig = await runner.config(mergedConfig);
+  (0, import_class_private_field_get._)(this, _configContext).set(finalServerConfig);
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  PluginManager
+});

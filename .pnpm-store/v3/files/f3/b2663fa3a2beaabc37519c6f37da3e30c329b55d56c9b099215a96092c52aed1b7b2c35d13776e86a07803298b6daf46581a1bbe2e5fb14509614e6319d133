@@ -1,0 +1,162 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { loadServerPlugins as loadServerPluginInstances } from "@modern-js/prod-server";
+import { compatibleRequire, createDebugger, dynamicImport, getInternalPlugins, tryResolve } from "@modern-js/utils";
+var debug = createDebugger("load-plugins");
+function getServerPlugins(api) {
+  return _getServerPlugins.apply(this, arguments);
+}
+function _getServerPlugins() {
+  _getServerPlugins = _async_to_generator(function(api) {
+    var metaName, hooks, plugins, filtedPlugins;
+    var _arguments = arguments;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          metaName = _arguments.length > 1 && _arguments[1] !== void 0 ? _arguments[1] : "modern-js";
+          hooks = api.getHooks();
+          return [
+            4,
+            hooks._internalServerPlugins.call({
+              plugins: []
+            })
+          ];
+        case 1:
+          plugins = _state.sent().plugins;
+          filtedPlugins = plugins.filter(function(plugin) {
+            return plugin.name.includes(metaName);
+          });
+          api.updateAppContext({
+            serverPlugins: filtedPlugins
+          });
+          return [
+            2,
+            filtedPlugins
+          ];
+      }
+    });
+  });
+  return _getServerPlugins.apply(this, arguments);
+}
+function loadServerPlugins(api, appDirectory, metaName) {
+  return _loadServerPlugins.apply(this, arguments);
+}
+function _loadServerPlugins() {
+  _loadServerPlugins = _async_to_generator(function(api, appDirectory, metaName) {
+    var plugins, instances;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            getServerPlugins(api, metaName)
+          ];
+        case 1:
+          plugins = _state.sent();
+          return [
+            4,
+            loadServerPluginInstances(plugins, appDirectory)
+          ];
+        case 2:
+          instances = _state.sent();
+          return [
+            2,
+            instances
+          ];
+      }
+    });
+  });
+  return _loadServerPlugins.apply(this, arguments);
+}
+var resolveCliPlugin = function() {
+  var _ref = _async_to_generator(function(p, appDirectory) {
+    var pkg, pluginOptions, path, module, e, ref, result;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          pkg = typeof p === "string" ? p : p[0];
+          pluginOptions = typeof p === "string" ? void 0 : p[1];
+          path = tryResolve(pkg, appDirectory);
+          _state.label = 1;
+        case 1:
+          _state.trys.push([
+            1,
+            3,
+            ,
+            5
+          ]);
+          return [
+            4,
+            compatibleRequire(path)
+          ];
+        case 2:
+          module = _state.sent();
+          return [
+            3,
+            5
+          ];
+        case 3:
+          e = _state.sent();
+          return [
+            4,
+            dynamicImport(path)
+          ];
+        case 4:
+          ref = _state.sent(), module = ref.default, ref;
+          return [
+            3,
+            5
+          ];
+        case 5:
+          if (typeof module === "function") {
+            result = module(pluginOptions);
+            return [
+              2,
+              result
+            ];
+          }
+          return [
+            2,
+            module
+          ];
+      }
+    });
+  });
+  return function resolveCliPlugin2(p, appDirectory) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var loadInternalPlugins = function() {
+  var _ref = _async_to_generator(function(appDirectory, internalPlugins, autoLoad, autoLoadPlugins) {
+    var plugins, loadedPlugins;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          plugins = _to_consumable_array(autoLoadPlugins ? getInternalPlugins(appDirectory, internalPlugins) : []).concat(_to_consumable_array(autoLoad ? getInternalPlugins(appDirectory, autoLoad) : []));
+          return [
+            4,
+            Promise.all(plugins.map(function(plugin) {
+              var loadedPlugin = resolveCliPlugin(plugin, appDirectory);
+              debug("resolve plugin %s: %s", plugin, loadedPlugin);
+              return loadedPlugin;
+            }))
+          ];
+        case 1:
+          loadedPlugins = _state.sent();
+          return [
+            2,
+            loadedPlugins
+          ];
+      }
+    });
+  });
+  return function loadInternalPlugins2(appDirectory, internalPlugins, autoLoad, autoLoadPlugins) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  getServerPlugins,
+  loadInternalPlugins,
+  loadServerPlugins
+};

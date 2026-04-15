@@ -1,0 +1,4 @@
+import type { CliPlugin } from '@modern-js/core';
+export * from './commands';
+export declare const changesetPlugin: () => CliPlugin;
+export default changesetPlugin;

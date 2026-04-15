@@ -1,0 +1,28 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ERemoteDebugDriverInternalEvent = exports.ERemoteDebugDriverExternalEvent = void 0;
+var ERemoteDebugDriverExternalEvent;
+(function (ERemoteDebugDriverExternalEvent) {
+    ERemoteDebugDriverExternalEvent["RoomJoined"] = "RoomJoined";
+    ERemoteDebugDriverExternalEvent["RoomLeaved"] = "RoomLeaved";
+    ERemoteDebugDriverExternalEvent["Close"] = "Close";
+    ERemoteDebugDriverExternalEvent["Connect"] = "Connect";
+    ERemoteDebugDriverExternalEvent["ClientList"] = "ClientList";
+    ERemoteDebugDriverExternalEvent["SessionList"] = "SessionList";
+    ERemoteDebugDriverExternalEvent["CDP"] = "CDP";
+    ERemoteDebugDriverExternalEvent["PingPongDelay"] = "PingPongDelay";
+    ERemoteDebugDriverExternalEvent["R2DStopAtEntry"] = "R2DStopAtEntry";
+    ERemoteDebugDriverExternalEvent["R2DStopLepusAtEntry"] = "R2DStopLepusAtEntry";
+    ERemoteDebugDriverExternalEvent["RemoteCall"] = "RemoteCall";
+    ERemoteDebugDriverExternalEvent["UsbConnect"] = "UsbConnect";
+    ERemoteDebugDriverExternalEvent["UsbConnectAck"] = "UsbConnectAck";
+    ERemoteDebugDriverExternalEvent["HMR"] = "HMR";
+    ERemoteDebugDriverExternalEvent["All"] = "All";
+})(ERemoteDebugDriverExternalEvent || (exports.ERemoteDebugDriverExternalEvent = ERemoteDebugDriverExternalEvent = {}));
+var ERemoteDebugDriverInternalEvent;
+(function (ERemoteDebugDriverInternalEvent) {
+    ERemoteDebugDriverInternalEvent["I"] = "I";
+})(ERemoteDebugDriverInternalEvent || (exports.ERemoteDebugDriverInternalEvent = ERemoteDebugDriverInternalEvent = {}));
+const a = {};
+const b = {};
+//# sourceMappingURL=driver.js.map

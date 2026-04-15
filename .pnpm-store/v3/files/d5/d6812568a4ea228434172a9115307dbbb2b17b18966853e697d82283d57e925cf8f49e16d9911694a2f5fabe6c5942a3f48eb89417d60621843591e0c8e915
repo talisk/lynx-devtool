@@ -1,0 +1,256 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const plist = __importStar(require("plist"));
+const iOSDevice_1 = __importDefault(require("./iOSDevice"));
+const DeviceManager_1 = require("../DeviceManager");
+const logger_1 = require("../../utils/logger");
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+const DeviceWatchStatusSocket_1 = require("./DeviceWatchStatusSocket");
+const WatchStatus_1 = require("../WatchStatus");
+const usbmux_1 = require("../../../third_party/usbmux/lib/usbmux");
+class IOSDeviceManager extends DeviceManager_1.DeviceManager {
+    constructor(driver) {
+        super(driver);
+        this.LOCKDOWN_PORT = 62078;
+        this.listener = null;
+    }
+    createDevice(serial, title) {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            var _a;
+            try {
+                const device = new iOSDevice_1.default(this.driver, serial, title);
+                resolve(device);
+            }
+            catch (e) {
+                const msg = "createDevice: iOS: error" + serial + " " + (e === null || e === void 0 ? void 0 : e.message);
+                logger_1.defaultLogger.debug(msg);
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                    msg: msg,
+                    stage: "device",
+                });
+                resolve(undefined);
+            }
+        }));
+    }
+    reWatchIOSDevices() {
+        return __awaiter(this, void 0, void 0, function* () {
+            setTimeout(() => {
+                this.watchDevices();
+            }, 300);
+        });
+    }
+    createUsbmuxListener() {
+        var _a;
+        let client = null;
+        try {
+            client = (0, usbmux_1.createListener)();
+        }
+        catch (err) {
+            const msg = "createUsbmuxListener error:" + (err === null || err === void 0 ? void 0 : err.message);
+            logger_1.defaultLogger.debug(msg);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                msg: msg,
+                stage: "device",
+                detail: "createUsbmuxListener",
+            });
+        }
+        return client;
+    }
+    watchDevices() {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.listener !== null &&
+                ((_a = this.listener) === null || _a === void 0 ? void 0 : _a.currentWatchStatus) !== WatchStatus_1.WatchStatus.StopWatching) {
+                return;
+            }
+            (_b = this.listener) === null || _b === void 0 ? void 0 : _b.getRawSocket().destroy();
+            this.listener = null;
+            try {
+                let usbmuxListener = this.createUsbmuxListener();
+                if (usbmuxListener === null) {
+                    this.reWatchIOSDevices();
+                    return;
+                }
+                let statusSocket = new DeviceWatchStatusSocket_1.DeviceWatchStatusSocket(usbmuxListener);
+                statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.PrepareToWatch;
+                usbmuxListener.on("usbmux_error", (err) => {
+                    var _a;
+                    statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                    const msg = "watchIOSDevices listener_error:" + (err === null || err === void 0 ? void 0 : err.message);
+                    logger_1.defaultLogger.debug(msg);
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                        msg: msg,
+                        stage: "device",
+                        detail: "listenerOnError",
+                    });
+                    this.reWatchIOSDevices();
+                });
+                usbmuxListener.on("close", (hadError) => {
+                    statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                    logger_1.defaultLogger.debug("watchIOSDevices listener_close");
+                    this.reWatchIOSDevices();
+                });
+                usbmuxListener.on("attached", (udid) => {
+                    statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                    logger_1.defaultLogger.debug("watchIOSDevices attached:" + JSON.stringify(udid));
+                    this.handleDeviceConnect(udid, statusSocket);
+                });
+                usbmuxListener.on("detached", (udid) => {
+                    statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                    logger_1.defaultLogger.debug("watchIOSDevices detached:" + JSON.stringify(udid));
+                    this.driver.unregisterDevice(udid);
+                });
+                this.listener = statusSocket;
+            }
+            catch (e) {
+                const msg = "watchIOSDevices error:" + (e === null || e === void 0 ? void 0 : e.message);
+                logger_1.defaultLogger.debug(msg);
+                (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("ios_connect_error", null, {
+                    msg: msg,
+                    stage: "device",
+                    detail: "watchIOSDevices_catch",
+                });
+                this.reWatchIOSDevices();
+            }
+        });
+    }
+    handleDeviceConnect(udid, statusSocket) {
+        return __awaiter(this, void 0, void 0, function* () {
+            (0, usbmux_1.getTunnel)(this.LOCKDOWN_PORT, { udid: udid })
+                .then((tunnel) => {
+                const parse = this.makeParse((result) => {
+                    var _a, _b;
+                    const deviceName = (_a = result === null || result === void 0 ? void 0 : result.Value) === null || _a === void 0 ? void 0 : _a.DeviceName;
+                    if (deviceName) {
+                        if (!this.driver.devices.has(udid)) {
+                            this.registerDevice(udid, deviceName);
+                        }
+                    }
+                    else {
+                        (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("ios_connect_error", null, {
+                            stage: "device",
+                            detail: "handleDeviceConnect_deviceName_null",
+                            udid: udid,
+                        });
+                    }
+                });
+                tunnel.on("data", parse);
+                tunnel.on("close", (hadError) => {
+                    var _a;
+                    const msg = "handleDeviceConnect: tunnel close:" + udid;
+                    logger_1.defaultLogger.debug(msg);
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_close", null, {
+                        stage: "device",
+                        detail: "handleDeviceConnect_tunnel_close",
+                        udid: udid,
+                    });
+                    tunnel.destroy();
+                    statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                    this.reWatchIOSDevices();
+                });
+                tunnel.on("usbmux_error", (err) => {
+                    var _a, _b;
+                    const msg = "handleDeviceConnect: tunnel error:" + udid + " " + (err === null || err === void 0 ? void 0 : err.message);
+                    logger_1.defaultLogger.debug(msg);
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                        msg: (_b = err === null || err === void 0 ? void 0 : err.message) !== null && _b !== void 0 ? _b : "unknown error",
+                        stage: "device",
+                        detail: "handleDeviceConnect_tunnel_error",
+                        udid: udid,
+                    });
+                    tunnel.destroy();
+                    statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                    this.reWatchIOSDevices();
+                });
+                const payload_plist = plist.build({
+                    Request: "GetValue",
+                    key: "DeviceName",
+                });
+                const payload_buf = new Buffer(payload_plist);
+                const header_buf = new Buffer(4);
+                header_buf.fill(0);
+                header_buf.writeUInt32BE(payload_buf.length, 0);
+                tunnel.write(Buffer.concat([header_buf, payload_buf]));
+            })
+                .catch((err) => {
+                var _a;
+                const msg = "handleDeviceConnect: getTunnel and then error:" + (err === null || err === void 0 ? void 0 : err.message);
+                logger_1.defaultLogger.debug(msg);
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("ios_connect_error", null, {
+                    msg: msg,
+                    stage: "device",
+                });
+                statusSocket.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                this.reWatchIOSDevices();
+            });
+        });
+    }
+    makeParse(onComplete = () => { }) {
+        let len, msg;
+        return function parse(data) {
+            if (!len) {
+                len = data.readUInt32BE(0);
+                data = data.slice(4);
+                msg = "";
+                if (!data.length)
+                    return;
+            }
+            const body = data.slice(0, len);
+            msg += body;
+            len -= body.length;
+            if (len === 0) {
+                onComplete(plist.parse(msg));
+            }
+            data = data.slice(body.length);
+            if (data.length)
+                parse(data);
+        };
+    }
+    registerDevice(udid, title) {
+        return __awaiter(this, void 0, void 0, function* () {
+            logger_1.defaultLogger.debug("start to registerDevice: iOS:" + udid + " " + title);
+            const device = yield this.createDevice(udid, title);
+            if (!device) {
+                return;
+            }
+            this.driver.registerDevice(device);
+        });
+    }
+}
+exports.default = IOSDeviceManager;
+//# sourceMappingURL=iOSDeviceManager.js.map

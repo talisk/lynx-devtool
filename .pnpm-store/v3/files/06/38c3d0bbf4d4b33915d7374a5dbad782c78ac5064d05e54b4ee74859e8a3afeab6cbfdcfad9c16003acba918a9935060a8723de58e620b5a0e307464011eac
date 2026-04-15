@@ -1,0 +1,92 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var getBuilderEnvironments_exports = {};
+__export(getBuilderEnvironments_exports, {
+  getBuilderEnvironments: () => getBuilderEnvironments
+});
+module.exports = __toCommonJS(getBuilderEnvironments_exports);
+var import_uni_builder = require("@modern-js/uni-builder");
+var import_utils = require("@modern-js/utils");
+function getBuilderEnvironments(normalizedConfig, appContext, tempBuilderConfig) {
+  var _tempBuilderConfig_output;
+  const entries = {};
+  const { entrypoints = [], checkedEntries } = appContext;
+  for (const { entryName, internalEntry, entry } of entrypoints) {
+    if (checkedEntries && !checkedEntries.includes(entryName)) {
+      continue;
+    }
+    const finalEntry = internalEntry || entry;
+    if (entryName in entries) {
+      entries[entryName].push(finalEntry);
+    } else {
+      entries[entryName] = [
+        finalEntry
+      ];
+    }
+  }
+  const serverEntries = {};
+  for (const entry in entries) {
+    const v = entries[entry];
+    serverEntries[entry] = v.map((entry2) => entry2.replace("index.jsx", "index.server.jsx")).map((entry2) => entry2.replace("bootstrap.jsx", "bootstrap.server.jsx"));
+  }
+  const environments = {
+    web: {
+      output: {
+        target: "web"
+      },
+      source: {
+        entry: entries
+      }
+    }
+  };
+  if ((_tempBuilderConfig_output = tempBuilderConfig.output) === null || _tempBuilderConfig_output === void 0 ? void 0 : _tempBuilderConfig_output.copy) {
+    environments.web.output.copy = tempBuilderConfig.output.copy;
+    delete tempBuilderConfig.output.copy;
+  }
+  const useNodeTarget = (0, import_utils.isProd)() ? (0, import_utils.isUseSSRBundle)(normalizedConfig) : (0, import_utils.isSSR)(normalizedConfig);
+  if (useNodeTarget) {
+    environments.node = {
+      output: {
+        target: "node"
+      },
+      source: {
+        entry: serverEntries
+      }
+    };
+  }
+  const useWorkerTarget = (0, import_utils.isServiceWorker)(normalizedConfig);
+  if (useWorkerTarget) {
+    environments[import_uni_builder.SERVICE_WORKER_ENVIRONMENT_NAME] = {
+      output: {
+        target: "web-worker"
+      },
+      source: {
+        entry: serverEntries
+      }
+    };
+  }
+  return {
+    environments,
+    builderConfig: tempBuilderConfig
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getBuilderEnvironments
+});

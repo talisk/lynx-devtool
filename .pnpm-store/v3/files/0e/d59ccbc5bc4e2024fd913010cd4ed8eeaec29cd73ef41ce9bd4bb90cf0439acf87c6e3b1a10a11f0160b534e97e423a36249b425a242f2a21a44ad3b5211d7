@@ -1,0 +1,57 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var devtools_exports = {};
+__export(devtools_exports, {
+  pluginDevtool: () => pluginDevtool
+});
+module.exports = __toCommonJS(devtools_exports);
+var import_utils = require("@modern-js/utils");
+const isUseJsSourceMap = (disableSourceMap = {}) => {
+  if (typeof disableSourceMap === "boolean") {
+    return !disableSourceMap;
+  }
+  return !disableSourceMap.js;
+};
+const pluginDevtool = (options) => ({
+  name: "uni-builder:devtool",
+  setup(api) {
+    var _options_sourceMap;
+    const devtoolJs = typeof options.sourceMap === "boolean" || ((_options_sourceMap = options.sourceMap) === null || _options_sourceMap === void 0 ? void 0 : _options_sourceMap.js) !== void 0;
+    if (devtoolJs) {
+      var _options_disableSourceMap;
+      if (typeof options.disableSourceMap === "boolean" || ((_options_disableSourceMap = options.disableSourceMap) === null || _options_disableSourceMap === void 0 ? void 0 : _options_disableSourceMap.js) !== void 0) {
+        import_utils.logger.warn("Detected that `output.sourceMap` and `output.disableSourceMap` are used together, use the value of `output.sourceMap`");
+      }
+      return;
+    }
+    api.modifyBundlerChain((chain, { isProd, isServer }) => {
+      if (!isUseJsSourceMap(options.disableSourceMap)) {
+        chain.devtool(false);
+        return;
+      }
+      const prodDevTool = isServer ? "source-map" : "hidden-source-map";
+      const devtool = isProd ? prodDevTool : "cheap-module-source-map";
+      chain.devtool(devtool);
+    });
+  }
+});
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  pluginDevtool
+});

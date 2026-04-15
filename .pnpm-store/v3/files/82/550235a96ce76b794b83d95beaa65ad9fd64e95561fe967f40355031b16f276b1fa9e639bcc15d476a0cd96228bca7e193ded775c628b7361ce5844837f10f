@@ -1,0 +1,7 @@
+var isResFinalized = function(res) {
+  var _res_socket;
+  return res.headersSent || res._modernBodyPiped || res.writableEnded || res.finished || !((_res_socket = res.socket) === null || _res_socket === void 0 ? void 0 : _res_socket.writable);
+};
+export {
+  isResFinalized
+};

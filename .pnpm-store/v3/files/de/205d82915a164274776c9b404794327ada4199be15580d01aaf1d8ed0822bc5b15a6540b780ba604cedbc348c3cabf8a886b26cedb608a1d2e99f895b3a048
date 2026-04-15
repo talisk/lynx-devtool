@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const command_1 = __importDefault(require("../../command"));
+class ForwardCommand extends command_1.default {
+    execute(local, remote) {
+        const command = `fport ${local} ${remote}`;
+        const data = Buffer.from(command, "ascii");
+        this.send(data);
+        return this.connection.parser.readValue().then(this._parseResult);
+    }
+    _parseResult(value) {
+        const message = value.toString("ascii");
+        if (message.includes("Forwardport result:OK")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+exports.default = ForwardCommand;
+//# sourceMappingURL=forward.js.map

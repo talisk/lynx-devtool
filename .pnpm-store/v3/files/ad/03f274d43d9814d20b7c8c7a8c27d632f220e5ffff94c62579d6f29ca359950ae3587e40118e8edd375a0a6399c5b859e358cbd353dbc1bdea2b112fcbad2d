@@ -1,0 +1,6 @@
+import { BaseDevice } from "../BaseDevice";
+import { DebugRouterConnector } from "../../connector/DebugRouterConnector";
+export default class NetworkDevice extends BaseDevice {
+    constructor(driver: DebugRouterConnector, ip: string, ports: number[]);
+    getHost(): string;
+}

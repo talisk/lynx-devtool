@@ -1,0 +1,7 @@
+export declare const driver_dir: string;
+export declare const lockDir: string;
+export declare function lock(callback: (acquiredLock: boolean) => void): void;
+export declare function unlock(afterUnlock: (err: Error | null) => void): void;
+export declare function resetLockStatus(): void;
+export declare function clearLockFile(): void;
+export declare function clearLockFileWhenProcessExit(): void;

@@ -1,0 +1,192 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "node:path";
+import { fs, NESTED_ROUTE_SPEC_FILE, createRuntimeExportsUtils, getEntryOptions, isRouterV5 as isV5 } from "@modern-js/utils";
+import { filterRoutesForServer } from "@modern-js/utils";
+import { isRouteEntry } from "./entry";
+import { handleFileChange, handleGeneratorEntryCode, handleModifyEntrypoints } from "./handler";
+import { isRouteEntry as isRouteEntry2 } from "./entry";
+import { handleFileChange as handleFileChange2, handleModifyEntrypoints as handleModifyEntrypoints2 } from "./handler";
+var routerPlugin = function() {
+  return {
+    name: "@modern-js/plugin-router",
+    required: [
+      "@modern-js/runtime"
+    ],
+    setup: function(api) {
+      var nestedRoutes = {};
+      var nestedRoutesForServer = {};
+      return {
+        _internalRuntimePlugins: function _internalRuntimePlugins(param) {
+          var entrypoint = param.entrypoint, plugins = param.plugins;
+          var _getEntryOptions;
+          var _api_useAppContext = api.useAppContext(), packageName = _api_useAppContext.packageName, serverRoutes = _api_useAppContext.serverRoutes, metaName = _api_useAppContext.metaName;
+          var serverBase = serverRoutes.filter(function(route) {
+            return route.entryName === entrypoint.entryName;
+          }).map(function(route) {
+            return route.urlPath;
+          }).sort(function(a, b) {
+            return a.length - b.length > 0 ? -1 : 1;
+          });
+          var userConfig = api.useResolvedConfigContext();
+          var routerConfig = (_getEntryOptions = getEntryOptions(entrypoint.entryName, entrypoint.isMainEntry, userConfig.runtime, userConfig.runtimeByEntries, packageName)) === null || _getEntryOptions === void 0 ? void 0 : _getEntryOptions.router;
+          if (routerConfig && !isV5(userConfig)) {
+            plugins.push({
+              name: "router",
+              path: "@".concat(metaName, "/runtime/router"),
+              config: typeof routerConfig === "boolean" ? {
+                serverBase
+              } : _object_spread_props(_object_spread({}, routerConfig), {
+                serverBase
+              })
+            });
+          }
+          return {
+            entrypoint,
+            plugins
+          };
+        },
+        checkEntryPoint: function checkEntryPoint(param) {
+          var path2 = param.path, entry = param.entry;
+          return {
+            path: path2,
+            entry: entry || isRouteEntry(path2)
+          };
+        },
+        config: function config() {
+          return {
+            source: {
+              include: [
+                // react-router v6 is no longer support ie 11
+                // so we need to compile these packages to ensure the compatibility
+                // https://github.com/remix-run/react-router/commit/f6df0697e1b2064a2b3a12e8b39577326fdd945b
+                /node_modules\/react-router/,
+                /node_modules\/react-router-dom/,
+                /node_modules\/@remix-run\/router/
+              ]
+            }
+          };
+        },
+        modifyEntrypoints: function modifyEntrypoints(param) {
+          var entrypoints = param.entrypoints;
+          return _async_to_generator(function() {
+            var newEntryPoints;
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  return [
+                    4,
+                    handleModifyEntrypoints(api, entrypoints)
+                  ];
+                case 1:
+                  newEntryPoints = _state.sent();
+                  return [
+                    2,
+                    {
+                      entrypoints: newEntryPoints
+                    }
+                  ];
+              }
+            });
+          })();
+        },
+        generateEntryCode: function generateEntryCode(param) {
+          var entrypoints = param.entrypoints;
+          return _async_to_generator(function() {
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  return [
+                    4,
+                    handleGeneratorEntryCode(api, entrypoints)
+                  ];
+                case 1:
+                  _state.sent();
+                  return [
+                    2
+                  ];
+              }
+            });
+          })();
+        },
+        addRuntimeExports: function addRuntimeExports() {
+          var userConfig = api.useResolvedConfigContext();
+          var _api_useAppContext = api.useAppContext(), internalDirectory = _api_useAppContext.internalDirectory, metaName = _api_useAppContext.metaName;
+          var pluginsExportsUtils = createRuntimeExportsUtils(internalDirectory, "plugins");
+          if (!isV5(userConfig)) {
+            pluginsExportsUtils.addExport("export { default as router } from '@".concat(metaName, "/runtime/router'"));
+          }
+        },
+        fileChange: function fileChange(e) {
+          return _async_to_generator(function() {
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  return [
+                    4,
+                    handleFileChange(api, e)
+                  ];
+                case 1:
+                  _state.sent();
+                  return [
+                    2
+                  ];
+              }
+            });
+          })();
+        },
+        modifyFileSystemRoutes: function modifyFileSystemRoutes(param) {
+          var entrypoint = param.entrypoint, routes = param.routes;
+          return _async_to_generator(function() {
+            return _ts_generator(this, function(_state) {
+              nestedRoutes[entrypoint.entryName] = routes;
+              nestedRoutesForServer[entrypoint.entryName] = filterRoutesForServer(routes);
+              return [
+                2,
+                {
+                  entrypoint,
+                  routes
+                }
+              ];
+            });
+          })();
+        },
+        beforeGenerateRoutes: function beforeGenerateRoutes(param) {
+          var entrypoint = param.entrypoint, code = param.code;
+          return _async_to_generator(function() {
+            var distDirectory;
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  distDirectory = api.useAppContext().distDirectory;
+                  return [
+                    4,
+                    fs.outputJSON(path.resolve(distDirectory, NESTED_ROUTE_SPEC_FILE), nestedRoutesForServer)
+                  ];
+                case 1:
+                  _state.sent();
+                  return [
+                    2,
+                    {
+                      entrypoint,
+                      code
+                    }
+                  ];
+              }
+            });
+          })();
+        }
+      };
+    }
+  };
+};
+var cli_default = routerPlugin;
+export {
+  cli_default as default,
+  handleFileChange2 as handleFileChange,
+  handleModifyEntrypoints2 as handleModifyEntrypoints,
+  isRouteEntry2 as isRouteEntry,
+  routerPlugin
+};

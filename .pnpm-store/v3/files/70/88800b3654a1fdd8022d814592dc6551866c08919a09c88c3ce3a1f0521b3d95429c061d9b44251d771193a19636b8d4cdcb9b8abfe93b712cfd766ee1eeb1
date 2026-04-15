@@ -1,0 +1,66 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var valid_exports = {};
+__export(valid_exports, {
+  validBuildConfig: () => validBuildConfig,
+  validPartialBuildConfig: () => validPartialBuildConfig
+});
+module.exports = __toCommonJS(valid_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+const validPartialBuildConfig = (config, appDirectory) => {
+  if (Array.isArray(config)) {
+    for (const c of config) {
+      validBuildConfig(c, appDirectory);
+    }
+  } else {
+    validBuildConfig(config, appDirectory);
+  }
+};
+const validBuildConfig = (config, appDirectory) => {
+  var _config_resolve;
+  var _config_format;
+  if (config.buildType === "bundleless" && [
+    "iife",
+    "umd"
+  ].includes((_config_format = config.format) !== null && _config_format !== void 0 ? _config_format : "")) {
+    throw new Error(`when buildType is bundleless, the format must be equal to one of the allowed values: (cjs, esm)`);
+  }
+  if (config.tsconfig && !import_utils.fs.existsSync(import_path.default.resolve(appDirectory, config.tsconfig))) {
+    throw new Error(`${config.tsconfig} does not exist in your project`);
+  }
+  if (config.alias && ((_config_resolve = config.resolve) === null || _config_resolve === void 0 ? void 0 : _config_resolve.alias)) {
+    throw new Error("alias and resolve.alias are not allowed to be used together, alias will be deprecated in the future, please use resolve.alias instead");
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  validBuildConfig,
+  validPartialBuildConfig
+});

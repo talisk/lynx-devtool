@@ -1,0 +1,17 @@
+import { PreRender, NoSSR, NoSSRCache } from "./react";
+var ssr = function(_config) {
+  return {
+    name: "@modern-js/plugin-ssr",
+    setup: function() {
+      return {};
+    }
+  };
+};
+var server_default = ssr;
+export {
+  NoSSR,
+  NoSSRCache,
+  PreRender,
+  server_default as default,
+  ssr
+};

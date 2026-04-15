@@ -1,0 +1,39 @@
+/// <reference types="react" />
+import type { Store } from '@modern-js-reduck/store';
+import type { StaticHandlerContext } from '@modern-js/runtime-utils/remix-router';
+import type { RouteManifest } from '../../router/runtime/types';
+import { createLoaderManager } from '../loader/loaderManager';
+import type { PluginRunner, runtime } from '../plugin';
+import type { SSRServerContext, TSSRContext } from '../types';
+interface BaseRuntimeContext {
+    initialData?: Record<string, unknown>;
+    loaderManager: ReturnType<typeof createLoaderManager>;
+    isBrowser: boolean;
+    runner: ReturnType<typeof runtime.init>;
+    ssrContext?: SSRServerContext;
+    store?: Store;
+    routeManifest: RouteManifest;
+    routerContext?: StaticHandlerContext;
+    /**
+     * private
+     */
+    unstable_getBlockNavState?: () => boolean;
+}
+export interface RuntimeContext extends BaseRuntimeContext {
+    [key: string]: any;
+}
+export declare const RuntimeReactContext: import("react").Context<RuntimeContext>;
+export declare const ServerRouterContext: import("react").Context<any>;
+export interface TRuntimeContext extends Partial<BaseRuntimeContext> {
+    initialData?: Record<string, unknown>;
+    isBrowser: boolean;
+    context: TSSRContext;
+    /** @deprecated use context.request field instead */
+    request?: SSRServerContext['request'];
+    /** @deprecated use context.response field instead */
+    response?: SSRServerContext['response'];
+    store?: Store;
+    [key: string]: any;
+}
+export declare const getInitialContext: (runner: PluginRunner, isBrowser?: boolean, routeManifest?: RouteManifest) => RuntimeContext;
+export {};

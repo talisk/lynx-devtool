@@ -1,0 +1,22 @@
+import type { RegisterBuildPlatformResult } from '@modern-js/core';
+import type { BuildCommandOptions } from '../types';
+import type { BaseBuildConfig, BuildPlatformResult, BuildResult, BuildTaskResult, WatchDtsHookContext, WatchJsHookContext } from '../types';
+export declare const buildHooks: {
+    beforeBuild: import("@modern-js/core").ParallelWorkflow<{
+        config: BaseBuildConfig[];
+        cliOptions: BuildCommandOptions;
+    }, void>;
+    beforeBuildTask: import("@modern-js/core").AsyncWaterfall<BaseBuildConfig>;
+    afterBuildTask: import("@modern-js/core").ParallelWorkflow<BuildTaskResult, void>;
+    afterBuild: import("@modern-js/core").ParallelWorkflow<BuildResult, void>;
+    registerBuildPlatform: import("@modern-js/core").ParallelWorkflow<void, RegisterBuildPlatformResult>;
+    beforeBuildPlatform: import("@modern-js/core").ParallelWorkflow<RegisterBuildPlatformResult[], void>;
+    buildPlatform: import("@modern-js/core").ParallelWorkflow<{
+        platform: string;
+    }, void>;
+    afterBuildPlatform: import("@modern-js/core").ParallelWorkflow<BuildPlatformResult, void>;
+};
+export declare const buildWatchHooks: {
+    buildWatchJs: import("@modern-js/core").ParallelWorkflow<WatchJsHookContext, void>;
+    buildWatchDts: import("@modern-js/core").ParallelWorkflow<WatchDtsHookContext, void>;
+};

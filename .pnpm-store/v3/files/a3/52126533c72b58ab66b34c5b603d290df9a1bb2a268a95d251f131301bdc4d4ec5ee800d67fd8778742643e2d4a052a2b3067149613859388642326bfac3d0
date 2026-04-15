@@ -1,0 +1,13 @@
+import type { DevToolData, PromptResult } from '../types/hooks';
+export declare const devHooks: {
+    registerDev: import("@modern-js/plugin").ParallelWorkflow<void, DevToolData>;
+    beforeDev: import("@modern-js/plugin").ParallelWorkflow<DevToolData[], void>;
+    beforeDevMenu: import("@modern-js/plugin").AsyncWaterfall<any>;
+    afterDevMenu: import("@modern-js/plugin").ParallelWorkflow<{
+        result: PromptResult;
+        devTools: DevToolData[];
+    }, void>;
+    beforeDevTask: import("@modern-js/plugin").ParallelWorkflow<DevToolData, void>;
+    afterDev: import("@modern-js/plugin").ParallelWorkflow<void, void>;
+    noDevTools: import("@modern-js/plugin").AsyncWaterfall<string>;
+};

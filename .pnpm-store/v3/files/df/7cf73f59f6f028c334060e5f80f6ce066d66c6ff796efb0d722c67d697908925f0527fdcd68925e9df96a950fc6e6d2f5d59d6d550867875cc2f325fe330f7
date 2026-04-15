@@ -1,0 +1,6 @@
+export interface DriverReportService {
+    init(manualConnect: boolean | undefined): void;
+    report(eventName: string, metrics: any, categories: any): void;
+}
+export declare function setDriverReportService(service: DriverReportService | null): void;
+export declare function getDriverReportService(): DriverReportService | null;

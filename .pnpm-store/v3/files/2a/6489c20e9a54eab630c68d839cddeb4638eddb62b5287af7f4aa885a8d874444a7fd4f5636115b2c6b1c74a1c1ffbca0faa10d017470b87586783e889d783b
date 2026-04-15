@@ -1,0 +1,11 @@
+/// <reference types="node" />
+import * as net from "net";
+import { RequireMessageType, ResponseMessageType } from "../utils/type";
+import { Connection } from "./Connection";
+export declare class USBConnection extends Connection {
+    protected socket: net.Socket;
+    constructor(socket: net.Socket);
+    close(): void;
+    send(data: any): void;
+    sendExpectResponse(require: RequireMessageType): Promise<ResponseMessageType>;
+}

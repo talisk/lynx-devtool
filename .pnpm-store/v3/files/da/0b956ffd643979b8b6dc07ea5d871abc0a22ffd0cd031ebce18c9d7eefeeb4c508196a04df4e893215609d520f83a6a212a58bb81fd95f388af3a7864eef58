@@ -1,0 +1,158 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var build_exports = {};
+__export(build_exports, {
+  buildLib: () => buildLib,
+  generatorDts: () => generatorDts,
+  runBuildTask: () => runBuildTask
+});
+module.exports = __toCommonJS(build_exports);
+var import_utils = require("@modern-js/utils");
+var import_p_map = __toESM(require("../../compiled/p-map"));
+var import_debug = require("../debug");
+var import_utils2 = require("../utils");
+var import_copy = require("./copy");
+var import_esbuild = require("./esbuild");
+const runBuildTask = async (options, api) => {
+  const { buildConfig, context, buildCmdOptions } = options;
+  const { appDirectory } = context;
+  await (0, import_copy.copyTask)(buildConfig, {
+    appDirectory,
+    watch: buildCmdOptions.watch
+  });
+  const dts = buildCmdOptions.dts ? buildConfig.dts : false;
+  const { watch } = buildCmdOptions;
+  const existTsconfig = await import_utils.fs.pathExists(buildConfig.tsconfig);
+  if (Object.keys(buildConfig.input).length === 0) {
+    import_utils.logger.info("The input config is empty, as a result, the JS compilation and dts generation tasks will be skipped. Please provide input to run these tasks.");
+    return;
+  }
+  if (dts && existTsconfig) {
+    const tasks = dts.only ? [
+      generatorDts
+    ] : [
+      buildLib,
+      generatorDts
+    ];
+    await (0, import_p_map.default)(tasks, async (task) => {
+      await task(buildConfig, api, {
+        watch,
+        dts
+      });
+    });
+  } else {
+    if (dts && dts.only) {
+      return;
+    }
+    await buildLib(buildConfig, api, {
+      watch
+    });
+  }
+};
+const generatorDts = async (config, api, options) => {
+  const { runRollup, runTsc } = await Promise.resolve().then(() => __toESM(require("./dts")));
+  const { watch, dts } = options;
+  const { buildType, input, sourceDir, alias, externals, tsconfig, footer: { dts: footer }, banner: { dts: banner }, format, autoExtension } = config;
+  const { appDirectory } = api.useAppContext();
+  const { distPath, abortOnError, respectExternal, enableTscBuild } = dts;
+  var _dts_tsconfigPath;
+  const tsconfigPath = (_dts_tsconfigPath = dts.tsconfigPath) !== null && _dts_tsconfigPath !== void 0 ? _dts_tsconfigPath : tsconfig;
+  const { dtsExtension } = (0, import_utils2.getDefaultOutExtension)({
+    format,
+    root: appDirectory,
+    autoExtension
+  });
+  const userTsconfig = await (0, import_utils2.getProjectTsconfig)(tsconfigPath);
+  const generatorDtsConfig = {
+    distPath,
+    watch,
+    externals,
+    input,
+    tsconfigPath,
+    abortOnError,
+    respectExternal,
+    appDirectory,
+    footer,
+    banner,
+    alias,
+    sourceDir,
+    dtsExtension,
+    userTsconfig,
+    enableTscBuild
+  };
+  const prevTime = Date.now();
+  (0, import_debug.debug)(`${(0, import_debug.label)("dts")} Build Start`);
+  if (buildType === "bundle") {
+    await runRollup(api, generatorDtsConfig);
+  } else {
+    await runTsc(api, generatorDtsConfig);
+  }
+  (0, import_debug.debug)(`${(0, import_debug.label)("dts")} Build success in ${Date.now() - prevTime}ms`);
+};
+const buildLib = async (config, api, options) => {
+  const { watch } = options;
+  const { target, buildType, format, externalHelpers } = config;
+  const { appDirectory } = api.useAppContext();
+  const root = (0, import_utils.slash)(appDirectory);
+  const { checkSwcHelpers } = await Promise.resolve().then(() => __toESM(require("../utils/builder")));
+  await checkSwcHelpers({
+    appDirectory,
+    externalHelpers
+  });
+  try {
+    const prevTime = Date.now();
+    (0, import_debug.debug)(`${(0, import_debug.label)(config.format)} Build Start`);
+    const compiler = await (0, import_esbuild.createCompiler)({
+      config,
+      watch,
+      root: appDirectory,
+      api
+    });
+    await compiler.build();
+    (0, import_debug.debug)(`${(0, import_debug.label)(config.format)} Build success in ${Date.now() - prevTime}ms`);
+    const { addOutputChunk } = await Promise.resolve().then(() => __toESM(require("../utils/print")));
+    addOutputChunk(compiler.outputChunk, root, buildType === "bundle");
+    if (watch) {
+      import_utils.logger.success((0, import_utils2.withLogTitle)(buildType, `Build ${format},${target} files`));
+    }
+  } catch (e) {
+    const { InternalBuildError } = await Promise.resolve().then(() => __toESM(require("../error")));
+    throw new InternalBuildError(e, {
+      target,
+      format,
+      buildType
+    });
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  buildLib,
+  generatorDts,
+  runBuildTask
+});

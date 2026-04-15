@@ -1,0 +1,6 @@
+import { DebugRouterConnector } from "../../connector";
+import { DeviceManager } from "../DeviceManager";
+export default class DesktopDeviceManager extends DeviceManager {
+    constructor(driver: DebugRouterConnector);
+    watchDevices(): Promise<void>;
+}

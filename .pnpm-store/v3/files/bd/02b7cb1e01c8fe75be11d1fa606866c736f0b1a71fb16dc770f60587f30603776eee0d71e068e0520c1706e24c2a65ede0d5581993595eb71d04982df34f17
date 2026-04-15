@@ -1,0 +1,324 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _class_call_check } from "@swc/helpers/_/_class_call_check";
+import { _ as _create_class } from "@swc/helpers/_/_create_class";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { ChunkExtractor } from "@loadable/server";
+import { attributesToString, checkIsNode } from "../utils";
+var extname = function(uri) {
+  if (typeof uri !== "string" || !uri.includes(".")) {
+    return "";
+  }
+  return ".".concat(uri === null || uri === void 0 ? void 0 : uri.split(".").pop()) || "";
+};
+var generateChunks = function(chunks, ext) {
+  return chunks.filter(function(chunk) {
+    return Boolean(chunk.url);
+  }).filter(function(chunk) {
+    return extname(chunk.url).slice(1) === ext;
+  });
+};
+var checkIsInline = function(chunk, enableInline) {
+  if (process.env.NODE_ENV === "production") {
+    if (_instanceof(enableInline, RegExp)) {
+      return enableInline.test(chunk.url);
+    } else {
+      return Boolean(enableInline);
+    }
+  } else {
+    return false;
+  }
+};
+var readAsset = function() {
+  var _ref = _async_to_generator(function(chunk) {
+    var fs, path, filepath;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            import("fs/promises")
+          ];
+        case 1:
+          fs = _state.sent();
+          return [
+            4,
+            import("path")
+          ];
+        case 2:
+          path = _state.sent();
+          filepath = path.resolve(__dirname, chunk.filename);
+          return [
+            2,
+            fs.readFile(filepath, "utf-8")
+          ];
+      }
+    });
+  });
+  return function readAsset2(chunk) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var LoadableCollector = /* @__PURE__ */ function() {
+  "use strict";
+  function LoadableCollector2(options) {
+    _class_call_check(this, LoadableCollector2);
+    this.options = options;
+  }
+  var _proto = LoadableCollector2.prototype;
+  _proto.collect = function collect(comopnent) {
+    var _this_options = this.options, stats = _this_options.stats, entryName = _this_options.entryName;
+    if (!stats) {
+      return comopnent;
+    }
+    this.extractor = new ChunkExtractor({
+      stats,
+      entrypoints: [
+        entryName
+      ]
+    });
+    return this.extractor.collectChunks(comopnent);
+  };
+  _proto.effect = function effect() {
+    var _this = this;
+    return _async_to_generator(function() {
+      var extractor, chunks, scriptChunks, styleChunks;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            if (!_this.extractor) {
+              return [
+                2
+              ];
+            }
+            extractor = _this.extractor;
+            chunks = extractor.getChunkAssets(extractor.chunks);
+            scriptChunks = generateChunks(chunks, "js");
+            styleChunks = generateChunks(chunks, "css");
+            _this.emitLoadableScripts(extractor);
+            return [
+              4,
+              _this.emitScriptAssets(scriptChunks)
+            ];
+          case 1:
+            _state.sent();
+            return [
+              4,
+              _this.emitStyleAssets(styleChunks)
+            ];
+          case 2:
+            _state.sent();
+            return [
+              2
+            ];
+        }
+      });
+    })();
+  };
+  _proto.emitLoadableScripts = function emitLoadableScripts(extractor) {
+    var check = function(scripts2) {
+      return (scripts2 || "").includes("__LOADABLE_REQUIRED_CHUNKS___ext");
+    };
+    var scripts = extractor.getScriptTags();
+    if (!check(scripts)) {
+      return;
+    }
+    var chunkSet = this.options.chunkSet;
+    var s = scripts.split("</script>").slice(0, 2).map(function(i) {
+      return "".concat(i, "</script>");
+    }).join("");
+    chunkSet.jsChunk += s;
+  };
+  _proto.emitScriptAssets = function emitScriptAssets(chunks) {
+    var _this = this;
+    return _async_to_generator(function() {
+      var _this_options, template, nonce, chunkSet, config, _config_scriptLoading, scriptLoading, enableInlineScripts, scriptLoadingAtr, attributes, jsScriptRegExp, matchs, existedScript, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, match, scripts;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            _this_options = _this.options, template = _this_options.template, nonce = _this_options.nonce, chunkSet = _this_options.chunkSet, config = _this_options.config;
+            _config_scriptLoading = config.scriptLoading, scriptLoading = _config_scriptLoading === void 0 ? "defer" : _config_scriptLoading, enableInlineScripts = config.enableInlineScripts;
+            scriptLoadingAtr = {
+              defer: scriptLoading === "defer" ? true : void 0,
+              type: scriptLoading === "module" ? "module" : void 0,
+              async: scriptLoading === "async" ? true : void 0
+            };
+            attributes = attributesToString(_this.generateAttributes(_object_spread({
+              nonce
+            }, scriptLoadingAtr)));
+            jsScriptRegExp = /<script .*?src="([^"]+)".*?>/g;
+            matchs = template.matchAll(jsScriptRegExp);
+            existedScript = [];
+            _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+            try {
+              for (_iterator = matchs[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                match = _step.value;
+                existedScript.push(match[1]);
+              }
+            } catch (err) {
+              _didIteratorError = true;
+              _iteratorError = err;
+            } finally {
+              try {
+                if (!_iteratorNormalCompletion && _iterator.return != null) {
+                  _iterator.return();
+                }
+              } finally {
+                if (_didIteratorError) {
+                  throw _iteratorError;
+                }
+              }
+            }
+            return [
+              4,
+              Promise.all(chunks.filter(function(chunk) {
+                var _this_existsAssets;
+                return !existedScript.includes(chunk.url) && !((_this_existsAssets = _this.existsAssets) === null || _this_existsAssets === void 0 ? void 0 : _this_existsAssets.includes(chunk.path));
+              }).map(function() {
+                var _ref = _async_to_generator(function(chunk) {
+                  var script;
+                  return _ts_generator(this, function(_state2) {
+                    script = "<script".concat(attributes, ' src="').concat(chunk.url, '"></script>');
+                    if (checkIsNode() && checkIsInline(chunk, enableInlineScripts)) {
+                      return [
+                        2,
+                        readAsset(chunk).then(function(content) {
+                          return "<script>".concat(content, "</script>");
+                        }).catch(function(_) {
+                          return script;
+                        })
+                      ];
+                    } else {
+                      return [
+                        2,
+                        script
+                      ];
+                    }
+                    return [
+                      2
+                    ];
+                  });
+                });
+                return function(chunk) {
+                  return _ref.apply(this, arguments);
+                };
+              }()))
+            ];
+          case 1:
+            scripts = _state.sent();
+            chunkSet.jsChunk += scripts.filter(function(script) {
+              return Boolean(script);
+            }).join("");
+            return [
+              2
+            ];
+        }
+      });
+    })();
+  };
+  _proto.emitStyleAssets = function emitStyleAssets(chunks) {
+    var _this = this;
+    return _async_to_generator(function() {
+      var _this_options, template, chunkSet, config, enableInlineStyles, atrributes, linkRegExp, matchs, existedLinks, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, match, css;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            _this_options = _this.options, template = _this_options.template, chunkSet = _this_options.chunkSet, config = _this_options.config;
+            enableInlineStyles = config.enableInlineStyles;
+            atrributes = attributesToString(_this.generateAttributes());
+            linkRegExp = /<link .*?href="([^"]+)".*?>/g;
+            matchs = template.matchAll(linkRegExp);
+            existedLinks = [];
+            _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+            try {
+              for (_iterator = matchs[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                match = _step.value;
+                existedLinks.push(match[1]);
+              }
+            } catch (err) {
+              _didIteratorError = true;
+              _iteratorError = err;
+            } finally {
+              try {
+                if (!_iteratorNormalCompletion && _iterator.return != null) {
+                  _iterator.return();
+                }
+              } finally {
+                if (_didIteratorError) {
+                  throw _iteratorError;
+                }
+              }
+            }
+            return [
+              4,
+              Promise.all(chunks.filter(function(chunk) {
+                var _this_existsAssets;
+                return !existedLinks.includes(chunk.url) && !((_this_existsAssets = _this.existsAssets) === null || _this_existsAssets === void 0 ? void 0 : _this_existsAssets.includes(chunk.path));
+              }).map(function() {
+                var _ref = _async_to_generator(function(chunk) {
+                  var link;
+                  return _ts_generator(this, function(_state2) {
+                    link = "<link".concat(atrributes, ' href="').concat(chunk.url, '" rel="stylesheet" />');
+                    if (checkIsNode() && checkIsInline(chunk, enableInlineStyles)) {
+                      return [
+                        2,
+                        readAsset(chunk).then(function(content) {
+                          return "<style>".concat(content, "</style>");
+                        }).catch(function(_) {
+                          return link;
+                        })
+                      ];
+                    } else {
+                      return [
+                        2,
+                        link
+                      ];
+                    }
+                    return [
+                      2
+                    ];
+                  });
+                });
+                return function(chunk) {
+                  return _ref.apply(this, arguments);
+                };
+              }()))
+            ];
+          case 1:
+            css = _state.sent();
+            chunkSet.cssChunk += css.filter(function(css2) {
+              return Boolean(css2);
+            }).join("");
+            return [
+              2
+            ];
+        }
+      });
+    })();
+  };
+  _proto.generateAttributes = function generateAttributes() {
+    var extraAtr = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+    var config = this.options.config;
+    var crossorigin = config.crossorigin;
+    var attributes = {};
+    if (crossorigin) {
+      attributes.crossorigin = crossorigin === true ? "anonymous" : crossorigin;
+    }
+    return _object_spread({}, attributes, extraAtr);
+  };
+  _create_class(LoadableCollector2, [
+    {
+      key: "existsAssets",
+      get: function get() {
+        var _routeManifest_routeAssets_entryName, _routeManifest_routeAssets;
+        var _this_options = this.options, routeManifest = _this_options.routeManifest, entryName = _this_options.entryName;
+        return routeManifest === null || routeManifest === void 0 ? void 0 : (_routeManifest_routeAssets = routeManifest.routeAssets) === null || _routeManifest_routeAssets === void 0 ? void 0 : (_routeManifest_routeAssets_entryName = _routeManifest_routeAssets[entryName]) === null || _routeManifest_routeAssets_entryName === void 0 ? void 0 : _routeManifest_routeAssets_entryName.assets;
+      }
+    }
+  ]);
+  return LoadableCollector2;
+}();
+export {
+  LoadableCollector
+};

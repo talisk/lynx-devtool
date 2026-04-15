@@ -1,0 +1,287 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var adapter_exports = {};
+__export(adapter_exports, {
+  adapterPlugin: () => adapterPlugin
+});
+module.exports = __toCommonJS(adapter_exports);
+var import_module = __toESM(require("module"));
+var import_path = require("path");
+var import_utils = require("@modern-js/utils");
+var import_pluginutils = require("@rollup/pluginutils");
+var import_loader = require("../../constants/loader");
+var import_debug = require("../../debug");
+var import_utils2 = require("../../utils");
+var import_write_file = require("./write-file");
+const globalNamespace = "globals";
+const HTTP_PATTERNS = /^(https?:)?\/\//;
+const DATAURL_PATTERNS = /^data:/;
+const HASH_PATTERNS = /.#[^#]+$/;
+const DATAURL_JAVASCRIPT_PATTERNS = /^data:text\/javascript/;
+const adapterPlugin = (compiler) => {
+  const { context } = compiler;
+  const { config, root } = context;
+  return {
+    name: "esbuild:adapter",
+    setup(build) {
+      build.onStart(async () => {
+        compiler.outputChunk = /* @__PURE__ */ new Map();
+      });
+      build.onResolve({
+        filter: /.*/
+      }, async (args) => {
+        if (args.kind === "url-token") {
+          return {
+            path: args.path,
+            external: true
+          };
+        }
+        for (const [key] of Object.entries(config.umdGlobals)) {
+          if (args.path === key) {
+            (0, import_debug.debugResolve)("resolve umdGlobals:", key);
+            return {
+              path: args.path,
+              namespace: globalNamespace
+            };
+          }
+        }
+        if (/^node:/.test(args.path)) {
+          return {
+            path: args.path.slice(5),
+            external: true
+          };
+        }
+        if (DATAURL_JAVASCRIPT_PATTERNS.test(args.path)) {
+          return {
+            path: args.path,
+            namespace: "dataurl"
+          };
+        }
+        const isUrl = (source) => HTTP_PATTERNS.test(source) || DATAURL_PATTERNS.test(source) || HASH_PATTERNS.test(source);
+        if (isUrl(args.path)) {
+          return {
+            path: args.path,
+            external: true
+          };
+        }
+        const { externals, sideEffects: userSideEffects } = config;
+        const regExternal = externals.filter((item) => !(0, import_utils.isString)(item));
+        const externalList = externals.filter(import_utils.isString).concat(config.platform === "node" ? import_module.default.builtinModules : []);
+        const externalMap = externalList.reduce((map, item) => {
+          map.set(item, true);
+          return map;
+        }, /* @__PURE__ */ new Map());
+        const getIsExternal = (name) => {
+          if (externalMap.get(name)) {
+            return true;
+          }
+          if (regExternal.some((reg) => reg.test(name))) {
+            return true;
+          }
+          return false;
+        };
+        const getSideEffects = async (filePath, isExternal2) => {
+          let pkgPath = "";
+          let sideEffects2 = userSideEffects;
+          let moduleSideEffects = true;
+          if (typeof userSideEffects === "undefined") {
+            let curDir = (0, import_path.dirname)(filePath);
+            try {
+              while (curDir !== (0, import_path.dirname)(curDir)) {
+                if (import_utils.fs.existsSync((0, import_path.resolve)(curDir, "package.json"))) {
+                  pkgPath = (0, import_path.resolve)(curDir, "package.json");
+                  break;
+                }
+                curDir = (0, import_path.dirname)(curDir);
+              }
+              sideEffects2 = JSON.parse(import_utils.fs.readFileSync(pkgPath, "utf-8")).sideEffects;
+            } catch (err) {
+            }
+            if (!pkgPath) {
+              return void 0;
+            }
+          }
+          if (typeof sideEffects2 === "boolean") {
+            moduleSideEffects = sideEffects2;
+          } else if (Array.isArray(sideEffects2)) {
+            moduleSideEffects = (0, import_pluginutils.createFilter)(sideEffects2.map((glob) => {
+              if (typeof glob === "string") {
+                if (!glob.includes("/")) {
+                  return `**/${glob}`;
+                }
+              }
+              return glob;
+            }), null, pkgPath ? {
+              resolve: (0, import_path.dirname)(pkgPath)
+            } : void 0)(filePath);
+          } else if (typeof sideEffects2 === "function") {
+            moduleSideEffects = sideEffects2(filePath, isExternal2);
+          }
+          return moduleSideEffects;
+        };
+        const getResultPath = (id, dir2, kind) => {
+          return id.endsWith(".css") ? compiler.css_resolve(id, dir2) : compiler.node_resolve(id, dir2, kind);
+        };
+        const { originalFilePath, rawQuery } = (0, import_utils2.resolvePathAndQuery)(args.path);
+        const suffix = (rawQuery !== null && rawQuery !== void 0 ? rawQuery : "").length > 0 ? `?${rawQuery}` : "";
+        const isExternal = getIsExternal(originalFilePath);
+        var _args_resolveDir;
+        const dir = (_args_resolveDir = args.resolveDir) !== null && _args_resolveDir !== void 0 ? _args_resolveDir : args.importer ? (0, import_path.dirname)(args.importer) : root;
+        const resultPath = isExternal ? args.path : getResultPath(originalFilePath, dir, args.kind);
+        if (resultPath === false) {
+          (0, import_debug.debugResolve)("resolve false:", args);
+          return {
+            path: `${import_path.sep}empty-stub`,
+            sideEffects: false,
+            namespace: "resolve-false"
+          };
+        }
+        const sideEffects = await getSideEffects(resultPath, isExternal);
+        const result = {
+          path: resultPath,
+          external: isExternal,
+          namespace: isExternal ? void 0 : "file",
+          sideEffects,
+          suffix
+        };
+        (0, import_debug.debugResolve)("onResolve args:", args);
+        (0, import_debug.debugResolve)("onResolve result:", result);
+        return result;
+      });
+      build.onLoad({
+        filter: /.*/
+      }, async (args) => {
+        if (args.namespace === globalNamespace) {
+          const value = config.umdGlobals[args.path];
+          return {
+            contents: `module.exports = (typeof globalThis !== "undefined" ? globalThis : (typeof global !== "undefined" ? global : self || Function('return this')()))[${JSON.stringify(value)}]`
+          };
+        }
+        if (args.namespace === "resolve-false") {
+          return {
+            contents: "module.exports = {}"
+          };
+        }
+        if (args.suffix) {
+          args.path += args.suffix;
+        }
+        if (args.namespace !== "file") {
+          return;
+        }
+        compiler.addWatchFile(args.path);
+        let result = await compiler.hooks.load.promise(args);
+        if (!result) {
+          if (DATAURL_JAVASCRIPT_PATTERNS.test(args.path)) {
+            return;
+          }
+          result = {
+            contents: await import_utils.fs.promises.readFile(args.path)
+          };
+        }
+        if (!result.contents || result.loader === "copy") {
+          return result;
+        }
+        const context2 = compiler.getTransformContext(args.path);
+        context2.addSourceMap(context2.genPluginId("adapter"), result.map);
+        const transformResult = await compiler.hooks.transform.promise({
+          code: result.contents.toString(),
+          path: args.path,
+          loader: result.loader
+        });
+        const ext = (0, import_path.extname)(args.path);
+        var _transformResult_loader, _ref;
+        const loader = (_ref = (_transformResult_loader = transformResult.loader) !== null && _transformResult_loader !== void 0 ? _transformResult_loader : compiler.config.loader[ext]) !== null && _ref !== void 0 ? _ref : import_loader.loaderMap[ext];
+        const inlineSourceMap = context2.getInlineSourceMap();
+        var _result_resolveDir;
+        return {
+          contents: transformResult.code + inlineSourceMap,
+          loader,
+          resolveDir: (_result_resolveDir = result.resolveDir) !== null && _result_resolveDir !== void 0 ? _result_resolveDir : (0, import_path.dirname)(args.path)
+        };
+      });
+      build.onEnd(async (result) => {
+        if (result.errors.length) {
+          return;
+        }
+        const { outputs } = result.metafile;
+        const needSourceMap = Boolean(config.sourceMap);
+        for (const [key, value] of Object.entries(outputs)) {
+          var _result_outputFiles, _result_outputFiles1;
+          if (key.endsWith(".map")) {
+            continue;
+          }
+          const absPath = (0, import_path.resolve)(root, key);
+          const item = (_result_outputFiles = result.outputFiles) === null || _result_outputFiles === void 0 ? void 0 : _result_outputFiles.find((x) => x.path === absPath);
+          const mapping = (_result_outputFiles1 = result.outputFiles) === null || _result_outputFiles1 === void 0 ? void 0 : _result_outputFiles1.find((x) => x.path.endsWith(".map") && x.path.replace(/\.map$/, "") === absPath);
+          if (!item) {
+            continue;
+          }
+          if ((0, import_utils2.isJsExt)(absPath)) {
+            compiler.emitAsset(absPath, {
+              type: "chunk",
+              contents: item.text,
+              map: (0, import_utils2.normalizeSourceMap)(mapping === null || mapping === void 0 ? void 0 : mapping.text, {
+                needSourceMap
+              }),
+              fileName: absPath,
+              entryPoint: value === null || value === void 0 ? void 0 : value.entryPoint
+            });
+          } else {
+            compiler.emitAsset(absPath, {
+              type: "asset",
+              contents: Buffer.from(item.contents),
+              fileName: absPath,
+              entryPoint: value === null || value === void 0 ? void 0 : value.entryPoint
+            });
+          }
+        }
+        for (const [key, value] of compiler.outputChunk.entries()) {
+          const context2 = compiler.getSourcemapContext(value.fileName);
+          if (value.type === "chunk" && config.sourceMap) {
+            context2.addSourceMap(context2.genPluginId("adapter"), value.map);
+          }
+          const processedResult = await compiler.hooks.renderChunk.promise(value);
+          if (processedResult.type === "chunk" && config.sourceMap) {
+            processedResult.map = context2.getSourceMap();
+          }
+          compiler.outputChunk.set(key, processedResult);
+        }
+        if (config.metafile) {
+          const now = Date.now();
+          compiler.emitAsset((0, import_path.resolve)(config.outDir, `metafile-${now}.json`), JSON.stringify(result.metafile, null, 2));
+        }
+        await (0, import_write_file.writeFile)(compiler);
+      });
+    }
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  adapterPlugin
+});

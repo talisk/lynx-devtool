@@ -1,0 +1,18 @@
+import type { PartialBuildConfig } from '../types';
+export declare const universalJsPreset: PartialBuildConfig;
+export declare const universalJsLitePreset: PartialBuildConfig;
+export declare const browserJsPreset: PartialBuildConfig;
+export declare const browserJsLitePreset: PartialBuildConfig;
+export declare const nodeJsPreset: PartialBuildConfig;
+export declare const legacyPresets: {
+    'universal-js': import("../types").PartialBaseBuildConfig[];
+    UNIVERSAL_JS: import("../types").PartialBaseBuildConfig[];
+    'universal-js-lite': import("../types").PartialBaseBuildConfig[];
+    UNIVERSAL_JS_LITE: import("../types").PartialBaseBuildConfig[];
+    'browser-js': import("../types").PartialBaseBuildConfig[];
+    BROWSER_JS: import("../types").PartialBaseBuildConfig[];
+    'browser-js-lite': import("../types").PartialBaseBuildConfig[];
+    BROWSER_JS_LITE: import("../types").PartialBaseBuildConfig[];
+    'node-js': import("../types").PartialBaseBuildConfig[];
+    NODE_JS: import("../types").PartialBaseBuildConfig[];
+};

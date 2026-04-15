@@ -1,0 +1,78 @@
+import path from "path";
+import { bundleRequire, defaultGetOutputFile } from "@modern-js/node-bundle-require";
+import { fs, CONFIG_CACHE_DIR, globby } from "@modern-js/utils";
+const getPackageConfig = (appDirectory, packageJsonConfig) => {
+  const json = JSON.parse(fs.readFileSync(path.resolve(appDirectory, "./package.json"), "utf8"));
+  return json[packageJsonConfig];
+};
+const getConfigFilePath = (appDirectory, configFilePath) => {
+  if (path.isAbsolute(configFilePath)) {
+    return configFilePath;
+  }
+  return path.resolve(appDirectory, configFilePath);
+};
+const clearFilesOverTime = async (targetDir, overtime) => {
+  try {
+    const files = await globby(`${targetDir}/**/*`, {
+      stats: true,
+      absolute: true
+    });
+    const currentTime = Date.now();
+    if (files.length > 0) {
+      for (const file of files) {
+        if (currentTime - file.stats.birthtimeMs >= overtime * 1e3) {
+          fs.unlinkSync(file.path);
+        }
+      }
+    }
+  } catch (err) {
+  }
+};
+const bundleRequireWithCatch = async (configFile, { appDirectory }) => {
+  try {
+    const mod = await bundleRequire(configFile, {
+      autoClear: false,
+      getOutputFile: async (filePath) => {
+        const defaultOutputFileName = path.basename(await defaultGetOutputFile(filePath));
+        const outputPath = path.join(appDirectory, CONFIG_CACHE_DIR);
+        const timeLimit = 10 * 60;
+        await clearFilesOverTime(outputPath, timeLimit);
+        return path.join(outputPath, defaultOutputFileName);
+      }
+    });
+    return mod;
+  } catch (e) {
+    if (e instanceof Error) {
+      e.message = `Get Error while loading config file: ${configFile}, please check it and retry.
+${e.message || ""}`;
+    }
+    throw e;
+  }
+};
+const loadConfig = async (appDirectory, configFile, packageJsonConfig) => {
+  let pkgConfig;
+  if (packageJsonConfig) {
+    pkgConfig = getPackageConfig(appDirectory, packageJsonConfig);
+  }
+  const packageName = require(path.resolve(appDirectory, "./package.json")).name;
+  let config;
+  if (configFile) {
+    delete require.cache[configFile];
+    const mod = await bundleRequireWithCatch(configFile, {
+      appDirectory
+    });
+    config = mod.default || mod;
+  }
+  return {
+    packageName,
+    configFile,
+    config,
+    pkgConfig
+  };
+};
+export {
+  clearFilesOverTime,
+  getConfigFilePath,
+  getPackageConfig,
+  loadConfig
+};

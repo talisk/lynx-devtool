@@ -1,0 +1,2 @@
+import type { ManifestPluginOptions } from 'rspack-manifest-plugin';
+export declare const generateManifest: ManifestPluginOptions['generate'];

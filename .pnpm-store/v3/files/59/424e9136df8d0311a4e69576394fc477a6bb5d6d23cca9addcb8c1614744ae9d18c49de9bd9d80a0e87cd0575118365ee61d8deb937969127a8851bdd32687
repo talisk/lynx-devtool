@@ -1,0 +1,2 @@
+import type { PreprocessRender } from './transformStyle';
+export declare const lessRender: PreprocessRender;

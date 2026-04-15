@@ -1,0 +1,121 @@
+import { jsx as _jsx } from "react/jsx-runtime";
+import { LOADER_REPORTER_NAME } from "@modern-js/utils/universal/constants";
+import { Suspense } from "react";
+import { Outlet, Route, createRoutesFromElements } from "react-router-dom";
+import { time } from "../time";
+const transformNestedRoutes = (routes, reporter) => {
+  const routeElements = [];
+  for (const route of routes) {
+    const routeElement = renderNestedRoute(route, {
+      reporter
+    });
+    routeElements.push(routeElement);
+  }
+  return createRoutesFromElements(routeElements);
+};
+const renderNestedRoute = (nestedRoute, options = {}) => {
+  const { children, index, id, component, isRoot, lazyImport, config, handle } = nestedRoute;
+  const Component = component;
+  const { parent, props = {}, reporter } = options;
+  const routeProps = {
+    caseSensitive: nestedRoute.caseSensitive,
+    path: nestedRoute.path,
+    id: nestedRoute.id,
+    loader: createLoader(nestedRoute, reporter),
+    action: nestedRoute.action,
+    hasErrorBoundary: nestedRoute.hasErrorBoundary,
+    shouldRevalidate: nestedRoute.shouldRevalidate,
+    handle: {
+      ...handle,
+      ...typeof config === "object" ? config === null || config === void 0 ? void 0 : config.handle : {}
+    },
+    index: nestedRoute.index,
+    element: nestedRoute.element,
+    errorElement: nestedRoute.errorElement
+  };
+  if (nestedRoute.error) {
+    const errorElement = /* @__PURE__ */ _jsx(nestedRoute.error, {});
+    routeProps.errorElement = errorElement;
+  }
+  let element;
+  if (Component) {
+    if ((parent === null || parent === void 0 ? void 0 : parent.loading) && lazyImport) {
+      const Loading = parent.loading;
+      if (isLoadableComponent(Component)) {
+        element = /* @__PURE__ */ _jsx(Component, {
+          fallback: /* @__PURE__ */ _jsx(Loading, {})
+        });
+      } else {
+        element = /* @__PURE__ */ _jsx(Suspense, {
+          fallback: /* @__PURE__ */ _jsx(Loading, {}),
+          children: /* @__PURE__ */ _jsx(Component, {})
+        });
+      }
+    } else if (isLoadableComponent(Component) && lazyImport) {
+      element = /* @__PURE__ */ _jsx(Component, {});
+    } else if (isRoot) {
+      element = /* @__PURE__ */ _jsx(Component, {
+        ...props
+      });
+    } else if (lazyImport) {
+      element = /* @__PURE__ */ _jsx(Suspense, {
+        fallback: null,
+        children: /* @__PURE__ */ _jsx(Component, {})
+      });
+    } else {
+      element = /* @__PURE__ */ _jsx(Component, {});
+    }
+  } else {
+    nestedRoute.loading = parent === null || parent === void 0 ? void 0 : parent.loading;
+    routeProps.element = /* @__PURE__ */ _jsx(Outlet, {});
+  }
+  if (element) {
+    routeProps.element = element;
+  }
+  const childElements = children === null || children === void 0 ? void 0 : children.map((childRoute) => {
+    return renderNestedRoute(childRoute, {
+      parent: nestedRoute,
+      reporter
+    });
+  });
+  const routeElement = index ? /* @__PURE__ */ _jsx(Route, {
+    ...routeProps,
+    index: true
+  }, id) : /* @__PURE__ */ _jsx(Route, {
+    ...routeProps,
+    index: false,
+    children: childElements
+  }, id);
+  return routeElement;
+};
+function createLoader(route, reporter) {
+  const { loader } = route;
+  if (loader) {
+    return async (args) => {
+      if (typeof route.lazyImport === "function") {
+        route.lazyImport();
+      }
+      const end = time();
+      const res = await loader(args);
+      const cost = end();
+      if (typeof document === "undefined" && reporter) {
+        reporter === null || reporter === void 0 ? void 0 : reporter.reportTiming(`${LOADER_REPORTER_NAME}-${route.id}`, cost);
+      }
+      return res;
+    };
+  } else {
+    return () => {
+      if (typeof route.lazyImport === "function") {
+        route.lazyImport();
+      }
+      return null;
+    };
+  }
+}
+function isLoadableComponent(component) {
+  return component && component.displayName === "Loadable" && component.preload && typeof component.preload === "function";
+}
+export {
+  renderNestedRoute,
+  transformNestedRoutes
+};

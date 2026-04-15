@@ -1,0 +1,274 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import cookieTool from "cookie";
+import { getGlobalAppInit } from "../context";
+import { getInitialContext } from "../context/runtime";
+import { createLoaderManager } from "../loader/loaderManager";
+import { getGlobalRunner } from "../plugin/runner";
+import { wrapRuntimeContextProvider } from "../react/wrapper";
+import { hydrateRoot } from "./hydrate";
+var IS_REACT18 = process.env.IS_REACT18 === "true";
+var getQuery = function() {
+  return window.location.search.substring(1).split("&").reduce(function(res, item) {
+    var _item_split = _sliced_to_array(item.split("="), 2), key = _item_split[0], value = _item_split[1];
+    if (key) {
+      res[key] = value;
+    }
+    return res;
+  }, {});
+};
+function getSSRData() {
+  var _ssrData_context, _ssrData_context1, _ssrRequest_headers;
+  var ssrData = window._SSR_DATA;
+  var ssrRequest = ssrData === null || ssrData === void 0 ? void 0 : (_ssrData_context = ssrData.context) === null || _ssrData_context === void 0 ? void 0 : _ssrData_context.request;
+  var finalSSRData = _object_spread_props(_object_spread({}, ssrData || {
+    renderLevel: 0,
+    mode: "string"
+  }), {
+    context: _object_spread_props(_object_spread({}, (ssrData === null || ssrData === void 0 ? void 0 : ssrData.context) || {}), {
+      request: _object_spread_props(_object_spread({}, (ssrData === null || ssrData === void 0 ? void 0 : (_ssrData_context1 = ssrData.context) === null || _ssrData_context1 === void 0 ? void 0 : _ssrData_context1.request) || {}), {
+        params: (ssrRequest === null || ssrRequest === void 0 ? void 0 : ssrRequest.params) || {},
+        host: (ssrRequest === null || ssrRequest === void 0 ? void 0 : ssrRequest.host) || location.host,
+        pathname: (ssrRequest === null || ssrRequest === void 0 ? void 0 : ssrRequest.pathname) || location.pathname,
+        headers: (ssrRequest === null || ssrRequest === void 0 ? void 0 : ssrRequest.headers) || {},
+        cookieMap: cookieTool.parse(document.cookie || "") || {},
+        cookie: document.cookie || "",
+        userAgent: (ssrRequest === null || ssrRequest === void 0 ? void 0 : (_ssrRequest_headers = ssrRequest.headers) === null || _ssrRequest_headers === void 0 ? void 0 : _ssrRequest_headers["user-agent"]) || navigator.userAgent,
+        referer: document.referrer,
+        query: _object_spread({}, getQuery(), (ssrRequest === null || ssrRequest === void 0 ? void 0 : ssrRequest.query) || {}),
+        url: location.href
+      })
+    })
+  });
+  return finalSSRData;
+}
+function isClientArgs(id) {
+  return typeof id === "undefined" || typeof id === "string" || typeof HTMLElement !== "undefined" && _instanceof(id, HTMLElement);
+}
+function render(App, id) {
+  return _render.apply(this, arguments);
+}
+function _render() {
+  _render = _async_to_generator(function(App, id) {
+    var runner, context, runBeforeRender, ModernRender, ModernHydrate, _ssrData_data, _ssrData_data1, ssrData, loadersData, initialLoadersState, initialData, rootElement;
+    function _ModernRender() {
+      _ModernRender = _async_to_generator(function(App2) {
+        var renderFunc;
+        return _ts_generator(this, function(_state) {
+          renderFunc = IS_REACT18 ? renderWithReact18 : renderWithReact17;
+          return [
+            2,
+            renderFunc(App2, rootElement)
+          ];
+        });
+      });
+      return _ModernRender.apply(this, arguments);
+    }
+    function _ModernHydrate() {
+      _ModernHydrate = _async_to_generator(function(App2, callback) {
+        var hydrateFunc;
+        return _ts_generator(this, function(_state) {
+          hydrateFunc = IS_REACT18 ? hydrateWithReact18 : hydrateWithReact17;
+          return [
+            2,
+            hydrateFunc(App2, rootElement, callback)
+          ];
+        });
+      });
+      return _ModernHydrate.apply(this, arguments);
+    }
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          runner = getGlobalRunner();
+          context = getInitialContext(runner);
+          runBeforeRender = function() {
+            var _ref = _async_to_generator(function(context2) {
+              var init;
+              return _ts_generator(this, function(_state2) {
+                switch (_state2.label) {
+                  case 0:
+                    return [
+                      4,
+                      runner.beforeRender(context2)
+                    ];
+                  case 1:
+                    _state2.sent();
+                    init = getGlobalAppInit();
+                    return [
+                      2,
+                      init === null || init === void 0 ? void 0 : init(context2)
+                    ];
+                }
+              });
+            });
+            return function runBeforeRender2(context2) {
+              return _ref.apply(this, arguments);
+            };
+          }();
+          if (!isClientArgs(id))
+            return [
+              3,
+              2
+            ];
+          ModernRender = function ModernRender2(App2) {
+            return _ModernRender.apply(this, arguments);
+          };
+          ModernHydrate = function ModernHydrate2(App2, callback) {
+            return _ModernHydrate.apply(this, arguments);
+          };
+          ssrData = getSSRData();
+          loadersData = ((_ssrData_data = ssrData.data) === null || _ssrData_data === void 0 ? void 0 : _ssrData_data.loadersData) || {};
+          initialLoadersState = Object.keys(loadersData).reduce(function(res, key) {
+            var loaderData = loadersData[key];
+            if ((loaderData === null || loaderData === void 0 ? void 0 : loaderData.loading) !== false) {
+              return res;
+            }
+            res[key] = loaderData;
+            return res;
+          }, {});
+          Object.assign(context, _object_spread({
+            loaderManager: createLoaderManager(initialLoadersState, {
+              skipStatic: true
+            }),
+            // garfish plugin params
+            _internalRouterBaseName: App.props.basename
+          }, {
+            ssrContext: ssrData.context
+          }));
+          context.initialData = (_ssrData_data1 = ssrData.data) === null || _ssrData_data1 === void 0 ? void 0 : _ssrData_data1.initialData;
+          return [
+            4,
+            runBeforeRender(context)
+          ];
+        case 1:
+          initialData = _state.sent();
+          if (initialData) {
+            context.initialData = initialData;
+          }
+          rootElement = id && typeof id !== "string" ? id : document.getElementById(id || "root");
+          if (window._SSR_DATA) {
+            return [
+              2,
+              hydrateRoot(App, context, ModernRender, ModernHydrate)
+            ];
+          }
+          return [
+            2,
+            ModernRender(wrapRuntimeContextProvider(App, context))
+          ];
+        case 2:
+          throw Error("`render` function needs id in browser environment, it needs to be string or element");
+      }
+    });
+  });
+  return _render.apply(this, arguments);
+}
+function renderWithReact18(App, rootElement) {
+  return _renderWithReact18.apply(this, arguments);
+}
+function _renderWithReact18() {
+  _renderWithReact18 = _async_to_generator(function(App, rootElement) {
+    var ReactDOM, root;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            import("react-dom/client")
+          ];
+        case 1:
+          ReactDOM = _state.sent();
+          root = ReactDOM.createRoot(rootElement);
+          root.render(App);
+          return [
+            2,
+            root
+          ];
+      }
+    });
+  });
+  return _renderWithReact18.apply(this, arguments);
+}
+function renderWithReact17(App, rootElement) {
+  return _renderWithReact17.apply(this, arguments);
+}
+function _renderWithReact17() {
+  _renderWithReact17 = _async_to_generator(function(App, rootElement) {
+    var ReactDOM;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            import("react-dom")
+          ];
+        case 1:
+          ReactDOM = _state.sent();
+          ReactDOM.render(App, rootElement);
+          return [
+            2,
+            rootElement
+          ];
+      }
+    });
+  });
+  return _renderWithReact17.apply(this, arguments);
+}
+function hydrateWithReact18(App, rootElement) {
+  return _hydrateWithReact18.apply(this, arguments);
+}
+function _hydrateWithReact18() {
+  _hydrateWithReact18 = _async_to_generator(function(App, rootElement) {
+    var ReactDOM, root;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            import("react-dom/client")
+          ];
+        case 1:
+          ReactDOM = _state.sent();
+          root = ReactDOM.hydrateRoot(rootElement, App);
+          return [
+            2,
+            root
+          ];
+      }
+    });
+  });
+  return _hydrateWithReact18.apply(this, arguments);
+}
+function hydrateWithReact17(App, rootElement, callback) {
+  return _hydrateWithReact17.apply(this, arguments);
+}
+function _hydrateWithReact17() {
+  _hydrateWithReact17 = _async_to_generator(function(App, rootElement, callback) {
+    var ReactDOM, root;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            import("react-dom")
+          ];
+        case 1:
+          ReactDOM = _state.sent();
+          root = ReactDOM.hydrate(App, rootElement, callback);
+          return [
+            2,
+            root
+          ];
+      }
+    });
+  });
+  return _hydrateWithReact17.apply(this, arguments);
+}
+export {
+  render
+};

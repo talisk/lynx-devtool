@@ -1,0 +1,134 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var getHtmlTemplate_exports = {};
+__export(getHtmlTemplate_exports, {
+  getHtmlTemplate: () => getHtmlTemplate,
+  getModifyHtmlPartials: () => getModifyHtmlPartials
+});
+module.exports = __toCommonJS(getHtmlTemplate_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_constants = require("./constants");
+var templates = __toESM(require("./templates"));
+var PartialPosition;
+(function(PartialPosition2) {
+  PartialPosition2["TOP"] = "top";
+  PartialPosition2["HEAD"] = "head";
+  PartialPosition2["BODY"] = "body";
+  PartialPosition2["BOTTOM"] = "bottom";
+  PartialPosition2["INDEX"] = "index";
+})(PartialPosition || (PartialPosition = {}));
+const findPartials = (dir, entryName, position) => {
+  if (import_utils.fs.existsSync(dir)) {
+    const base = (0, import_utils.findExists)(import_constants.HTML_PARTIALS_EXTENSIONS.map((ext) => import_path.default.resolve(dir, `${position}${ext}`)));
+    const file = entryName ? (0, import_utils.findExists)(import_constants.HTML_PARTIALS_EXTENSIONS.map((ext) => import_path.default.resolve(dir, entryName, `${position}${ext}`))) || base : base;
+    return file ? {
+      file,
+      content: import_utils.fs.readFileSync(file, "utf8")
+    } : null;
+  }
+  return null;
+};
+const getModifyHtmlPartials = (partials) => {
+  const append = (type, ...script) => {
+    script.forEach((item) => {
+      partials[type].push(item);
+    });
+  };
+  const prepend = (type, ...script) => {
+    script.forEach((item) => {
+      partials[type].unshift(item);
+    });
+  };
+  return {
+    top: {
+      append: (...script) => append("top", ...script),
+      prepend: (...script) => prepend("top", ...script),
+      current: partials.top
+    },
+    head: {
+      append: (...script) => append("head", ...script),
+      prepend: (...script) => prepend("head", ...script),
+      current: partials.head
+    },
+    body: {
+      append: (...script) => append("body", ...script),
+      prepend: (...script) => prepend("body", ...script),
+      current: partials.body
+    }
+  };
+};
+const getHtmlTemplate = async (entrypoints, hooks, { appContext, config }) => {
+  const { appDirectory, internalDirectory } = appContext;
+  const { source: { configDir } } = config;
+  const htmlDir = import_path.default.resolve(appDirectory, configDir || "", import_constants.HTML_PARTIALS_FOLDER);
+  const htmlTemplates = {};
+  const partialsByEntrypoint = {};
+  for (const entrypoint of entrypoints) {
+    const { entryName, isMainEntry } = entrypoint;
+    const name = entrypoints.length === 1 && isMainEntry ? "" : entryName;
+    const customIndexTemplate = findPartials(htmlDir, name, "index");
+    if (customIndexTemplate) {
+      htmlTemplates[entryName] = customIndexTemplate.file;
+    } else {
+      const getPartialInitValue = (position) => {
+        const partial = findPartials(htmlDir, name, position);
+        return partial ? [
+          partial.content
+        ] : [];
+      };
+      const partials = {
+        top: getPartialInitValue("top"),
+        head: getPartialInitValue("head"),
+        body: getPartialInitValue("body")
+      };
+      await hooks.modifyHtmlPartials.call({
+        entrypoint,
+        partials: getModifyHtmlPartials(partials)
+      });
+      const templatePath = import_path.default.resolve(internalDirectory, entryName, "index.html");
+      import_utils.fs.outputFileSync(templatePath, templates.html(partials), "utf8");
+      htmlTemplates[entryName] = templatePath;
+      partialsByEntrypoint[entryName] = partials;
+      const bottomTemplate = findPartials(htmlDir, name, "bottom");
+      if (bottomTemplate) {
+        htmlTemplates[`__${entryName}-bottom__`] = bottomTemplate.content;
+      }
+    }
+  }
+  return {
+    partialsByEntrypoint,
+    htmlTemplates
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getHtmlTemplate,
+  getModifyHtmlPartials
+});

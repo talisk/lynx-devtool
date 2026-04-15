@@ -1,0 +1,123 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var utils_exports = {};
+__export(utils_exports, {
+  loadProcessor: () => loadProcessor,
+  rebaseUrls: () => rebaseUrls,
+  rewriteCssUrls: () => rewriteCssUrls
+});
+module.exports = __toCommonJS(utils_exports);
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+var import_utils = require("../../../utils");
+const cache = {};
+function loadProcessor(lang, root, implementation) {
+  if (cache[lang]) {
+    return cache[lang];
+  }
+  try {
+    if (typeof implementation === "string") {
+      return cache[lang] = require(implementation);
+    }
+    if (typeof implementation === "object") {
+      return cache[lang] = implementation;
+    }
+    const loadPath = require.resolve(lang, {
+      paths: [
+        root
+      ]
+    });
+    return cache[lang] = require(loadPath);
+  } catch (err) {
+    throw new Error(`${lang} require failed, please install it or use implemention`);
+  }
+}
+const dataUrlRE = /^\s*data:/i;
+const cssUrlRE = RegExp(`(?<=^|[^\\w\\-\\u0080-\\uffff])url\\(\\s*('[^']+'|"[^"]+"|[^'")]+)\\s*\\)`);
+const externalRE = /^(https?:)?\/\//;
+const isDataUrl = (url) => dataUrlRE.test(url);
+const isExternalUrl = (url) => externalRE.test(url);
+async function rebaseUrls(filepath, rootDir, resolver) {
+  const file = import_path.default.resolve(filepath);
+  const fileDir = import_path.default.dirname(file);
+  if (fileDir === rootDir) {
+    return {
+      file
+    };
+  }
+  const content = import_fs.default.readFileSync(file, "utf-8");
+  if (!cssUrlRE.test(content)) {
+    return {
+      file
+    };
+  }
+  try {
+    const rebased = await rewriteCssUrls(content, import_path.default.extname(file).slice(1), (url) => {
+      if (url.startsWith("/")) {
+        return url;
+      }
+      return resolver(url, fileDir);
+    });
+    return {
+      file,
+      contents: rebased
+    };
+  } catch (e) {
+    return {
+      file
+    };
+  }
+}
+async function rewriteCssUrls(css, type, replacer) {
+  let match;
+  let remaining = css;
+  let rewritten = "";
+  while (match = cssUrlRE.exec(remaining)) {
+    rewritten += remaining.slice(0, match.index);
+    const matched = match[0];
+    let rawUrl = match[1];
+    let wrap = "";
+    const first = rawUrl[0];
+    if (first === `"` || first === `'`) {
+      wrap = first;
+      rawUrl = rawUrl.slice(1, -1);
+    }
+    const result = type === "less" && rawUrl.startsWith("@") || (type === "sass" || type === "scss") && rawUrl.startsWith("$") || isExternalUrl(rawUrl) || isDataUrl(rawUrl) || rawUrl.startsWith("#") ? matched : `url(${wrap}${(0, import_utils.normalizeSlashes)(await replacer(rawUrl))}${wrap})`;
+    rewritten += result;
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+  rewritten += remaining;
+  return rewritten;
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  loadProcessor,
+  rebaseUrls,
+  rewriteCssUrls
+});

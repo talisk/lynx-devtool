@@ -1,0 +1,3 @@
+import type { AppTools, CliPluginFuture } from '../../types';
+declare const _default: () => CliPluginFuture<AppTools<'shared'>>;
+export default _default;

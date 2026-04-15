@@ -1,0 +1,87 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var sassRender_exports = {};
+__export(sassRender_exports, {
+  sassRender: () => sassRender
+});
+module.exports = __toCommonJS(sassRender_exports);
+var import_fs = require("fs");
+var import_path = __toESM(require("path"));
+var import_utils = require("./utils");
+const sassRender = async function(content, sourcePath, stdinDir, options, resolvePathMap, implementation) {
+  const sass = await (0, import_utils.loadProcessor)("sass", this.context.root, implementation);
+  const useScssSyntax = sourcePath.endsWith(".scss");
+  return new Promise((resolve, reject) => {
+    sass.render({
+      data: content,
+      indentedSyntax: !useScssSyntax,
+      importer: [
+        (url, dir, done) => {
+          if (url.startsWith("data:")) {
+            done({
+              contents: url
+            });
+          }
+          let filePath = null;
+          const baseUrl = import_path.default.basename(url);
+          const dirUrl = import_path.default.dirname(url);
+          const removeUnderScoreBaseUrl = baseUrl.replace(/^_/, "");
+          const prependUnderScoreBaseUrl = `_${removeUnderScoreBaseUrl}`;
+          try {
+            const id = import_path.default.join(dirUrl, prependUnderScoreBaseUrl);
+            filePath = this.css_resolve(id, dir === "stdin" ? stdinDir : resolvePathMap.get(dir));
+          } catch (err) {
+            const id = import_path.default.join(dirUrl, removeUnderScoreBaseUrl);
+            filePath = this.css_resolve(id, dir === "stdin" ? stdinDir : resolvePathMap.get(dir));
+          }
+          resolvePathMap.set(url, import_path.default.dirname(filePath));
+          if (url.startsWith("./")) {
+            resolvePathMap.set(url.replace(/^\.\//, ""), import_path.default.dirname(filePath));
+          }
+          (0, import_utils.rebaseUrls)(filePath, stdinDir, this.css_resolve).then((value) => {
+            done({
+              contents: value.contents || (0, import_fs.readFileSync)(value.file, "utf-8")
+            });
+          });
+        }
+      ],
+      ...options
+    }, (err, res) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(res);
+      }
+    });
+  });
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  sassRender
+});

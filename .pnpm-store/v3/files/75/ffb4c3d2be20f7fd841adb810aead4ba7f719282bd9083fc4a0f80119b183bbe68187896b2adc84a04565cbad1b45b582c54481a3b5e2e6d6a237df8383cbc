@@ -1,0 +1,2 @@
+import type { CLIOptions } from './types';
+export declare const run: (options: CLIOptions) => Promise<void>;

@@ -1,0 +1,1 @@
+{"version":3,"file":"DeviceWatchStatusSocket.js","sourceRoot":"","sources":["../../../../../src/device/ios/DeviceWatchStatusSocket.ts"],"names":[],"mappings":";;;AAKA,gDAA6C;AAE7C,MAAa,uBAAuB;IAGlC,YAAY,MAAc;QAFnB,uBAAkB,GAAgB,yBAAW,CAAC,YAAY,CAAC;QAGhE,IAAI,CAAC,SAAS,GAAG,MAAM,CAAC;IAC1B,CAAC;IACM,YAAY;QACjB,OAAO,IAAI,CAAC,SAAS,CAAC;IACxB,CAAC;CACF;AATD,0DASC"}

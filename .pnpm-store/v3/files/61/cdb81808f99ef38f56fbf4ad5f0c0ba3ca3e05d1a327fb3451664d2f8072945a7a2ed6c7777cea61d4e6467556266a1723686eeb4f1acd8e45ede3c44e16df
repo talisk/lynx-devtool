@@ -1,0 +1,11 @@
+import Client from "./client";
+interface Options {
+    host?: string;
+    port?: number;
+    bin?: string;
+    timeout?: number;
+}
+export default class Hdc {
+    static createClient(options?: Options): Client;
+}
+export {};

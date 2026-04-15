@@ -1,0 +1,7 @@
+import type { AppNormalizedConfig, Bundler } from '../../types';
+import type { AppToolsContext } from '../../types/new';
+export declare function createCopyInfo<B extends Bundler>(appContext: AppToolsContext<B>, config: AppNormalizedConfig<B>): {
+    configDir: string;
+    uploadDir: string;
+    publicDir: string;
+};

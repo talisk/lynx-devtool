@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.DeviceManager = void 0;
+class DeviceManager {
+    constructor(driver) {
+        this.driver = driver;
+    }
+}
+exports.DeviceManager = DeviceManager;
+//# sourceMappingURL=DeviceManager.js.map

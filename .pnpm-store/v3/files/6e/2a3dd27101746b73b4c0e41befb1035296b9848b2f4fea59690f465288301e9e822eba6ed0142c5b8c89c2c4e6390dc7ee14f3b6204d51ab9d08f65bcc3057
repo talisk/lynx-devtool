@@ -1,0 +1,83 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.monitorUnregisterClient = exports.setClientTimeMap = exports.monitorUnregisterDevice = exports.setDeviceTimeMap = void 0;
+const AndroidDevice_1 = __importDefault(require("../device/android/AndroidDevice"));
+const LinuxDevice_1 = __importDefault(require("../device/desktop/LinuxDevice"));
+const MacDevice_1 = __importDefault(require("../device/desktop/MacDevice"));
+const WindowsDevice_1 = __importDefault(require("../device/desktop/WindowsDevice"));
+const iOSDevice_1 = __importDefault(require("../device/ios/iOSDevice"));
+const NetworkDevice_1 = __importDefault(require("../device/network/NetworkDevice"));
+const DriverReportService_1 = require("../report/interface/DriverReportService");
+let deviceTimeMap = new Map();
+let clientTimeMap = new Map();
+function setDeviceTimeMap(device) {
+    var _a;
+    deviceTimeMap.set(device.info.serial, new Date().getTime());
+    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("register_new_device", null, {
+        serial: device.info.serial,
+        deviceType: getDeviceType(device),
+    });
+}
+exports.setDeviceTimeMap = setDeviceTimeMap;
+function monitorUnregisterDevice(device, retryTime) {
+    var _a;
+    const currentTime = new Date().getTime();
+    const deviceTime = deviceTimeMap.get(device.info.serial);
+    if (deviceTime && currentTime - deviceTime < retryTime) {
+        (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("quick_lose_device", null, {
+            curTime: currentTime,
+            serial: device.info.serial,
+            dur: currentTime - deviceTime,
+            deviceType: getDeviceType(device),
+        });
+        deviceTimeMap.delete(device.info.serial);
+    }
+}
+exports.monitorUnregisterDevice = monitorUnregisterDevice;
+function getDeviceType(device) {
+    if (device instanceof AndroidDevice_1.default) {
+        return "Android";
+    }
+    if (device instanceof iOSDevice_1.default) {
+        return "iOS";
+    }
+    if (device instanceof MacDevice_1.default) {
+        return "Mac";
+    }
+    if (device instanceof WindowsDevice_1.default) {
+        return "Windows";
+    }
+    if (device instanceof LinuxDevice_1.default) {
+        return "Linux";
+    }
+    if (device instanceof NetworkDevice_1.default) {
+        return "Network";
+    }
+    return "Unknown";
+}
+function setClientTimeMap(client) {
+    var _a, _b, _c;
+    clientTimeMap.set(client.clientId(), new Date().getTime());
+    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("register_new_client", null, {
+        client: (_c = JSON.stringify((_b = client.info.query) === null || _b === void 0 ? void 0 : _b.raw_info)) !== null && _c !== void 0 ? _c : "unknown",
+    });
+}
+exports.setClientTimeMap = setClientTimeMap;
+function monitorUnregisterClient(client, retryTime) {
+    var _a, _b, _c;
+    const currentTime = new Date().getTime();
+    const clientTime = clientTimeMap.get(client.clientId());
+    if (clientTime && currentTime - clientTime < retryTime) {
+        (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("quick_lose_client", null, {
+            curTime: currentTime,
+            dur: currentTime - clientTime,
+            client: (_c = JSON.stringify((_b = client.info.query) === null || _b === void 0 ? void 0 : _b.raw_info)) !== null && _c !== void 0 ? _c : "unknown",
+        });
+        clientTimeMap.delete(client.clientId());
+    }
+}
+exports.monitorUnregisterClient = monitorUnregisterClient;
+//# sourceMappingURL=MonitorUtils.js.map

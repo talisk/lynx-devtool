@@ -1,0 +1,139 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var dev_exports = {};
+__export(dev_exports, {
+  dev: () => dev
+});
+module.exports = __toCommonJS(dev_exports);
+var import_node_path = __toESM(require("node:path"));
+var import_prod_server = require("@modern-js/prod-server");
+var import_server = require("@modern-js/server");
+var import_utils = require("@modern-js/utils");
+var import_config = require("../utils/config");
+var import_createServer = require("../utils/createServer");
+var import_loadPlugins = require("../utils/loadPlugins");
+var import_printInstructions = require("../utils/printInstructions");
+var import_register = require("../utils/register");
+var import_routes = require("../utils/routes");
+const dev = async (api, options, devServerOptions) => {
+  var _normalizedConfig_source, _normalizedConfig_tools, _normalizedConfig_dev;
+  if (options.analyze) {
+    process.env.BUNDLE_ANALYZE = "true";
+  }
+  const normalizedConfig = api.getNormalizedConfig();
+  const appContext = api.getAppContext();
+  const hooks = api.getHooks();
+  if (appContext.moduleType && appContext.moduleType === "module") {
+    var _normalizedConfig_source1;
+    const { registerEsm } = await import("../esm/register-esm.mjs");
+    await registerEsm({
+      appDir: appContext.appDirectory,
+      distDir: appContext.distDirectory,
+      alias: (_normalizedConfig_source1 = normalizedConfig.source) === null || _normalizedConfig_source1 === void 0 ? void 0 : _normalizedConfig_source1.alias
+    });
+  }
+  await (0, import_register.registerCompiler)(appContext.appDirectory, appContext.distDirectory, normalizedConfig === null || normalizedConfig === void 0 ? void 0 : (_normalizedConfig_source = normalizedConfig.source) === null || _normalizedConfig_source === void 0 ? void 0 : _normalizedConfig_source.alias);
+  api.modifyResolvedConfig((config) => {
+    return {
+      ...config,
+      cliOptions: options
+    };
+  });
+  const { appDirectory, distDirectory, port, apiOnly, serverConfigFile, metaName, serverRoutes } = appContext;
+  await (0, import_config.buildServerConfig)({
+    appDirectory,
+    distDirectory,
+    configFile: serverConfigFile,
+    watch: true
+  });
+  const meta = (0, import_utils.getMeta)(metaName);
+  const serverConfigPath = import_node_path.default.resolve(appDirectory, import_utils.SERVER_DIR, `${meta}.server`);
+  await hooks.onBeforeDev.call();
+  if (!appContext.builder && !apiOnly) {
+    throw new Error("Expect the Builder to have been initialized, But the appContext.builder received `undefined`");
+  }
+  await (0, import_routes.generateRoutes)(appContext);
+  const pluginInstances = await (0, import_loadPlugins.loadServerPlugins)(api, appDirectory, metaName);
+  const serverOptions = {
+    metaName,
+    dev: {
+      port,
+      https: normalizedConfig.dev.https,
+      host: normalizedConfig.dev.host,
+      ...(_normalizedConfig_tools = normalizedConfig.tools) === null || _normalizedConfig_tools === void 0 ? void 0 : _normalizedConfig_tools.devServer
+    },
+    appContext: {
+      appDirectory,
+      internalDirectory: appContext.internalDirectory,
+      apiDirectory: appContext.apiDirectory,
+      lambdaDirectory: appContext.lambdaDirectory,
+      sharedDirectory: appContext.sharedDirectory
+    },
+    serverConfigPath,
+    routes: serverRoutes,
+    pwd: appDirectory,
+    config: normalizedConfig,
+    serverConfigFile,
+    plugins: pluginInstances,
+    ...devServerOptions
+  };
+  const host = ((_normalizedConfig_dev = normalizedConfig.dev) === null || _normalizedConfig_dev === void 0 ? void 0 : _normalizedConfig_dev.host) || import_utils.DEFAULT_DEV_HOST;
+  if (apiOnly) {
+    const { server } = await (0, import_server.createDevServer)({
+      ...serverOptions,
+      runCompile: false
+    }, (devServerOptions === null || devServerOptions === void 0 ? void 0 : devServerOptions.applyPlugins) || import_prod_server.applyPlugins);
+    server.listen({
+      port,
+      host
+    }, () => {
+      (0, import_printInstructions.printInstructions)(hooks, appContext, normalizedConfig);
+    });
+  } else {
+    const { server, afterListen } = await (0, import_server.createDevServer)({
+      ...serverOptions,
+      builder: appContext.builder
+    }, (devServerOptions === null || devServerOptions === void 0 ? void 0 : devServerOptions.applyPlugins) || import_prod_server.applyPlugins);
+    server.listen({
+      port,
+      host
+    }, async (err) => {
+      if (err) {
+        import_utils.logger.error("Occur error %s, when start dev server", err);
+      }
+      import_utils.logger.debug("listen dev server done");
+      await afterListen();
+    });
+    (0, import_createServer.setServer)(server);
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  dev
+});

@@ -1,0 +1,2 @@
+import type { AppToolsContext } from '../types/new';
+export declare function getAutoInjectEnv(appContext: AppToolsContext<'shared'>): Record<string, string>;

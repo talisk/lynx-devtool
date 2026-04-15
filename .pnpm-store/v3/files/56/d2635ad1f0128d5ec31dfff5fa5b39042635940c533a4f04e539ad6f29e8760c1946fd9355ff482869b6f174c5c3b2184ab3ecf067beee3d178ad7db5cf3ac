@@ -1,0 +1,5 @@
+import React from 'react';
+import { type ReactElement } from 'react';
+export declare const NoSSR: (props?: React.PropsWithChildren<{
+    fallback?: ReactElement | string;
+}>) => ReactElement | null;

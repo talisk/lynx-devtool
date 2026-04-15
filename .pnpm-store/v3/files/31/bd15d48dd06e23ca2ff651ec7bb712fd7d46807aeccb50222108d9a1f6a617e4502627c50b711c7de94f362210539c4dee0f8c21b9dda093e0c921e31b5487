@@ -1,0 +1,1 @@
+export declare const addExitListener: (fn: () => Promise<void>) => Promise<void>;

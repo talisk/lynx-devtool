@@ -1,0 +1,210 @@
+import path from "path";
+import readChangesets from "@changesets/read";
+import { fs, execa } from "@modern-js/utils";
+import axios from "axios";
+import resolveFrom from "resolve-from";
+var CommitType;
+(function(CommitType2) {
+  CommitType2["Performance"] = "performance";
+  CommitType2["Features"] = "features";
+  CommitType2["BugFix"] = "bugFix";
+  CommitType2["Doc"] = "doc";
+  CommitType2["Other"] = "other";
+})(CommitType || (CommitType = {}));
+const ChangesTitle = `What's Changed`;
+const ChangesZhTitle = "更新内容";
+const CommitTypeTitle = {
+  performance: "Performance Improvements ⚡",
+  features: "New Features 🎉",
+  bugFix: "Bug Fixes 🐞",
+  doc: "Docs update 📄",
+  other: "Other Changes"
+};
+const CommitTypeZhTitle = {
+  performance: "性能优化 ⚡",
+  features: "新特性 🎉",
+  bugFix: "Bug 修复 🐞",
+  doc: "文档更新 📄",
+  other: "其他变更"
+};
+function getCommitType(message) {
+  if (message.startsWith("perf")) {
+    return "performance";
+  }
+  if (message.startsWith("feat")) {
+    return "features";
+  }
+  if (message.startsWith("fix") || message.startsWith("hotfix")) {
+    return "bugFix";
+  }
+  if (message.startsWith("docs")) {
+    return "doc";
+  }
+  return "other";
+}
+const AuthorMap = /* @__PURE__ */ new Map();
+async function getReleaseInfo(commit, commitObj, repo, authToken) {
+  const commitRegex = /(.*)\(#(\d*)\)/;
+  const [commitId, message, email] = commit.split("--");
+  const author = AuthorMap.get(email);
+  const token = authToken || process.env.GITHUB_AUTH_TOKEN;
+  if (author) {
+    commitObj.author = author;
+  } else if (repo && token) {
+    try {
+      const res = await axios.get(`https://api.github.com/repos/${repo}/commits/${commitId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: token
+        }
+      });
+      const author2 = res.data.author.login;
+      commitObj.author = author2;
+      AuthorMap.set(email, author2);
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+  if ((message || commitObj.summary).match(commitRegex)) {
+    const [, messageShort, pullRequestId] = (message || commitObj.summary).match(commitRegex);
+    commitObj.pullRequestId = pullRequestId;
+    commitObj.message = messageShort.trim();
+  }
+  return commitObj;
+}
+function getReleaseNoteLine(commit, customReleaseNoteFunction, lang = "en") {
+  if (customReleaseNoteFunction === null || customReleaseNoteFunction === void 0 ? void 0 : customReleaseNoteFunction.getReleaseNoteLine) {
+    return customReleaseNoteFunction.getReleaseNoteLine(commit, lang);
+  }
+  const { repository, pullRequestId, summary, summary_zh, author } = commit;
+  const pullRequest = pullRequestId && repository ? `https://github.com/${repository}/pull/${pullRequestId}` : "";
+  if (lang === "en") {
+    return `- ${summary}${author ? ` by @${author}` : ""}${pullRequest ? ` in ${pullRequest}` : ""}
+`;
+  }
+  return `- ${summary_zh}${author ? ` 由 @${author} 实现` : ""}${pullRequest ? `， 详情可查看 ${pullRequest}` : ""}
+`;
+}
+async function genReleaseNote(options) {
+  const cwd = process.cwd();
+  const { repo, custom } = options;
+  let repository = repo;
+  let customReleaseNoteFunction;
+  if (!repo) {
+    const pkg = await fs.readJSON(path.join(cwd, "package.json"));
+    ({ repository } = pkg);
+  }
+  if (custom) {
+    let possibleReleaseNoteFunc;
+    const releasenotePath = resolveFrom(cwd, custom);
+    possibleReleaseNoteFunc = require(releasenotePath);
+    if (possibleReleaseNoteFunc.default) {
+      possibleReleaseNoteFunc = possibleReleaseNoteFunc.default;
+    }
+    if (typeof possibleReleaseNoteFunc.getReleaseInfo === "function" && typeof possibleReleaseNoteFunc.getReleaseNoteLine === "function") {
+      customReleaseNoteFunction = possibleReleaseNoteFunc;
+    } else {
+      throw new Error("Could not resolve release note generation functions");
+    }
+  }
+  const changesets = await readChangesets(cwd);
+  if (changesets.length === 0) {
+    console.warn("No unreleased changesets found.");
+    return "";
+  }
+  const releaseNote = {
+    ["performance"]: {
+      en: [],
+      zh: []
+    },
+    ["features"]: {
+      en: [],
+      zh: []
+    },
+    ["bugFix"]: {
+      en: [],
+      zh: []
+    },
+    ["doc"]: {
+      en: [],
+      zh: []
+    },
+    ["other"]: {
+      en: [],
+      zh: []
+    }
+  };
+  for (const changeset of changesets) {
+    const { stdout } = await execa("git", [
+      "log",
+      "--pretty=format:%h--%s--%ae",
+      `.changeset/${changeset.id}.md`
+    ]);
+    const [id, message] = stdout.split("--");
+    const [firstLine, ...futureLines] = changeset.summary.split("\n").map((l) => l.trimRight());
+    let commitObj = {
+      id,
+      type: getCommitType(changeset.summary || message),
+      repository,
+      message: (message || changeset.summary).trim(),
+      summary: firstLine,
+      summary_zh: futureLines.filter((l) => Boolean(l)).join("\n")
+    };
+    if (customReleaseNoteFunction === null || customReleaseNoteFunction === void 0 ? void 0 : customReleaseNoteFunction.getReleaseInfo) {
+      commitObj = await customReleaseNoteFunction.getReleaseInfo(stdout, commitObj);
+    } else {
+      commitObj = await getReleaseInfo(stdout, commitObj, repository, options.authToken);
+    }
+    releaseNote[commitObj.type].en.push(commitObj);
+    if (commitObj.summary_zh) {
+      releaseNote[commitObj.type].zh.push(commitObj);
+    }
+  }
+  const result = {
+    en: `## ${ChangesTitle}
+
+`,
+    zh: `## ${ChangesZhTitle}
+
+`
+  };
+  let flag = 0;
+  for (const [type, { en, zh }] of Object.entries(releaseNote)) {
+    if (en.length > 0) {
+      result.en += `### ${CommitTypeTitle[type]}
+
+`;
+      for (const commit of en) {
+        const releaseNote2 = await getReleaseNoteLine(commit, customReleaseNoteFunction, "en");
+        result.en += releaseNote2;
+      }
+    }
+    if (zh.length > 0) {
+      flag = 1;
+      result.zh += `### ${CommitTypeZhTitle[type]}
+
+`;
+      for (const commit of zh) {
+        const releaseNote2 = await getReleaseNoteLine(commit, customReleaseNoteFunction, "zh");
+        result.zh += releaseNote2;
+      }
+    }
+  }
+  const resultStr = flag ? `${result.en}
+
+${result.zh}` : result.en;
+  console.info(resultStr);
+  return resultStr;
+}
+export {
+  ChangesTitle,
+  ChangesZhTitle,
+  CommitType,
+  CommitTypeTitle,
+  CommitTypeZhTitle,
+  genReleaseNote,
+  getCommitType,
+  getReleaseInfo,
+  getReleaseNoteLine
+};

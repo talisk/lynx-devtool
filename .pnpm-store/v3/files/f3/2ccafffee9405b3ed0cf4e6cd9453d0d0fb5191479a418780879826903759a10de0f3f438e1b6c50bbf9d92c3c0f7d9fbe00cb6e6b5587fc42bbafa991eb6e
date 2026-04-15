@@ -1,0 +1,103 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var hook_exports = {};
+__export(hook_exports, {
+  createRenderChunkHook: () => createRenderChunkHook,
+  createTransformHook: () => createTransformHook
+});
+module.exports = __toCommonJS(hook_exports);
+var import_util = require("util");
+var tapable = __toESM(require("tapable"));
+function createTransformHook(compiler) {
+  const hook = new tapable.AsyncSeriesWaterfallHook([
+    "args"
+  ]);
+  if (!compiler.config.transformCache) {
+    return hook;
+  }
+  const originTapPromise = hook.tapPromise;
+  let hook_fn_id = 1;
+  const cacheFn = (options, fn) => {
+    fn.id = hook_fn_id++;
+    originTapPromise.call(hook, options, async (args) => {
+      const originCode = args.code;
+      const { id } = fn;
+      const context = compiler.getTransformContext(args.path);
+      const cache = context.getValidCache(id, args.code);
+      if (cache) {
+        return cache;
+      }
+      delete args.map;
+      const result = await fn(args);
+      context.addTransformResult(id, {
+        ...result,
+        originCode
+      });
+      return result;
+    });
+  };
+  hook.tap = cacheFn;
+  hook.tapPromise = cacheFn;
+  return hook;
+}
+function createRenderChunkHook(compiler) {
+  const hook = new tapable.AsyncSeriesWaterfallHook([
+    "chunk"
+  ]);
+  if (!compiler.context.config.sourceMap) {
+    return hook;
+  }
+  const originTapPromise = hook.tapPromise;
+  let hook_fn_id = 1;
+  const wrapper = (options, fn) => {
+    fn.id = hook_fn_id++;
+    originTapPromise.call(hook, options, async (chunk) => {
+      const context = compiler.getSourcemapContext(chunk.fileName);
+      if (chunk.type === "chunk") {
+        delete chunk.map;
+      }
+      const result = await fn(chunk);
+      if (chunk.type === "chunk") {
+        context.addSourceMap(fn.id, result.map);
+      }
+      return result;
+    });
+  };
+  hook.tap = wrapper;
+  hook.tapPromise = wrapper;
+  hook.tapAsync = function(options, fn) {
+    wrapper(options, (0, import_util.promisify)(fn));
+  };
+  return hook;
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createRenderChunkHook,
+  createTransformHook
+});

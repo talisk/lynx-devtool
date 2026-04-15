@@ -1,0 +1,103 @@
+import path from "path";
+import { fileReader } from "@modern-js/runtime-utils/fileReader";
+import { fs, LOADABLE_STATS_FILE, MAIN_ENTRY_NAME, NESTED_ROUTE_SPEC_FILE, ROUTE_MANIFEST_FILE, SERVER_BUNDLE_DIRECTORY, compatibleRequire } from "@modern-js/utils";
+import { uniqueKeyByRoute } from "../../../utils";
+async function getHtmlTemplates(pwd, routes) {
+  const htmls = await Promise.all(routes.map(async (route) => {
+    let html;
+    try {
+      var _this;
+      const htmlPath = path.join(pwd, route.entryPath);
+      html = (_this = await fileReader.readFile(htmlPath, "utf-8")) === null || _this === void 0 ? void 0 : _this.toString();
+    } catch (e) {
+    }
+    return [
+      uniqueKeyByRoute(route),
+      html
+    ];
+  }) || []);
+  const templates = Object.fromEntries(htmls);
+  return templates;
+}
+function injectTemplates(pwd, routes) {
+  return async (c, next) => {
+    if (routes && !c.get("templates")) {
+      const templates = await getHtmlTemplates(pwd, routes);
+      c.set("templates", templates);
+    }
+    await next();
+  };
+}
+const loadBundle = async (filepath, logger) => {
+  if (!await fs.pathExists(filepath)) {
+    return void 0;
+  }
+  try {
+    const module = await compatibleRequire(filepath, false);
+    return module;
+  } catch (e) {
+    logger.error(`Load ${filepath} bundle failed, error = %s`, e instanceof Error ? e.stack || e.message : e);
+    return void 0;
+  }
+};
+async function getServerManifest(pwd, routes, logger) {
+  const loaderBundles = {};
+  const renderBundles = {};
+  await Promise.all(routes.filter((route) => Boolean(route.bundle)).map(async (route) => {
+    const entryName = route.entryName || MAIN_ENTRY_NAME;
+    const renderBundlePath = path.join(pwd, route.bundle || "");
+    const loaderBundlePath = path.join(pwd, SERVER_BUNDLE_DIRECTORY, `${entryName}-server-loaders.js`);
+    const renderBundle = await loadBundle(renderBundlePath, logger);
+    const loaderBundle = await loadBundle(loaderBundlePath, logger);
+    renderBundle && (renderBundles[entryName] = renderBundle);
+    loaderBundle && (loaderBundles[entryName] = (loaderBundle === null || loaderBundle === void 0 ? void 0 : loaderBundle.loadModules) ? await (loaderBundle === null || loaderBundle === void 0 ? void 0 : loaderBundle.loadModules()) : loaderBundle);
+  }));
+  const loadableUri = path.join(pwd, LOADABLE_STATS_FILE);
+  const loadableStats = await compatibleRequire(loadableUri).catch((_) => ({}));
+  const routesManifestUri = path.join(pwd, ROUTE_MANIFEST_FILE);
+  const routeManifest = await compatibleRequire(routesManifestUri).catch((_) => ({}));
+  const nestedRoutesJsonPath = path.join(pwd, NESTED_ROUTE_SPEC_FILE);
+  const nestedRoutesJson = await compatibleRequire(nestedRoutesJsonPath).catch((_) => ({}));
+  return {
+    loaderBundles,
+    renderBundles,
+    loadableStats,
+    routeManifest,
+    nestedRoutesJson
+  };
+}
+function injectServerManifest(pwd, routes) {
+  return async (c, next) => {
+    if (routes && !c.get("serverManifest")) {
+      const logger = c.get("logger");
+      const serverManifest = await getServerManifest(pwd, routes, logger);
+      c.set("serverManifest", serverManifest);
+    }
+    await next();
+  };
+}
+const injectResourcePlugin = () => ({
+  name: "@modern-js/plugin-inject-resource",
+  setup(api) {
+    return {
+      async prepare() {
+        const { middlewares, routes, distDirectory: pwd } = api.useAppContext();
+        middlewares.push({
+          name: "inject-server-manifest",
+          handler: injectServerManifest(pwd, routes)
+        });
+        middlewares.push({
+          name: "inject-html",
+          handler: injectTemplates(pwd, routes)
+        });
+      }
+    };
+  }
+});
+export {
+  getHtmlTemplates,
+  getServerManifest,
+  injectResourcePlugin,
+  injectServerManifest,
+  injectTemplates
+};

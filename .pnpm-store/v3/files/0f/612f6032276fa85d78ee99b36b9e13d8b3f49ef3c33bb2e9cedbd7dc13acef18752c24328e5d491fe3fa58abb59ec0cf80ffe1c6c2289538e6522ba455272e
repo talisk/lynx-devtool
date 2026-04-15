@@ -1,0 +1,134 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var tsc_exports = {};
+__export(tsc_exports, {
+  removeTscLogTime: () => removeTscLogTime,
+  runTsc: () => runTsc
+});
+module.exports = __toCommonJS(tsc_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_dts = require("../../constants/dts");
+var import_utils2 = require("../../utils");
+const removeTscLogTime = (log) => log.replace(/\[.*\]\s/, "");
+const resolveLog = async (childProgress, options) => {
+  var _childProgress_stdout, _childProgress_stdout1, _childProgress_stderr;
+  const { watch = false, watchFn = async () => void 0 } = options;
+  (_childProgress_stdout = childProgress.stdout) === null || _childProgress_stdout === void 0 ? void 0 : _childProgress_stdout.on("data", async (data) => {
+    if (watch) {
+      const lines = data.toString().split("\n").filter((line) => line.trim() !== "").map((line) => (0, import_utils2.withLogTitle)("tsc", removeTscLogTime(line)));
+      import_utils.logger.info(lines.join("\n"));
+      if (data.toString().includes(import_dts.watchDoneText)) {
+        await watchFn();
+      }
+    }
+  });
+  (_childProgress_stdout1 = childProgress.stdout) === null || _childProgress_stdout1 === void 0 ? void 0 : _childProgress_stdout1.on("error", (error) => {
+    import_utils.logger.error(error.message);
+  });
+  (_childProgress_stderr = childProgress.stderr) === null || _childProgress_stderr === void 0 ? void 0 : _childProgress_stderr.on("data", (chunk) => {
+    import_utils.logger.error(chunk.toString());
+  });
+};
+const runTscBin = async (api, config) => {
+  const { appDirectory, watch = false, abortOnError = true, tsconfigPath, userTsconfig, distPath, enableTscBuild } = config;
+  const tscBinFile = await (0, import_utils2.getTscBinPath)(appDirectory);
+  const params = [];
+  if (enableTscBuild) {
+    params.push("-b", tsconfigPath);
+    var _userTsconfig_compilerOptions;
+    const { baseUrl = ".", outDir, emitDeclarationOnly, declaration, declarationDir } = (_userTsconfig_compilerOptions = userTsconfig.compilerOptions) !== null && _userTsconfig_compilerOptions !== void 0 ? _userTsconfig_compilerOptions : {};
+    const abosultBaseUrl = import_path.default.isAbsolute(baseUrl) ? baseUrl : import_path.default.join(import_path.default.dirname(tsconfigPath), baseUrl);
+    if ((!outDir || import_path.default.resolve(abosultBaseUrl, outDir) !== distPath) && (!declarationDir || import_path.default.resolve(abosultBaseUrl, declarationDir) !== distPath)) {
+      const correctOutDir = import_path.default.relative(abosultBaseUrl, distPath);
+      const info = outDir && !declarationDir ? "outDir" : "declarationDir";
+      import_utils.logger.error(`Please set ${info}: "${correctOutDir}" in ${import_utils.chalk.underline(tsconfigPath)} to keep it same as buildConfig.`);
+    }
+    const tsVersion = await (0, import_utils2.detectTSVersion)(appDirectory);
+    if (tsVersion !== 5) {
+      if (!declaration || !emitDeclarationOnly) {
+        import_utils.logger.error(`Please set declaration: true and emitDeclarationOnly: true in ${import_utils.chalk.underline(tsconfigPath)}`);
+      }
+    } else {
+      params.push("--declaration", "--emitDeclarationOnly");
+    }
+  } else {
+    params.push(
+      "-p",
+      tsconfigPath,
+      // Same as dts.distPath
+      "--declarationDir",
+      distPath,
+      // Only emit d.ts files
+      "--declaration",
+      "--emitDeclarationOnly"
+    );
+  }
+  if (watch) {
+    params.push("-w");
+  }
+  const childProgress = (0, import_utils.execa)(tscBinFile, [
+    ...params,
+    /* Required parameter, use it stdout have color */
+    "--pretty",
+    // https://github.com/microsoft/TypeScript/issues/21824
+    "--preserveWatchOutput"
+  ], {
+    stdio: "pipe",
+    cwd: appDirectory
+  });
+  const runner = api.useHookRunners();
+  resolveLog(childProgress, {
+    watch,
+    watchFn: async () => {
+      await (0, import_utils2.processDtsFilesAfterTsc)(config);
+      runner.buildWatchDts({
+        buildType: "bundleless"
+      });
+    }
+  });
+  try {
+    await childProgress;
+  } catch (e) {
+    await (0, import_utils2.printOrThrowDtsErrors)(e, {
+      abortOnError,
+      buildType: "bundleless"
+    });
+  }
+};
+const runTsc = async (api, config) => {
+  await runTscBin(api, config);
+  await (0, import_utils2.processDtsFilesAfterTsc)(config);
+  await (0, import_utils2.addDtsFiles)(config.distPath, config.appDirectory);
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  removeTscLogTime,
+  runTsc
+});

@@ -1,0 +1,52 @@
+import type { RsbuildPlugin } from '@rsbuild/core';
+type Globals = {
+    process?: boolean;
+    Buffer?: boolean;
+};
+export type PluginNodePolyfillOptions = {
+    /**
+     * Whether to provide polyfill of globals.
+     * @default
+     * {
+     *   Buffer: true,
+     *   process: true,
+     * }
+     */
+    globals?: Globals;
+    /**
+     * Whether to polyfill Node.js builtin modules starting with `node:`.
+     * @see https://nodejs.org/api/esm.html#node-imports
+     * @default true
+     */
+    protocolImports?: boolean;
+    /**
+     * Exclude certain modules to be polyfilled.
+     * This option is mutually exclusive with {@link PluginNodePolyfillOptions.include | `include`}.
+     * @default undefined
+     */
+    exclude?: string[];
+    /**
+     * Only include certain modules to be polyfilled.
+     * This option is mutually exclusive with {@link PluginNodePolyfillOptions.exclude | `exclude`}.
+     * @default undefined
+     */
+    include?: string[];
+    /**
+     * Override the default polyfills for specific modules.
+     * @default undefined
+     */
+    overrides?: Record<string, string | false>;
+    /**
+     * By default, the plugin only polyfills the browser-side code.
+     * If you want to polyfill the server-side code as well (when `output.target` is `node`),
+     * you can set the `force` option to `true`.
+     * @default false
+     */
+    force?: boolean;
+};
+export declare const resolvePolyfill: (libPath: string, overrides?: PluginNodePolyfillOptions["overrides"]) => string | false | null;
+export declare const getResolveFallback: ({ protocolImports, exclude, include, overrides, }: Pick<PluginNodePolyfillOptions, "protocolImports" | "exclude" | "include" | "overrides">) => Record<string, string | false>;
+export declare const getProvideGlobals: (globals?: Globals, overrides?: PluginNodePolyfillOptions["overrides"]) => Promise<Record<string, string | string[]>>;
+export declare const PLUGIN_NODE_POLYFILL_NAME = "rsbuild:node-polyfill";
+export declare function pluginNodePolyfill(options?: PluginNodePolyfillOptions): RsbuildPlugin;
+export { builtinMappingResolved, resolvedPolyfillToModules, } from './libs.js';

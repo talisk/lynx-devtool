@@ -1,0 +1,192 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var cli_exports = {};
+__export(cli_exports, {
+  default: () => cli_default,
+  documentPlugin: () => import_cli.documentPlugin,
+  isRuntimeEntry: () => import_entry2.isRuntimeEntry,
+  routerPlugin: () => import_cli2.routerPlugin,
+  runtimePlugin: () => runtimePlugin,
+  ssrPlugin: () => import_ssr.ssrPlugin,
+  statePlugin: () => import_cli3.statePlugin
+});
+module.exports = __toCommonJS(cli_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_cli = require("../document/cli");
+var import_cli2 = require("../router/cli");
+var import_cli3 = require("../state/cli");
+var import_alias = require("./alias");
+var import_code = require("./code");
+var import_constants = require("./constants");
+var import_entry = require("./entry");
+var import_ssr = require("./ssr");
+var import_entry2 = require("./entry");
+const runtimePlugin = (params) => ({
+  name: "@modern-js/runtime",
+  post: [
+    "@modern-js/plugin-ssr",
+    "@modern-js/plugin-state",
+    "@modern-js/plugin-router",
+    "@modern-js/plugin-document",
+    "@modern-js/plugin-design-token"
+  ],
+  // the order of runtime plugins is affected by runtime hooks, mainly `init` and `hoc` hooks
+  usePlugins: (params === null || params === void 0 ? void 0 : params.plugins) || [
+    (0, import_ssr.ssrPlugin)(),
+    (0, import_cli2.routerPlugin)(),
+    (0, import_cli3.statePlugin)(),
+    (0, import_cli.documentPlugin)()
+  ],
+  setup: (api) => {
+    return {
+      checkEntryPoint({ path: path2, entry }) {
+        return {
+          path: path2,
+          entry: entry || (0, import_entry.isRuntimeEntry)(path2)
+        };
+      },
+      modifyEntrypoints({ entrypoints }) {
+        const { internalDirectory } = api.useAppContext();
+        const { source: { enableAsyncEntry } } = api.useResolvedConfigContext();
+        const newEntryPoints = entrypoints.map((entrypoint) => {
+          if (entrypoint.isAutoMount) {
+            entrypoint.internalEntry = import_path.default.resolve(internalDirectory, `./${entrypoint.entryName}/${enableAsyncEntry ? import_constants.ENTRY_BOOTSTRAP_FILE_NAME : import_constants.ENTRY_POINT_FILE_NAME}`);
+          }
+          return entrypoint;
+        });
+        return {
+          entrypoints: newEntryPoints
+        };
+      },
+      async generateEntryCode({ entrypoints }) {
+        const appContext = api.useAppContext();
+        const resolvedConfig = api.useResolvedConfigContext();
+        const runners = api.useHookRunners();
+        await (0, import_code.generateCode)(entrypoints, appContext, resolvedConfig, runners._internalRuntimePlugins);
+      },
+      /* Note that the execution time of the config hook is before prepare.
+      /* This means that the entry information cannot be obtained in the config hook.
+      /* Therefore, aliases cannot be set directly in the config.
+      */
+      prepare() {
+        const { builder, entrypoints, internalDirectory, metaName } = api.useAppContext();
+        builder === null || builder === void 0 ? void 0 : builder.addPlugins([
+          (0, import_alias.builderPluginAlias)({
+            entrypoints,
+            internalDirectory,
+            metaName
+          })
+        ]);
+      },
+      config() {
+        const { appDirectory, metaName, internalDirectory } = api.useAppContext();
+        const isReact18 = (0, import_utils.isReact18)(appDirectory);
+        process.env.IS_REACT18 = isReact18.toString();
+        const pluginsExportsUtils = (0, import_utils.createRuntimeExportsUtils)(internalDirectory, "plugins");
+        return {
+          runtime: {},
+          runtimeByEntries: {},
+          source: {
+            alias: {
+              /**
+              * twin.macro inserts styled-components into the code during the compilation process
+              * But it will not be installed under the user project.
+              * So need to add alias
+              */
+              "styled-components": require.resolve("styled-components"),
+              /**
+              * Compatible with the reference path of the old version of the plugin.
+              */
+              [`@${metaName}/runtime/plugins`]: pluginsExportsUtils.getPath(),
+              "@meta/runtime/browser$": require.resolve("@modern-js/runtime/browser"),
+              "@meta/runtime/react$": require.resolve("@modern-js/runtime/react"),
+              "@meta/runtime/context$": require.resolve("@modern-js/runtime/context"),
+              "@meta/runtime$": require.resolve("@modern-js/runtime")
+            },
+            globalVars: {
+              "process.env.IS_REACT18": process.env.IS_REACT18
+            }
+          },
+          tools: {
+            styledComponents: {
+              // https://github.com/styled-components/babel-plugin-styled-components/issues/287
+              topLevelImportPaths: [
+                "@modern-js/runtime/styled"
+              ]
+            },
+            bundlerChain: (chain) => {
+              chain.module.rule("modern-entry").test(/\.jsx?$/).include.add(import_path.default.resolve(appDirectory, "node_modules", `.${metaName}`)).end().sideEffects(true);
+            },
+            /**
+            * Add IgnorePlugin to fix react-dom/client import error when use react17
+            */
+            webpackChain: (chain, { webpack }) => {
+              if (!isReact18) {
+                chain.plugin("ignore-plugin").use(webpack.IgnorePlugin, [
+                  {
+                    resourceRegExp: /^react-dom\/client$/,
+                    contextRegExp: /./
+                  }
+                ]);
+              }
+            },
+            rspack: (_config, { appendPlugins, rspack }) => {
+              if (!isReact18) {
+                appendPlugins([
+                  new rspack.IgnorePlugin({
+                    resourceRegExp: /^react-dom\/client$/,
+                    contextRegExp: /./
+                  })
+                ]);
+              }
+            }
+          }
+        };
+      },
+      async beforeRestart() {
+        (0, import_utils.cleanRequireCache)([
+          require.resolve("../state/cli"),
+          require.resolve("../router/cli"),
+          require.resolve("./ssr")
+        ]);
+      }
+    };
+  }
+});
+var cli_default = runtimePlugin;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  documentPlugin,
+  isRuntimeEntry,
+  routerPlugin,
+  runtimePlugin,
+  ssrPlugin,
+  statePlugin
+});

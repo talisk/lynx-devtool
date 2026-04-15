@@ -1,0 +1,9 @@
+/// <reference types="node" />
+import { Socket } from "net";
+import { WatchStatus } from "../WatchStatus";
+export declare class DeviceWatchStatusSocket {
+    currentWatchStatus: WatchStatus;
+    private rawSocket;
+    constructor(socket: Socket);
+    getRawSocket(): Socket;
+}

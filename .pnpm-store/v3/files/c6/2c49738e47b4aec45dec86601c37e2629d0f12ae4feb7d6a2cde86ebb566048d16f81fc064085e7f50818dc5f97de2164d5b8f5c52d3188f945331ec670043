@@ -1,0 +1,3 @@
+import type { AppNormalizedConfig } from '../types';
+import type { AppToolsContext, AppToolsHooks } from '../types/new';
+export declare const printInstructions: (hooks: AppToolsHooks<'shared'>, appContext: AppToolsContext<'shared'>, config: AppNormalizedConfig<'shared'>) => Promise<void>;

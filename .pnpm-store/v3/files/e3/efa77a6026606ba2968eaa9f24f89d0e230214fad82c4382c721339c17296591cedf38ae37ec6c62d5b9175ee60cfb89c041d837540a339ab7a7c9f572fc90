@@ -1,0 +1,113 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var platform_exports = {};
+__export(platform_exports, {
+  buildPlatform: () => buildPlatform
+});
+module.exports = __toCommonJS(platform_exports);
+var import_utils = require("@modern-js/utils");
+var import_color = require("../constants/color");
+const buildPlatform = async (options, api, context) => {
+  const runner = api.useHookRunners();
+  const platformBuilders = await runner.registerBuildPlatform();
+  if (platformBuilders.length === 0) {
+    if (options.platform === true) {
+      import_utils.logger.info("No executable platform build tasks");
+    } else if (Array.isArray(options.platform) && options.platform.length === 1) {
+      import_utils.logger.info(`No build tasks with platform "${options.platform[0]}" found`);
+    } else if (Array.isArray(options.platform) && options.platform.length > 1) {
+      import_utils.logger.info(`No build tasks with platform ${options.platform.join(",")} found`);
+    } else {
+      import_utils.logger.info("Unknown platform", JSON.stringify(options.platform));
+    }
+    return;
+  }
+  await runner.beforeBuildPlatform(platformBuilders);
+  let errorMsg = null;
+  try {
+    if (options.platform === true) {
+      for (const platformBuilder of platformBuilders) {
+        const currentPlatform = Array.isArray(platformBuilder.platform) ? platformBuilder.platform[0] : platformBuilder.platform;
+        import_utils.logger.info(import_utils.chalk.underline.rgb(...import_color.blue)(`Running [${currentPlatform}] build task:`));
+        await runner.buildPlatform({
+          platform: currentPlatform
+        });
+        await platformBuilder.build(currentPlatform, {
+          isTsProject: context.isTsProject
+        });
+        import_utils.logger.info(import_utils.chalk.rgb(...import_color.gray)(`Done for [${currentPlatform}] task`));
+      }
+    } else if (Array.isArray(options.platform) && options.platform.length === 1) {
+      const targetPlatform = options.platform[0];
+      const selectPlatformBuilder = platformBuilders.find((builder) => {
+        if (Array.isArray(builder.platform)) {
+          return builder.platform.includes(targetPlatform);
+        }
+        return builder.platform === targetPlatform;
+      });
+      if (!selectPlatformBuilder) {
+        import_utils.logger.info(`The specified "${targetPlatform}" build does not exist`);
+        return;
+      }
+      import_utils.logger.info(import_utils.chalk.underline.rgb(...import_color.blue)(`Running [${targetPlatform}] build task:`));
+      await runner.buildPlatform({
+        platform: targetPlatform
+      });
+      await selectPlatformBuilder.build(targetPlatform, {
+        isTsProject: context.isTsProject
+      });
+      import_utils.logger.info(import_utils.chalk.rgb(...import_color.gray)(`Done for [${targetPlatform}] task`));
+    } else if (Array.isArray(options.platform) && options.platform.length > 1) {
+      for (const platform of options.platform) {
+        const foundBuilder = platformBuilders.find((builder) => {
+          if (Array.isArray(builder.platform)) {
+            return builder.platform.includes(platform);
+          }
+          return builder.platform === platform;
+        });
+        if (!foundBuilder) {
+          import_utils.logger.info(`skip ${platform} build, because it does not exist`);
+          continue;
+        }
+        import_utils.logger.info(import_utils.chalk.underline.rgb(...import_color.blue)(`Running [${platform}] build task:`));
+        await runner.buildPlatform({
+          platform
+        });
+        await foundBuilder.build(platform, {
+          isTsProject: context.isTsProject
+        });
+        import_utils.logger.info(import_utils.chalk.rgb(...import_color.gray)(`Done for [${platform}] task`));
+      }
+    }
+  } catch (e) {
+    if (e instanceof Error) {
+      errorMsg = e;
+    } else {
+      errorMsg = String(e);
+    }
+  }
+  await runner.afterBuildPlatform({
+    status: errorMsg === null ? "success" : "fail",
+    message: errorMsg
+  });
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  buildPlatform
+});

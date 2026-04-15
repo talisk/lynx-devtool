@@ -1,0 +1,2 @@
+import type { AppTools, CliPluginFuture } from '../types';
+export declare const compatPlugin: () => CliPluginFuture<AppTools<'shared'>>;

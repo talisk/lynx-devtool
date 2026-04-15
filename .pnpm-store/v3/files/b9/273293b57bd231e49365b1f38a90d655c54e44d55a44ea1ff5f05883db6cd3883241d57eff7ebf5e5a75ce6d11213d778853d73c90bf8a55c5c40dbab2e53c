@@ -1,0 +1,12 @@
+import type { Context, Middleware, Next, NodeRequest, NodeResponse, ServerEnv } from '../../types';
+import { type NodeBindings } from './helper';
+export type ServerNodeEnv = {
+    Bindings: NodeBindings;
+};
+export type ServerNodeMiddleware = Middleware<ServerNodeEnv>;
+export type ServerNodeContext = Context<ServerNodeEnv>;
+type Handler = (req: NodeRequest, res: NodeResponse) => void | Promise<void>;
+export declare const httpCallBack2HonoMid: (handler: Handler) => (context: Context<ServerNodeEnv & ServerEnv>, next: Next) => Promise<void>;
+type ConnectMiddleware = ((req: NodeRequest, res: NodeResponse, callback: (...args: unknown[]) => void) => void) | ((req: NodeRequest, res: NodeResponse) => void);
+export declare const connectMid2HonoMid: (handler: ConnectMiddleware) => Middleware;
+export {};

@@ -1,0 +1,52 @@
+import path from "path";
+import { createProdServer } from "@modern-js/prod-server";
+import { SERVER_DIR, getMeta, getTargetDir, isApiOnly, logger } from "@modern-js/utils";
+import { loadServerPlugins } from "../utils/loadPlugins";
+import { printInstructions } from "../utils/printInstructions";
+const start = async (api) => {
+  var _userConfig_source, _userConfig_output_distPath;
+  const appContext = api.getAppContext();
+  const userConfig = api.getNormalizedConfig();
+  const hooks = api.getHooks();
+  const { distDirectory, appDirectory, internalDirectory, port, metaName, serverRoutes, serverConfigFile } = appContext;
+  logger.info(`Starting production server...`);
+  const apiOnly = await isApiOnly(appContext.appDirectory, userConfig === null || userConfig === void 0 ? void 0 : (_userConfig_source = userConfig.source) === null || _userConfig_source === void 0 ? void 0 : _userConfig_source.entriesDir, appContext.apiDirectory);
+  let runMode;
+  if (apiOnly) {
+    runMode = "apiOnly";
+  }
+  const meta = getMeta(metaName);
+  const serverConfigPath = path.resolve(distDirectory, SERVER_DIR, `${meta}.server`);
+  const pluginInstances = await loadServerPlugins(api, appDirectory, metaName);
+  const app = await createProdServer({
+    metaName,
+    pwd: distDirectory,
+    config: {
+      ...userConfig,
+      dev: userConfig.dev,
+      // server-core can't get RegExp & Function output.enableInlineScripts by JSON.stringy;
+      output: {
+        path: (_userConfig_output_distPath = userConfig.output.distPath) === null || _userConfig_output_distPath === void 0 ? void 0 : _userConfig_output_distPath.root,
+        ...userConfig.output || {}
+      }
+    },
+    routes: serverRoutes,
+    plugins: pluginInstances,
+    serverConfigFile,
+    serverConfigPath,
+    appContext: {
+      appDirectory,
+      internalDirectory,
+      sharedDirectory: getTargetDir(appContext.sharedDirectory, appContext.appDirectory, appContext.distDirectory),
+      apiDirectory: getTargetDir(appContext.apiDirectory, appContext.appDirectory, appContext.distDirectory),
+      lambdaDirectory: getTargetDir(appContext.lambdaDirectory, appContext.appDirectory, appContext.distDirectory)
+    },
+    runMode
+  });
+  app.listen(port, async () => {
+    await printInstructions(hooks, appContext, userConfig);
+  });
+};
+export {
+  start
+};

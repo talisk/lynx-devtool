@@ -1,0 +1,19 @@
+import type { ExternalHelpers } from '../types/config';
+type Query = Record<string, string | boolean>;
+type ResolveResult = {
+    originalFilePath: string;
+    query: Query;
+    rawQuery?: string;
+};
+export declare const getAllDeps: <T>(appDirectory: string, options?: {
+    dependencies?: boolean;
+    devDependencies?: boolean;
+    peerDependencies?: boolean;
+}) => Promise<string[]>;
+export declare const checkSwcHelpers: (options: {
+    appDirectory: string;
+    externalHelpers: ExternalHelpers;
+}) => Promise<void>;
+export declare const normalizeSlashes: (file: string) => string;
+export declare const resolvePathAndQuery: (originalPath: string) => ResolveResult;
+export {};

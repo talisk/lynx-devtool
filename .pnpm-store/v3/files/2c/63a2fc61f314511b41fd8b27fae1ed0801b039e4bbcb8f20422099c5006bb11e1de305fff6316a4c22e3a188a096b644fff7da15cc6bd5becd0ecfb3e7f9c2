@@ -1,0 +1,140 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var getFileSystemEntry_exports = {};
+__export(getFileSystemEntry_exports, {
+  getFileSystemEntry: () => getFileSystemEntry
+});
+module.exports = __toCommonJS(getFileSystemEntry_exports);
+var import_fs = __toESM(require("fs"));
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_constants = require("./constants");
+var import_isDefaultExportFunction = require("./isDefaultExportFunction");
+const hasIndex = (dir) => (0, import_utils.findExists)(import_utils.JS_EXTENSIONS.map((ext) => import_path.default.resolve(dir, `${import_constants.INDEX_FILE_NAME}${ext}`)));
+const hasEntry = (dir) => (0, import_utils.findExists)(import_utils.JS_EXTENSIONS.map((ext) => import_path.default.resolve(dir, `${import_constants.ENTRY_FILE_NAME}${ext}`)));
+const hasServerEntry = (dir) => (0, import_utils.findExists)(import_utils.JS_EXTENSIONS.map((ext) => import_path.default.resolve(dir, `${import_constants.ENTRY_FILE_NAME}.server${ext}`)));
+const isBundleEntry = async (hooks, dir, enableCustomEntry) => {
+  const { entry } = await hooks.checkEntryPoint.call({
+    path: dir,
+    entry: false
+  });
+  if (entry) {
+    return entry;
+  }
+  const customEntry = hasEntry(dir);
+  if (enableCustomEntry && customEntry) {
+    return customEntry;
+  }
+  return hasIndex(dir);
+};
+const scanDir = async (hooks, dirs, enableCustomEntry) => {
+  const entries = await Promise.all(dirs.map(async (dir) => {
+    const indexFile = hasIndex(dir);
+    const customBootstrap = (0, import_isDefaultExportFunction.isDefaultExportFunction)(indexFile) ? indexFile : false;
+    const entryName = import_path.default.basename(dir);
+    const customEntryFile = hasEntry(dir);
+    const customServerEntry = hasServerEntry(dir);
+    if (!enableCustomEntry && indexFile && !customBootstrap) {
+      return {
+        entryName,
+        isMainEntry: false,
+        entry: indexFile,
+        absoluteEntryDir: import_path.default.resolve(dir),
+        isAutoMount: false,
+        customBootstrap
+      };
+    }
+    const entryFile = (await hooks.checkEntryPoint.call({
+      path: dir,
+      entry: false
+    })).entry;
+    if (entryFile) {
+      return {
+        entryName,
+        isMainEntry: false,
+        entry: enableCustomEntry ? customEntryFile || entryFile : entryFile,
+        customServerEntry,
+        absoluteEntryDir: import_path.default.resolve(dir),
+        isAutoMount: true,
+        customBootstrap,
+        customEntry: enableCustomEntry ? Boolean(customEntryFile) : false
+      };
+    }
+    if (enableCustomEntry && customEntryFile) {
+      return {
+        entryName,
+        isMainEntry: false,
+        entry: customEntryFile,
+        customServerEntry,
+        absoluteEntryDir: import_path.default.resolve(dir),
+        isAutoMount: false,
+        customEntry: Boolean(customEntryFile)
+      };
+    }
+    return false;
+  })).then((entries2) => entries2.filter(Boolean));
+  if (entries.length === 0) {
+    throw Error("There is no valid entry point in the current project!");
+  }
+  return entries;
+};
+const getFileSystemEntry = async (hooks, appContext, config) => {
+  const { appDirectory } = appContext;
+  const { source: { entriesDir, disableEntryDirs, enableCustomEntry } } = config;
+  let disabledDirs = [];
+  if (disableEntryDirs && Array.isArray(disableEntryDirs)) {
+    disabledDirs = disableEntryDirs === null || disableEntryDirs === void 0 ? void 0 : disableEntryDirs.map((dir) => (0, import_utils.ensureAbsolutePath)(appDirectory, dir));
+  }
+  const src = (0, import_utils.ensureAbsolutePath)(appDirectory, entriesDir || "");
+  if (import_fs.default.existsSync(src)) {
+    if (import_fs.default.statSync(src).isDirectory()) {
+      if (await isBundleEntry(hooks, src, enableCustomEntry)) {
+        return scanDir(hooks, [
+          src
+        ], enableCustomEntry);
+      }
+      const dirs = [];
+      await Promise.all(import_fs.default.readdirSync(src).map(async (filename) => {
+        const file = import_path.default.join(src, filename);
+        if (import_fs.default.statSync(file).isDirectory() && await isBundleEntry(hooks, file, enableCustomEntry) && !disabledDirs.includes(file)) {
+          dirs.push(file);
+        }
+      }));
+      return scanDir(hooks, dirs, enableCustomEntry);
+    } else {
+      throw Error(`source.entriesDir accept a directory.`);
+    }
+  } else {
+    throw Error(`src dir ${entriesDir} not found.`);
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getFileSystemEntry
+});

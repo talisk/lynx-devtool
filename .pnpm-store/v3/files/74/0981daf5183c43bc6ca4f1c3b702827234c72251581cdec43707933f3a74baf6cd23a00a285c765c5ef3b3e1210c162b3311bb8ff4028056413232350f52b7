@@ -1,0 +1,10 @@
+import type { ICompilerMessageDetail, ICompilerResult } from './type';
+export declare class CompilerErrorResult {
+    _messageDetails: ICompilerMessageDetail[];
+    constructor(initErrorResult?: ICompilerResult);
+    init(initErrorResult?: ICompilerResult): void;
+    update(messageDetails: ICompilerMessageDetail[]): void;
+    removeByFileName(filename: string): void;
+    get value(): ICompilerResult;
+    checkExistError(): boolean;
+}

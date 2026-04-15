@@ -1,0 +1,18 @@
+import type { LogUpdate } from './log.js';
+import type { Colors, Props } from './types.js';
+export declare const getProgressColor: (index: number) => Colors;
+declare class Bus {
+    states: Partial<Props>[];
+    log: LogUpdate;
+    restore: () => void;
+    prevOutput: string;
+    destroyed: boolean;
+    constructor();
+    update(state: Partial<Props>): void;
+    writeToStd(type?: 'stdout' | 'stderr', data?: string): void;
+    render(): void;
+    destroy(): void;
+    clear(): void;
+}
+declare const bus: Bus;
+export { bus };

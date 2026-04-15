@@ -1,0 +1,3 @@
+import type { GeneratorDtsConfig, ModuleTools, PluginAPI } from '../../types';
+export declare const removeTscLogTime: (log: string) => string;
+export declare const runTsc: (api: PluginAPI<ModuleTools>, config: GeneratorDtsConfig) => Promise<void>;

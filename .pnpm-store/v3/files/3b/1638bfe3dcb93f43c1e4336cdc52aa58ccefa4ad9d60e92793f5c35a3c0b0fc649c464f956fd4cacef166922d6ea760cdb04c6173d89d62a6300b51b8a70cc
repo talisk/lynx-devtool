@@ -1,0 +1,32 @@
+export declare const initAppContext: ({ appDirectory, runtimeConfigFile, options, serverConfigFile, tempDir, }: {
+    appDirectory: string;
+    runtimeConfigFile: string | false;
+    options?: {
+        metaName?: string | undefined;
+        srcDir?: string | undefined;
+        apiDir?: string | undefined;
+        distDir?: string | undefined;
+        sharedDir?: string | undefined;
+    } | undefined;
+    serverConfigFile: string;
+    tempDir?: string | undefined;
+}) => {
+    metaName: string;
+    runtimeConfigFile: string | false;
+    serverConfigFile: string;
+    ip: any;
+    port: number;
+    moduleType: any;
+    apiDirectory: string;
+    lambdaDirectory: string;
+    sharedDirectory: string;
+    serverPlugins: never[];
+    internalDirectory: string;
+    htmlTemplates: {};
+    serverRoutes: never[];
+    entrypoints: never[];
+    checkedEntries: never[];
+    apiOnly: boolean;
+    internalDirAlias: string;
+    internalSrcAlias: string;
+};

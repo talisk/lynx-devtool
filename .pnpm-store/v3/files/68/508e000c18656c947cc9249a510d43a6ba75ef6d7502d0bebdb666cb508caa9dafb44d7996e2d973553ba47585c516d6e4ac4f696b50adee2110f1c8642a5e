@@ -1,0 +1,3 @@
+import type { PartialBaseBuildConfig, PartialBuildConfig } from '../types';
+export declare const validPartialBuildConfig: (config: PartialBuildConfig, appDirectory: string) => void;
+export declare const validBuildConfig: (config: PartialBaseBuildConfig, appDirectory: string) => void;

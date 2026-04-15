@@ -1,0 +1,56 @@
+import type { LoaderOptions } from './useLoader';
+export declare enum LoaderStatus {
+    idle = 0,
+    loading = 1,
+    fulfilled = 2,
+    rejected = 3
+}
+export type LoaderResult = {
+    loading: boolean;
+    reloading: boolean;
+    data: any;
+    error: any;
+    _error?: any;
+};
+declare const createLoader: (id: string, initialData?: Partial<LoaderResult>, loaderFn?: () => Promise<any>, skip?: boolean) => {
+    readonly result: {
+        loading: boolean;
+        reloading: boolean;
+        data: any;
+        error: any;
+        _error: any;
+    };
+    readonly promise: Promise<any> | null;
+    onChange: (handler: (status: LoaderStatus, result: LoaderResult) => void) => () => void;
+    load: () => Promise<any>;
+};
+type ManagerOption = {
+    /**
+     * whether current manage only exec static loader
+     */
+    skipStatic?: boolean;
+    skipNonStatic?: boolean;
+};
+/**
+ * Create loaders manager. It's returned instance will add to context
+ * @param initialDataMap used to initialing loader data
+ */
+export declare const createLoaderManager: (initialDataMap: Record<string, LoaderResult>, managerOptions?: ManagerOption) => {
+    hasPendingLoaders: () => boolean;
+    awaitPendingLoaders: () => Promise<Record<string, LoaderResult>>;
+    add: (loaderFn: () => Promise<any>, loaderOptions: LoaderOptions) => any;
+    get: (id: string) => {
+        readonly result: {
+            loading: boolean;
+            reloading: boolean;
+            data: any;
+            error: any;
+            _error: any;
+        };
+        readonly promise: Promise<any> | null;
+        onChange: (handler: (status: LoaderStatus, result: LoaderResult) => void) => () => void;
+        load: () => Promise<any>;
+    } | undefined;
+};
+export type Loader = ReturnType<typeof createLoader>;
+export {};

@@ -1,0 +1,14 @@
+import type { RollupOutput } from '../../compiled/rollup/types/rollup';
+import type { Chunk } from '../types';
+type Files = {
+    name: string;
+    size: number;
+};
+export declare const bundleFiles: Files[];
+export declare const bundlelessFiles: Files[];
+export declare const addOutputChunk: (outputChunk: Map<string, Chunk>, appDirectory: string, isBundle: boolean) => void;
+export declare const addRollupChunk: (rollupOutput: RollupOutput, appDirectory: string, distDir: string) => void;
+export declare const addDtsFiles: (distDir: string, appDirectory: string) => Promise<void>;
+export declare const printFileSize: () => void;
+export declare const printSucceed: (totalDuration: number) => void;
+export {};

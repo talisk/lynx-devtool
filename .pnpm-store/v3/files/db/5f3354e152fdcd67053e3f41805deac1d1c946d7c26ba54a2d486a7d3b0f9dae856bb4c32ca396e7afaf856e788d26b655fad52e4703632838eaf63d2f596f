@@ -1,0 +1,5 @@
+/**
+ * transform ['a', 'b'] to { a: undefined, b: undefined }
+ */
+export declare const transformUndefineObject: (arr: string[]) => Record<string, undefined>;
+export declare function mapValue<T = any, U = any>(obj: Record<string, T>, mapper: (x: T) => U): Record<string, U>;

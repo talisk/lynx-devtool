@@ -1,0 +1,11 @@
+/// <reference types="node" />
+import { EventEmitter } from "events";
+import Client from "./client";
+export default class Tracker extends EventEmitter {
+    private readonly client;
+    private targets;
+    private targetMap;
+    constructor(client: Client);
+    read(): void;
+    private update;
+}

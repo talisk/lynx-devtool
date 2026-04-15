@@ -1,0 +1,25 @@
+export declare const DOC_EXT: string[];
+export declare const DOCUMENT_META_PLACEHOLDER: string;
+export declare const DOCUMENT_TITLE_PLACEHOLDER: string;
+export declare const HTML_SEPARATOR = "<!--<?- html ?>-->";
+export declare const HEAD_PARTICALS_SEPARATOR: string;
+export declare const BODY_PARTICALS_SEPARATOR: string;
+export declare const TOP_PARTICALS_SEPARATOR: string;
+export declare const HTML_SSRDATASCRIPT_SEPARATOR = "<!--<?- SSRDataScript ?>-->";
+export declare const DOCUMENT_SSR_PLACEHOLDER: string;
+export declare const DOCUMENT_CHUNKSMAP_PLACEHOLDER: string;
+export declare const DOCUMENT_SSRDATASCRIPT_PLACEHOLDER: string;
+export declare const DOCUMENT_FILE_NAME = "Document";
+export declare const DOCUMENT_SCRIPTS_PLACEHOLDER: string;
+export declare const DOCUMENT_LINKS_PLACEHOLDER: string;
+export declare const DOCUMENT_SCRIPT_PLACEHOLDER_START: string;
+export declare const DOCUMENT_SCRIPT_PLACEHOLDER_END: string;
+export declare const DOCUMENT_SCRIPT_ATTRIBUTES_START: string;
+export declare const DOCUMENT_SCRIPT_ATTRIBUTES_END: string;
+export declare const DOCUMENT_STYLE_PLACEHOLDER_START: string;
+export declare const DOCUMENT_STYLE_PLACEHOLDER_END: string;
+export declare const DOCUMENT_COMMENT_PLACEHOLDER_START: string;
+export declare const DOCUMENT_COMMENT_PLACEHOLDER_END: string;
+export declare const PLACEHOLDER_REPLACER_MAP: {
+    [x: string]: string;
+};

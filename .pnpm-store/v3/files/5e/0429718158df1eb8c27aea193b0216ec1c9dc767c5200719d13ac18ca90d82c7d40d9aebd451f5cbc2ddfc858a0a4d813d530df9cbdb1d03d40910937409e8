@@ -1,0 +1,8 @@
+import { type InternalContext, type RsbuildProviderHelpers, type RsbuildTarget } from '@rsbuild/core';
+import type { WebpackConfig } from './types.js';
+export declare function generateWebpackConfig({ target, context, environment, helpers, }: {
+    environment: string;
+    target: RsbuildTarget;
+    context: InternalContext;
+    helpers: RsbuildProviderHelpers;
+}): Promise<WebpackConfig>;

@@ -1,0 +1,123 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var normalize_exports = {};
+__export(normalize_exports, {
+  mergeConfig: () => mergeConfig,
+  normalizeBuildConfig: () => normalizeBuildConfig,
+  presetToConfig: () => presetToConfig,
+  transformToAbsPath: () => transformToAbsPath
+});
+module.exports = __toCommonJS(normalize_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_lodash = __toESM(require("@modern-js/utils/lodash"));
+var import_preset = require("../constants/preset");
+var import_merge = require("./merge");
+var import_valid = require("./valid");
+const presetToConfig = async (preset) => {
+  if (typeof preset === "function") {
+    const extendPreset = (presetName, extendConfig) => {
+      const originalBuildConfig = import_preset.internalPreset[presetName];
+      if (!originalBuildConfig) {
+        throw new Error(`**${presetName}** is not internal buildPreset`);
+      }
+      return originalBuildConfig.map((config) => {
+        return import_lodash.default.merge(config, extendConfig);
+      });
+    };
+    const partialBuildConfig = await preset({
+      preset: import_preset.internalPreset,
+      extendPreset
+    });
+    if (!partialBuildConfig) {
+      throw new Error("The `buildPreset` function does not allow no return value");
+    }
+    return partialBuildConfig;
+  }
+  const inPresetList = (p) => p in import_preset.presetList;
+  return preset && inPresetList(preset) ? import_preset.presetList[preset] : void 0;
+};
+const mergeConfig = (low, high = {}) => {
+  if (!low) {
+    return (0, import_utils.ensureArray)(high);
+  }
+  return Array.isArray(high) ? [
+    ...low,
+    ...high
+  ] : low.map((config) => {
+    return import_lodash.default.merge(config, high);
+  });
+};
+const normalizeBuildConfig = async (resolvedConfig, context, buildCmdOptions) => {
+  let config = resolvedConfig;
+  if ((0, import_merge.isLegacyUserConfig)(config)) {
+    const { createUserConfigFromLegacy } = await Promise.resolve().then(() => __toESM(require("./transformLegacyConfig")));
+    config = await createUserConfigFromLegacy(config);
+  }
+  const { buildConfig, buildPreset } = config;
+  const configFromPreset = await presetToConfig(buildPreset);
+  const mergedConfig = mergeConfig(configFromPreset, buildConfig !== null && buildConfig !== void 0 ? buildConfig : {});
+  (0, import_valid.validPartialBuildConfig)(mergedConfig, context.appDirectory);
+  const normalizedConfig = await Promise.all(mergedConfig.map(async (config2) => {
+    let newConfig = await (0, import_merge.mergeDefaultBaseConfig)(config2, {
+      context,
+      buildCmdOptions
+    });
+    newConfig = await transformToAbsPath(newConfig, {
+      context,
+      buildCmdOptions
+    });
+    return newConfig;
+  }));
+  return normalizedConfig;
+};
+const transformToAbsPath = async (baseConfig, options) => {
+  const newConfig = baseConfig;
+  const { context } = options;
+  newConfig.outDir = import_path.default.resolve(context.appDirectory, newConfig.outDir);
+  newConfig.sourceDir = import_path.default.resolve(context.appDirectory, baseConfig.sourceDir);
+  newConfig.tsconfig = import_path.default.resolve(context.appDirectory, newConfig.tsconfig);
+  if (newConfig.resolve.tsConfig) {
+    newConfig.resolve.tsConfig.configFile = import_path.default.resolve(context.appDirectory, newConfig.resolve.tsConfig.configFile);
+  }
+  if (newConfig.dts) {
+    newConfig.dts.distPath = import_path.default.resolve(newConfig.outDir, newConfig.dts.distPath);
+    if (newConfig.dts.tsconfigPath) {
+      newConfig.dts.tsconfigPath = import_path.default.resolve(context.appDirectory, newConfig.dts.tsconfigPath);
+    }
+  }
+  return newConfig;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  mergeConfig,
+  normalizeBuildConfig,
+  presetToConfig,
+  transformToAbsPath
+});

@@ -1,0 +1,3 @@
+export declare const styleExts: string[];
+export declare const dtsAliasExts: string[];
+export declare const assetExt: string[];

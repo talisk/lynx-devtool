@@ -1,0 +1,7 @@
+import type { InspectConfigOptions, InspectConfigResult } from '@rsbuild/core';
+import { type InitConfigsOptions } from './initConfigs.js';
+import type { WebpackConfig } from './types.js';
+export declare function inspectConfig({ helpers, context, pluginManager, rsbuildOptions, bundlerConfigs, inspectOptions, }: InitConfigsOptions & {
+    inspectOptions?: InspectConfigOptions;
+    bundlerConfigs?: WebpackConfig[];
+}): Promise<InspectConfigResult<'webpack'>>;

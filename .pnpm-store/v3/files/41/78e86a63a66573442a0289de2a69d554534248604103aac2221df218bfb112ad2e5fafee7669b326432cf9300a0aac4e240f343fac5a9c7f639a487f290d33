@@ -1,0 +1,26 @@
+import type { PartialBaseBuildConfig, Target } from '../types';
+export declare const targets: Target[];
+export declare const npmLibraryPresetConfig: PartialBaseBuildConfig[];
+export declare const npmLibraryWithUmdPresetConfig: PartialBaseBuildConfig[];
+export declare const npmComponentPresetConfig: PartialBaseBuildConfig[];
+export declare const npmComponentWithUmdPresetConfig: PartialBaseBuildConfig[];
+export declare const libraryPreset: {
+    'npm-library': PartialBaseBuildConfig[];
+};
+export declare const libraryPresetWithTarget: Record<"npm-library-esnext" | "npm-library-es5" | "npm-library-es6" | "npm-library-es2015" | "npm-library-es2016" | "npm-library-es2017" | "npm-library-es2018" | "npm-library-es2019" | "npm-library-es2020" | "npm-library-es2021" | "npm-library-es2022", PartialBaseBuildConfig[]>;
+export declare const libraryUmdPreset: {
+    'npm-library-with-umd': PartialBaseBuildConfig[];
+};
+export declare const libraryUmdPresetWithTarget: Record<"npm-library-with-umd-esnext" | "npm-library-with-umd-es5" | "npm-library-with-umd-es6" | "npm-library-with-umd-es2015" | "npm-library-with-umd-es2016" | "npm-library-with-umd-es2017" | "npm-library-with-umd-es2018" | "npm-library-with-umd-es2019" | "npm-library-with-umd-es2020" | "npm-library-with-umd-es2021" | "npm-library-with-umd-es2022", PartialBaseBuildConfig[]>;
+export declare const componentPreset: {
+    'npm-component': PartialBaseBuildConfig[];
+};
+export declare const componentPresetWithTarget: Record<"npm-component-esnext" | "npm-component-es5" | "npm-component-es6" | "npm-component-es2015" | "npm-component-es2016" | "npm-component-es2017" | "npm-component-es2018" | "npm-component-es2019" | "npm-component-es2020" | "npm-component-es2021" | "npm-component-es2022", PartialBaseBuildConfig[]>;
+export declare const componentUmdPreset: {
+    'npm-component-with-umd': PartialBaseBuildConfig[];
+};
+export declare const componentUmdPresetWithTarget: Record<"npm-component-with-umd-esnext" | "npm-component-with-umd-es5" | "npm-component-with-umd-es6" | "npm-component-with-umd-es2015" | "npm-component-with-umd-es2016" | "npm-component-with-umd-es2017" | "npm-component-with-umd-es2018" | "npm-component-with-umd-es2019" | "npm-component-with-umd-es2020" | "npm-component-with-umd-es2021" | "npm-component-with-umd-es2022", PartialBaseBuildConfig[]>;
+export declare const nodeBuildConfig: PartialBaseBuildConfig[];
+export declare const universalBuildConfig: PartialBaseBuildConfig[];
+export declare const presetList: Record<string, PartialBaseBuildConfig[]>;
+export declare const internalPreset: Record<string, PartialBaseBuildConfig[]>;

@@ -1,0 +1,207 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var analyze_exports = {};
+__export(analyze_exports, {
+  default: () => analyze_default
+});
+module.exports = __toCommonJS(analyze_exports);
+var path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_builder = require("../../builder");
+var import_config = require("../../config");
+var import_config2 = require("../../utils/config");
+var import_getSelectedEntries = require("../../utils/getSelectedEntries");
+var import_printInstructions = require("../../utils/printInstructions");
+var import_routes = require("../../utils/routes");
+var import_utils2 = require("./utils");
+const debug = (0, import_utils.createDebugger)("plugin-analyze");
+var analyze_default = ({ bundler }) => ({
+  name: "@modern-js/plugin-analyze",
+  post: [
+    "@modern-js/runtime"
+  ],
+  setup: (api) => {
+    let pagesDir = [];
+    let nestedRouteEntries = [];
+    api.onPrepare(async () => {
+      var _resolvedConfig_source;
+      let appContext = api.getAppContext();
+      const resolvedConfig = api.getNormalizedConfig();
+      const hooks = api.getHooks();
+      try {
+        if ((0, import_utils2.checkIsBuildCommands)()) {
+          import_utils.fs.emptydirSync(appContext.internalDirectory);
+        }
+      } catch {
+      }
+      const apiOnly = await (0, import_utils.isApiOnly)(appContext.appDirectory, (_resolvedConfig_source = resolvedConfig.source) === null || _resolvedConfig_source === void 0 ? void 0 : _resolvedConfig_source.entriesDir, appContext.apiDirectory);
+      await hooks.addRuntimeExports.call();
+      const [{ getProdServerRoutes }] = await Promise.all([
+        import("./getServerRoutes.js")
+      ]);
+      if (apiOnly) {
+        const routes2 = [];
+        if ((0, import_utils2.checkIsServeCommand)()) {
+          routes2.push(...getProdServerRoutes(appContext.distDirectory));
+        } else {
+          const { routes: modifiedRoutes } = await hooks.modifyServerRoutes.call({
+            routes: []
+          });
+          routes2.push(...modifiedRoutes);
+        }
+        debug(`server routes: %o`, routes2);
+        api.updateAppContext({
+          apiOnly,
+          serverRoutes: routes2
+        });
+        return;
+      }
+      const [{ getBundleEntry }, { getServerRoutes }, { getHtmlTemplate }] = await Promise.all([
+        import("./getBundleEntry.js"),
+        import("./getServerRoutes.js"),
+        import("./getHtmlTemplate.js")
+      ]);
+      const { entrypoints } = await hooks.modifyEntrypoints.call({
+        entrypoints: await getBundleEntry(hooks, appContext, resolvedConfig)
+      });
+      debug(`entrypoints: %o`, entrypoints);
+      const routes = [];
+      if ((0, import_utils2.checkIsServeCommand)()) {
+        routes.push(...getProdServerRoutes(appContext.distDirectory));
+      } else {
+        const initialRoutes = getServerRoutes(entrypoints, {
+          appContext,
+          config: resolvedConfig
+        });
+        const { routes: modifiedRoutes } = await hooks.modifyServerRoutes.call({
+          routes: initialRoutes
+        });
+        routes.push(...modifiedRoutes);
+      }
+      debug(`server routes: %o`, routes);
+      appContext = {
+        ...api.getAppContext(),
+        entrypoints,
+        serverRoutes: routes
+      };
+      api.updateAppContext(appContext);
+      nestedRouteEntries = entrypoints.map((point) => point.nestedRoutesEntry).filter(Boolean);
+      pagesDir = entrypoints.map((point) => point.entry).filter((entry) => entry && !path.extname(entry)).concat(nestedRouteEntries);
+      const { partialsByEntrypoint, htmlTemplates } = await getHtmlTemplate(entrypoints, hooks, {
+        appContext,
+        config: resolvedConfig
+      });
+      debug(`html templates: %o`, htmlTemplates);
+      api.updateAppContext({
+        partialsByEntrypoint
+      });
+      let checkedEntries = entrypoints.map((point) => point.entryName);
+      if ((0, import_utils.isDevCommand)()) {
+        const { entry } = (0, import_utils.minimist)((0, import_utils.getArgv)());
+        checkedEntries = await (0, import_getSelectedEntries.getSelectedEntries)(typeof entry === "string" ? entry.split(",") : entry, entrypoints);
+      }
+      appContext = {
+        ...api.getAppContext(),
+        entrypoints,
+        checkedEntries,
+        apiOnly,
+        serverRoutes: routes,
+        htmlTemplates
+      };
+      api.updateAppContext(appContext);
+      if ((0, import_utils2.checkIsBuildCommands)()) {
+        await hooks.generateEntryCode.call({
+          entrypoints
+        });
+        const normalizedConfig = api.getNormalizedConfig();
+        const createBuilderForModern = await (0, import_builder.createBuilderGenerator)(bundler);
+        const builder = await createBuilderForModern({
+          normalizedConfig,
+          appContext
+        });
+        builder.onBeforeBuild(async ({ bundlerConfigs, isFirstCompile, environments, isWatch }) => {
+          if (!isFirstCompile) {
+            return;
+          }
+          await (0, import_routes.generateRoutes)(appContext);
+          await hooks.onBeforeBuild.call({
+            isFirstCompile,
+            isWatch,
+            environments,
+            bundlerConfigs
+          });
+        });
+        builder.onAfterBuild(async ({ stats, environments, isFirstCompile, isWatch }) => {
+          await hooks.onAfterBuild.call({
+            stats,
+            environments,
+            isFirstCompile,
+            isWatch
+          });
+          await (0, import_config2.emitResolvedConfig)(appContext.appDirectory, normalizedConfig);
+        });
+        builder.onDevCompileDone(async ({ isFirstCompile }) => {
+          hooks.onAfterDev.call({
+            isFirstCompile
+          });
+          if (isFirstCompile) {
+            (0, import_printInstructions.printInstructions)(hooks, appContext, normalizedConfig);
+          }
+        });
+        builder.onBeforeCreateCompiler(async ({ bundlerConfigs, environments }) => {
+          await hooks.onBeforeCreateCompiler.call({
+            environments,
+            bundlerConfigs
+          });
+        });
+        builder.onAfterCreateCompiler(async ({ compiler, environments }) => {
+          await hooks.onAfterCreateCompiler.call({
+            environments,
+            compiler
+          });
+        });
+        builder.addPlugins(resolvedConfig.builderPlugins);
+        api.updateAppContext({
+          builder
+        });
+      }
+    });
+    api.addWatchFiles(() => {
+      return {
+        files: pagesDir,
+        isPrivate: true
+      };
+    });
+    api.modifyResolvedConfig((resolved) => {
+      const appContext = api.getAppContext();
+      const config = (0, import_config.initialNormalizedConfig)(resolved, appContext, bundler);
+      return config;
+    });
+  }
+});

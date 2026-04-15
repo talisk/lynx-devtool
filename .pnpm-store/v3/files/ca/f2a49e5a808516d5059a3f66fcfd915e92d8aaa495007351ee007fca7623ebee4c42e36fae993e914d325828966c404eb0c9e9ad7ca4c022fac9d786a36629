@@ -1,0 +1,10 @@
+var PACKAGE_JSON_CONFIG_NAME = "modernConfig";
+var DEFAULT_CONFIG_FILE = "modern.config";
+var DEFAULT_SERVER_CONFIG_FILE = "modern.server-runtime.config";
+var DEFAULT_RUNTIME_CONFIG_FILE = "modern.runtime";
+export {
+  DEFAULT_CONFIG_FILE,
+  DEFAULT_RUNTIME_CONFIG_FILE,
+  DEFAULT_SERVER_CONFIG_FILE,
+  PACKAGE_JSON_CONFIG_NAME
+};

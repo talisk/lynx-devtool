@@ -1,0 +1,61 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var postcssUrlPlugin_exports = {};
+__export(postcssUrlPlugin_exports, {
+  postcssUrlPlugin: () => postcssUrlPlugin
+});
+module.exports = __toCommonJS(postcssUrlPlugin_exports);
+var import_path = require("path");
+var import_asset = require("../asset");
+var import_utils = require("./utils");
+const Processed = Symbol("processed");
+const HTTP_PATTERNS = /^(https?:)?\/\//;
+const DATAURL_PATTERNS = /^data:/;
+const HASH_PATTERNS = /.#[^#]+$/;
+const postcssUrlPlugin = (options) => {
+  return {
+    postcssPlugin: "postcss-url",
+    async Declaration(decl) {
+      const isProcessed = decl[Processed];
+      if (isProcessed) {
+        return;
+      }
+      decl.value = await (0, import_utils.rewriteCssUrls)(decl.value, false, async (URL) => {
+        if (URL && !HTTP_PATTERNS.test(URL) && !HASH_PATTERNS.test(URL) && !DATAURL_PATTERNS.test(URL)) {
+          let filePath = URL;
+          const { outDir, sourceDir, buildType } = options.compilation.config;
+          const { css_resolve } = options.compilation;
+          filePath = css_resolve(URL, (0, import_path.dirname)(options.entryPath));
+          const rebaseFrom = buildType === "bundle" ? outDir : (0, import_path.join)(outDir, (0, import_path.relative)(sourceDir, (0, import_path.dirname)(options.entryPath)));
+          const { contents: fileUrl } = await import_asset.getAssetContents.apply(options.compilation, [
+            filePath,
+            rebaseFrom
+          ]);
+          decl[Processed] = true;
+          return fileUrl.toString();
+        }
+        return URL;
+      });
+    }
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  postcssUrlPlugin
+});

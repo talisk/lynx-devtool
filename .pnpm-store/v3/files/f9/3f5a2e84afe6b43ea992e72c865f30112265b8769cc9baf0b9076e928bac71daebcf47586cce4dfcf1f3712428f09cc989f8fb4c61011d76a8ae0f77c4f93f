@@ -1,0 +1,63 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var compat_exports = {};
+__export(compat_exports, {
+  compatPlugin: () => compatPlugin
+});
+module.exports = __toCommonJS(compat_exports);
+var import_plugin_v2 = require("@modern-js/plugin-v2");
+var import_hooks = require("./hooks");
+const compatPlugin = () => ({
+  name: "@modern-js/app-tools-compat",
+  _registryApi: (getAppContext, updateAppContext) => {
+    const getInternalContext = () => {
+      return getAppContext()._internalContext;
+    };
+    return {
+      useAppContext: () => {
+        const { _internalContext, ...appContext } = getAppContext();
+        return appContext;
+      },
+      setAppContext: (context) => {
+        return updateAppContext(context);
+      },
+      useConfigContext: () => {
+        return getInternalContext().config;
+      },
+      useResolvedConfigContext: () => {
+        return getInternalContext().normalizedConfig;
+      },
+      useHookRunners: () => {
+        return (0, import_hooks.getHookRunners)(getInternalContext());
+      }
+    };
+  },
+  registryHooks: {
+    appendEntryCode: (0, import_plugin_v2.createCollectAsyncHook)()
+  },
+  setup: (api) => {
+    api.updateAppContext({
+      toolsType: "app-tools"
+    });
+  }
+});
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  compatPlugin
+});

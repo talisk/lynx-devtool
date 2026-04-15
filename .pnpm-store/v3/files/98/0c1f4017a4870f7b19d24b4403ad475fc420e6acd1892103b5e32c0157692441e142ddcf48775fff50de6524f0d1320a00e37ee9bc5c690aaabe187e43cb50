@@ -1,0 +1,277 @@
+import * as __WEBPACK_EXTERNAL_MODULE_node_path__ from "node:path";
+import * as __WEBPACK_EXTERNAL_MODULE_node_fs__ from "node:fs";
+import * as __WEBPACK_EXTERNAL_MODULE_acorn__ from "acorn";
+import * as __WEBPACK_EXTERNAL_MODULE_browserslist_to_es_version__ from "browserslist-to-es-version";
+import * as __WEBPACK_EXTERNAL_MODULE_picocolors__ from "picocolors";
+import * as __WEBPACK_EXTERNAL_MODULE_source_map__ from "source-map";
+import * as __WEBPACK_EXTERNAL_MODULE_htmlparser2__ from "htmlparser2";
+import * as __WEBPACK_EXTERNAL_MODULE__rsbuild_core__ from "@rsbuild/core";
+function _define_property(obj, key, value) {
+    if (key in obj) Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+    });
+    else obj[key] = value;
+    return obj;
+}
+class ECMASyntaxError extends Error {
+    constructor(message, options){
+        super(message), _define_property(this, "source", void 0), _define_property(this, "output", void 0);
+        this.source = options.source;
+        this.output = options.output;
+    }
+}
+function checkIsExclude(path, exclude) {
+    if (!exclude) return false;
+    const excludes = Array.isArray(exclude) ? exclude : [
+        exclude
+    ];
+    // normalize to posix path
+    const normalizedPath = path.replace(/\\/g, '/');
+    return excludes.some((reg)=>reg.test(normalizedPath));
+}
+function displayCodePointer(code, pos) {
+    const SUB_LEN = 80;
+    const start = Math.max(pos - SUB_LEN / 2, 0);
+    const subCode = code.slice(start, start + SUB_LEN);
+    const arrowPos = pos - start;
+    const arrowLine = __WEBPACK_EXTERNAL_MODULE_picocolors__["default"].yellow('^'.padStart(arrowPos + 11, ' '));
+    return `${subCode}\n${arrowLine}`;
+}
+async function generateError({ err, code, filepath, rootPath, exclude }) {
+    let error = await tryGenerateErrorFromSourceMap({
+        err,
+        filepath,
+        rootPath
+    });
+    if (!error) {
+        const path = filepath.replace(rootPath, '');
+        error = new ECMASyntaxError(err.message, {
+            source: {
+                path,
+                line: err.loc.line,
+                column: err.loc.column,
+                code: displayCodePointer(code, err.pos)
+            }
+        });
+    }
+    if (checkIsExclude(error.source.path, exclude)) return null;
+    return error;
+}
+function makeCodeFrame(lines, highlightIndex) {
+    const startLine = Math.max(highlightIndex - 3, 0);
+    const endLine = Math.min(highlightIndex + 4, lines.length - 1);
+    const ret = [];
+    for(let i = startLine; i < endLine; i++)if (i === highlightIndex) {
+        const lineNumber = `> ${i + 1}`.padStart(6, ' ');
+        ret.push(__WEBPACK_EXTERNAL_MODULE_picocolors__["default"].yellow(`${lineNumber} | ${lines[i]}`));
+    } else {
+        const lineNumber = ` ${i + 1}`.padStart(6, ' ');
+        ret.push(__WEBPACK_EXTERNAL_MODULE_picocolors__["default"].gray(`${lineNumber} | ${lines[i]}`));
+    }
+    return `\n${ret.join('\n')}`;
+}
+async function tryGenerateErrorFromSourceMap({ err, filepath, rootPath }) {
+    const sourceMapPath = `${filepath}.map`;
+    if (!__WEBPACK_EXTERNAL_MODULE_node_fs__["default"].existsSync(sourceMapPath)) return null;
+    try {
+        var _JSON_parse_sourcesContent, _JSON_parse;
+        const sourcemap = await __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.readFile(sourceMapPath, 'utf-8');
+        const consumer = await new __WEBPACK_EXTERNAL_MODULE_source_map__.SourceMapConsumer(sourcemap);
+        const sm = consumer.originalPositionFor({
+            line: err.loc.line,
+            column: err.loc.column
+        });
+        if (!sm.source) return null;
+        const { sources } = consumer;
+        const smIndex = sources.indexOf(sm.source);
+        const smContent = null === (_JSON_parse = JSON.parse(sourcemap)) || void 0 === _JSON_parse ? void 0 : null === (_JSON_parse_sourcesContent = _JSON_parse.sourcesContent) || void 0 === _JSON_parse_sourcesContent ? void 0 : _JSON_parse_sourcesContent[smIndex];
+        if (!smContent) return null;
+        const path = sm.source.replace(/webpack:\/\/(tmp)?/g, '');
+        const relativeFilepath = filepath.replace(rootPath, '');
+        const rawLines = smContent.split(/\r?\n/g);
+        const highlightLine = (sm.line ?? 1) - 1;
+        return new ECMASyntaxError(err.message, {
+            source: {
+                path,
+                line: sm.line ?? 0,
+                column: sm.column ?? 0,
+                code: makeCodeFrame(rawLines, highlightLine)
+            },
+            output: {
+                path: relativeFilepath,
+                line: err.loc.line,
+                column: err.loc.column
+            }
+        });
+    } catch (e) {
+        return null;
+    }
+}
+async function generateHtmlScripts(filepath) {
+    const html = await __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.readFile(filepath, 'utf-8');
+    return getHtmlScripts(html);
+}
+function getHtmlScripts(html) {
+    const inlineScripts = [];
+    let currentScript = null;
+    const parser = new __WEBPACK_EXTERNAL_MODULE_htmlparser2__.Parser({
+        onopentag (name, attrs) {
+            if ('script' === name && !attrs.src && (!attrs.type || 'application/javascript' === attrs.type || 'text/javascript' === attrs.type)) currentScript = '';
+        },
+        ontext (text) {
+            if (null !== currentScript) currentScript += text;
+        },
+        onclosetag (tagname) {
+            if ('script' === tagname && currentScript) inlineScripts.push(currentScript.trim());
+            currentScript = null;
+        }
+    });
+    parser.write(html);
+    parser.end();
+    return inlineScripts;
+}
+function checkSyntax_define_property(obj, key, value) {
+    if (key in obj) Object.defineProperty(obj, key, {
+        value: value,
+        enumerable: true,
+        configurable: true,
+        writable: true
+    });
+    else obj[key] = value;
+    return obj;
+}
+const HTML_REGEX = /\.html$/;
+const JS_REGEX = /\.(?:js|mjs|cjs|jsx)$/;
+class CheckSyntax {
+    async check(filepath, code) {
+        // If the code is provided, no need to read file.
+        if (code) return await this.tryParse(filepath, code);
+        if (HTML_REGEX.test(filepath)) {
+            const htmlScripts = await generateHtmlScripts(filepath);
+            await Promise.all(htmlScripts.map(async (script)=>{
+                if (!checkIsExclude(filepath, this.exclude)) await this.tryParse(filepath, script);
+            }));
+        }
+        if (JS_REGEX.test(filepath)) {
+            const jsScript = await __WEBPACK_EXTERNAL_MODULE_node_fs__["default"].promises.readFile(filepath, 'utf-8');
+            await this.tryParse(filepath, jsScript);
+        }
+    }
+    async tryParse(filepath, code) {
+        try {
+            (0, __WEBPACK_EXTERNAL_MODULE_acorn__.parse)(code, {
+                ecmaVersion: this.ecmaVersion
+            });
+        } catch (_) {
+            const err = _;
+            const error = await generateError({
+                err,
+                code,
+                filepath,
+                exclude: this.exclude,
+                rootPath: this.rootPath
+            });
+            if (error) this.errors.push(error);
+        }
+    }
+    constructor(options){
+        checkSyntax_define_property(this, "errors", []);
+        checkSyntax_define_property(this, "ecmaVersion", void 0);
+        checkSyntax_define_property(this, "targets", void 0);
+        checkSyntax_define_property(this, "rootPath", void 0);
+        checkSyntax_define_property(this, "exclude", void 0);
+        checkSyntax_define_property(this, "excludeOutput", void 0);
+        checkSyntax_define_property(this, "excludeErrorLogs", void 0);
+        this.targets = options.targets;
+        this.exclude = options.exclude;
+        this.excludeOutput = options.excludeOutput;
+        this.rootPath = options.rootPath;
+        this.ecmaVersion = options.ecmaVersion || (0, __WEBPACK_EXTERNAL_MODULE_browserslist_to_es_version__.browserslistToESVersion)(this.targets);
+        this.excludeErrorLogs = options.excludeErrorLogs || [];
+    }
+}
+function printErrors(errors, ecmaVersion, excludeErrorLogs) {
+    if (0 === errors.length) {
+        __WEBPACK_EXTERNAL_MODULE__rsbuild_core__.logger.success('[@rsbuild/plugin-check-syntax] Syntax check passed.');
+        return;
+    }
+    const errs = errors.map((error)=>({
+            source: `${error.source.path}:${error.source.line}:${error.source.column}`,
+            output: error.output ? `${error.output.path}:${error.output.line}:${error.output.column}` : void 0,
+            reason: error.message,
+            code: error.source.code
+        }));
+    const longest = Math.max(...Object.keys(errs[0]).map((err)=>err.length));
+    const expectedVersion = __WEBPACK_EXTERNAL_MODULE_picocolors__["default"].yellow(`ecmaVersion <= ${ecmaVersion}`);
+    __WEBPACK_EXTERNAL_MODULE__rsbuild_core__.logger.error(`[@rsbuild/plugin-check-syntax] Find some syntax that does not match "${expectedVersion}":\n`);
+    errs.forEach((err, index)=>{
+        console.log(__WEBPACK_EXTERNAL_MODULE_picocolors__["default"].bold(__WEBPACK_EXTERNAL_MODULE_picocolors__["default"].red(`  ERROR ${index + 1}`)));
+        printMain(err, longest, excludeErrorLogs);
+    });
+    throw new Error(`[@rsbuild/plugin-check-syntax] The current build fails due to an incompatible syntax, which can be fixed in the following ways:
+
+  - If you want to downgrade the syntax, you can compile the specified module through the \`source.include\` config.
+  - If you don't want to downgrade the syntax, you can adjust the project's browserslist to match the syntax, or set the \`ecmaVersion\` option.
+  - If you don't want to check the syntax of specified files, you can use the \`exclude\` option to exclude the files to be checked.\n`);
+}
+function printMain(error, longest, excludeErrorLogs) {
+    const fillWhiteSpace = (s, longest)=>{
+        if (s.length < longest) {
+            const rightPadding = ' '.repeat(longest - s.length);
+            return s + rightPadding;
+        }
+        return s;
+    };
+    for (const [key, content] of Object.entries(error)){
+        if (!content || excludeErrorLogs.includes(key)) continue;
+        const title = __WEBPACK_EXTERNAL_MODULE_picocolors__["default"].magenta(`${fillWhiteSpace(`${key}:`, longest + 1)}`);
+        console.info(`  ${title}  ${content}`);
+    }
+    console.info('');
+}
+const CheckSyntaxPlugin_HTML_REGEX = /\.html$/;
+const CheckSyntaxPlugin_JS_REGEX = /\.(?:js|mjs|cjs|jsx)$/;
+class CheckSyntaxRspackPlugin extends CheckSyntax {
+    apply(compiler) {
+        compiler.hooks.afterEmit.tapPromise(CheckSyntaxRspackPlugin.name, async (compilation)=>{
+            const outputPath = compilation.outputOptions.path || 'dist';
+            // not support compilation.emittedAssets in Rspack
+            const emittedAssets = compilation.getAssets().filter((a)=>a.source).map((a)=>{
+                // remove query from name
+                const resourcePath = a.name.split('?')[0];
+                const file = (0, __WEBPACK_EXTERNAL_MODULE_node_path__.resolve)(outputPath, resourcePath);
+                if (!checkIsExclude(file, this.excludeOutput)) return file;
+                return '';
+            });
+            const files = emittedAssets.filter((assets)=>CheckSyntaxPlugin_HTML_REGEX.test(assets) || CheckSyntaxPlugin_JS_REGEX.test(assets));
+            await Promise.all(files.map(async (file)=>{
+                await this.check(file);
+            }));
+            printErrors(this.errors, this.ecmaVersion, this.excludeErrorLogs);
+        });
+    }
+}
+const PLUGIN_CHECK_SYNTAX_NAME = 'rsbuild:check-syntax';
+function pluginCheckSyntax(options = {}) {
+    return {
+        name: PLUGIN_CHECK_SYNTAX_NAME,
+        setup (api) {
+            api.modifyBundlerChain(async (chain, { isDev, target, environment })=>{
+                if (isDev || 'web' !== target) return;
+                const { rootPath } = api.context;
+                const targets = options.targets ?? environment.browserslist;
+                chain.plugin(CheckSyntaxRspackPlugin.name).use(CheckSyntaxRspackPlugin, [
+                    {
+                        targets,
+                        rootPath,
+                        ...'object' == typeof options ? options : {}
+                    }
+                ]);
+            });
+        }
+    };
+}
+export { CheckSyntax, PLUGIN_CHECK_SYNTAX_NAME, pluginCheckSyntax };

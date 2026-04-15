@@ -1,0 +1,239 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { ServerResponse } from "node:http";
+import { isResFinalized } from "./helper";
+import { installGlobals } from "./polyfills/install";
+import { createReadableStreamFromReadable, writeReadableStreamToWritable } from "./polyfills/stream";
+import { writeReadableStreamToWritable as writeReadableStreamToWritable2 } from "./polyfills";
+installGlobals();
+var createWebRequest = function(req, res, body) {
+  var _req_url;
+  var headerRecord = [];
+  var len = req.rawHeaders.length;
+  for (var i = 0; i < len; i += 2) {
+    headerRecord.push([
+      req.rawHeaders[i],
+      req.rawHeaders[i + 1]
+    ]);
+  }
+  var method = req.method;
+  var controller = new AbortController();
+  var init = {
+    method,
+    headers: headerRecord,
+    signal: controller.signal
+  };
+  res.on("close", function() {
+    return controller.abort("res closed");
+  });
+  if (body || !(method === "GET" || method === "HEAD") && ((_req_url = req.url) === null || _req_url === void 0 ? void 0 : _req_url.includes("__loader")) || req.headers["x-mf-micro"]) {
+    init.body = body !== null && body !== void 0 ? body : createReadableStreamFromReadable(req);
+    init.duplex = "half";
+  }
+  var url = "http://".concat(req.headers.host).concat(req.url);
+  var request = new Request(url, init);
+  return request;
+};
+var sendResponse = function() {
+  var _ref = _async_to_generator(function(response, res) {
+    var _response_headers_get, cookies, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, _step_value, key, value;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          res.statusMessage = response.statusText;
+          res.statusCode = response.status;
+          cookies = [];
+          _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+          try {
+            for (_iterator = response.headers.entries()[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+              _step_value = _sliced_to_array(_step.value, 2), key = _step_value[0], value = _step_value[1];
+              if (key === "set-cookie") {
+                cookies.push(value);
+              } else {
+                res.setHeader(key, value);
+              }
+            }
+          } catch (err) {
+            _didIteratorError = true;
+            _iteratorError = err;
+          } finally {
+            try {
+              if (!_iteratorNormalCompletion && _iterator.return != null) {
+                _iterator.return();
+              }
+            } finally {
+              if (_didIteratorError) {
+                throw _iteratorError;
+              }
+            }
+          }
+          if (cookies.length > 0) {
+            res.setHeader("set-cookie", cookies);
+          }
+          if (((_response_headers_get = response.headers.get("Content-Type")) === null || _response_headers_get === void 0 ? void 0 : _response_headers_get.match(/text\/event-stream/i)) && _instanceof(res, ServerResponse)) {
+            res.flushHeaders();
+          }
+          if (!response.body)
+            return [
+              3,
+              2
+            ];
+          return [
+            4,
+            writeReadableStreamToWritable(response.body, res)
+          ];
+        case 1:
+          _state.sent();
+          return [
+            3,
+            3
+          ];
+        case 2:
+          res.end();
+          _state.label = 3;
+        case 3:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function sendResponse2(response, res) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var handleResponseError = function(e, res) {
+  var err = _instanceof(e, Error) ? e : new Error("unknown error", {
+    cause: e
+  });
+  if (err.code === "ERR_STREAM_PREMATURE_CLOSE") {
+    console.info("The user aborted a request.");
+  } else {
+    console.error(e);
+    if (!res.headersSent) {
+      res.writeHead(500, {
+        "Content-Type": "text/plain"
+      });
+    }
+    res.end("Error: ".concat(err.message));
+    res.destroy(err);
+  }
+};
+var getRequestListener = function(handler) {
+  return function() {
+    var _ref = _async_to_generator(function(req, res) {
+      var request, response, error;
+      return _ts_generator(this, function(_state) {
+        switch (_state.label) {
+          case 0:
+            _state.trys.push([
+              0,
+              4,
+              ,
+              5
+            ]);
+            request = createWebRequest(req, res);
+            return [
+              4,
+              handler(request, {
+                node: {
+                  req,
+                  res
+                }
+              })
+            ];
+          case 1:
+            response = _state.sent();
+            if (!(!response.res && !isResFinalized(res)))
+              return [
+                3,
+                3
+              ];
+            return [
+              4,
+              sendResponse(response, res)
+            ];
+          case 2:
+            _state.sent();
+            _state.label = 3;
+          case 3:
+            return [
+              3,
+              5
+            ];
+          case 4:
+            error = _state.sent();
+            return [
+              2,
+              handleResponseError(error, res)
+            ];
+          case 5:
+            return [
+              2
+            ];
+        }
+      });
+    });
+    return function(req, res) {
+      return _ref.apply(this, arguments);
+    };
+  }();
+};
+var createNodeServer = function() {
+  var _ref = _async_to_generator(function(requestHandler, httpsOptions) {
+    var requestListener, nodeServer, createServer, createServer1;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          requestListener = getRequestListener(requestHandler);
+          if (!httpsOptions)
+            return [
+              3,
+              2
+            ];
+          return [
+            4,
+            import("node:https")
+          ];
+        case 1:
+          createServer = _state.sent().createServer;
+          nodeServer = createServer(httpsOptions, requestListener);
+          return [
+            3,
+            4
+          ];
+        case 2:
+          return [
+            4,
+            import("node:http")
+          ];
+        case 3:
+          createServer1 = _state.sent().createServer;
+          nodeServer = createServer1(requestListener);
+          _state.label = 4;
+        case 4:
+          nodeServer.getRequestListener = function() {
+            return requestListener;
+          };
+          nodeServer.getRequestHandler = function() {
+            return requestHandler;
+          };
+          return [
+            2,
+            nodeServer
+          ];
+      }
+    });
+  });
+  return function createNodeServer2(requestHandler, httpsOptions) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  createNodeServer,
+  createWebRequest,
+  sendResponse,
+  writeReadableStreamToWritable2 as writeReadableStreamToWritable
+};

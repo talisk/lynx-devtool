@@ -1,0 +1,4 @@
+import type { RsbuildPlugin } from '@modern-js/uni-builder';
+import type { Bundler } from '../../types';
+import type { BuilderOptions } from '../shared';
+export declare const builderPluginAdapterCopy: <B extends Bundler>(options: BuilderOptions<B>) => RsbuildPlugin;

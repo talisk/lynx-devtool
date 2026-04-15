@@ -1,0 +1,39 @@
+import type { ModifyBundlerChainFn, ModifyRsbuildConfigFn, ModifyRspackConfigFn, ModifyWebpackChainFn, ModifyWebpackConfigFn, OnAfterBuildFn, OnAfterCreateCompilerFn, OnBeforeBuildFn, OnBeforeCreateCompilerFn } from '@rsbuild/core';
+import type { AddCommandFn, AddWatchFilesFn, ConfigFn, ModifyConfigFn, ModifyHtmlPartialsFn, ModifyResolvedConfigFn, OnAfterDeployFn, OnAfterDevFn, OnBeforeDeployFn, OnBeforeDevFn, OnBeforeExitFn, OnBeforeRestartFn, OnFileChangedFn, OnPrepareFn } from '../types/cli/hooks';
+import type { DeepPartial } from '../types/utils';
+export declare function initHooks<Config, NormalizedConfig>(): {
+    /**
+     * add config for this cli plugin
+     */
+    config: import("..").CollectAsyncHook<ConfigFn<DeepPartial<Config>>>;
+    /**
+     * @private
+     * modify config for this cli plugin
+     */
+    modifyConfig: import("..").AsyncHook<ModifyConfigFn<Config>>;
+    /**
+     * modify final config
+     */
+    modifyResolvedConfig: import("..").AsyncHook<ModifyResolvedConfigFn<NormalizedConfig>>;
+    modifyRsbuildConfig: import("..").AsyncHook<ModifyRsbuildConfigFn>;
+    modifyBundlerChain: import("..").AsyncHook<ModifyBundlerChainFn>;
+    modifyRspackConfig: import("..").AsyncHook<ModifyRspackConfigFn>;
+    modifyWebpackChain: import("..").AsyncHook<ModifyWebpackChainFn>;
+    modifyWebpackConfig: import("..").AsyncHook<ModifyWebpackConfigFn>;
+    modifyHtmlPartials: import("..").AsyncHook<ModifyHtmlPartialsFn>;
+    addCommand: import("..").AsyncHook<AddCommandFn>;
+    addWatchFiles: import("..").CollectAsyncHook<AddWatchFilesFn>;
+    onPrepare: import("..").AsyncHook<OnPrepareFn>;
+    onFileChanged: import("..").AsyncHook<OnFileChangedFn>;
+    onBeforeRestart: import("..").AsyncHook<OnBeforeRestartFn>;
+    onBeforeCreateCompiler: import("..").AsyncHook<OnBeforeCreateCompilerFn>;
+    onAfterCreateCompiler: import("..").AsyncHook<OnAfterCreateCompilerFn>;
+    onBeforeBuild: import("..").AsyncHook<OnBeforeBuildFn>;
+    onAfterBuild: import("..").AsyncHook<OnAfterBuildFn>;
+    onBeforeDev: import("..").AsyncHook<OnBeforeDevFn>;
+    onAfterDev: import("..").AsyncHook<OnAfterDevFn>;
+    onBeforeDeploy: import("..").AsyncHook<OnBeforeDeployFn>;
+    onAfterDeploy: import("..").AsyncHook<OnAfterDeployFn>;
+    onBeforeExit: import("..").AsyncHook<OnBeforeExitFn>;
+};
+export type Hooks<Config, NormalizedConfig> = ReturnType<typeof initHooks<Config, NormalizedConfig>>;

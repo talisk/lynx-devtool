@@ -1,0 +1,11 @@
+import { type InternalContext, type PluginManager, type ResolvedCreateRsbuildOptions, type RsbuildProviderHelpers } from '@rsbuild/core';
+import type { WebpackConfig } from './types.js';
+export type InitConfigsOptions = {
+    context: InternalContext;
+    pluginManager: PluginManager;
+    rsbuildOptions: ResolvedCreateRsbuildOptions;
+    helpers: RsbuildProviderHelpers;
+};
+export declare function initConfigs({ context, pluginManager, rsbuildOptions, helpers, }: InitConfigsOptions): Promise<{
+    webpackConfigs: WebpackConfig[];
+}>;

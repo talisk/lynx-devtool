@@ -1,0 +1,23 @@
+import { cli } from "@modern-js/plugin-v2/cli";
+import { chalk, clearConsole, getFullArgv, logger } from "@modern-js/utils";
+import { program } from "@modern-js/utils/commander";
+async function restart(hooks, filename) {
+  clearConsole();
+  logger.info(`Restart because ${chalk.yellow(filename)} is changed...
+`);
+  let hasGetError = false;
+  await hooks.onBeforeRestart.call();
+  try {
+    await cli.init(cli.getPrevInitOptions());
+  } catch (err) {
+    console.error(err);
+    hasGetError = true;
+  } finally {
+    if (!hasGetError) {
+      program.parse(getFullArgv());
+    }
+  }
+}
+export {
+  restart
+};

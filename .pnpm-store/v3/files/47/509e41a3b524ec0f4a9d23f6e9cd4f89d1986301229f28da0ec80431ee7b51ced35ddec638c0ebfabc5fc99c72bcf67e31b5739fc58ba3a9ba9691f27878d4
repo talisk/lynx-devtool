@@ -1,0 +1,4 @@
+import React from 'react';
+export declare function Html(props: {
+    children: any[];
+} & React.HtmlHTMLAttributes<HTMLHtmlElement>): React.JSX.Element;

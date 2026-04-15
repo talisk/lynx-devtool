@@ -1,0 +1,250 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { fs, getEntryOptions, isRouterV5, isSSGEntry, isUseSSRBundle, logger } from "@modern-js/utils";
+import { filterRoutesForServer, filterRoutesLoader, markRoutes } from "@modern-js/utils";
+import { cloneDeep } from "@modern-js/utils/lodash";
+import { ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME } from "../../../cli/constants";
+import { FILE_SYSTEM_ROUTES_FILE_NAME } from "../constants";
+import { getClientRoutes, getClientRoutesLegacy } from "./getClientRoutes";
+import { walk } from "./nestedRoutes";
+import * as templates from "./templates";
+import { getServerCombinedModueFile, getServerLoadersFile } from "./utils";
+var generateCode = function() {
+  var _ref = _async_to_generator(function(appContext, config, entrypoints, api) {
+    var internalDirectory, srcDirectory, internalDirAlias, internalSrcAlias, packageName, hookRunners, isV5, getRoutes, oldVersion;
+    function generateEntryCode(entrypoint) {
+      return _generateEntryCode.apply(this, arguments);
+    }
+    function _generateEntryCode() {
+      _generateEntryCode = _async_to_generator(function(entrypoint) {
+        var entryName, isMainEntry, isAutoMount, pageRoutesEntry, nestedRoutesEntry, metaName, _config_output, initialRoutes, nestedRoutes, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, route, _$config, ssrByRouteIds, clonedRoutes, markedRoutes, routes, ssr, useSSG, mode, hasPageRoute, code, _, _tmp, _config_output1, routesServerFile, filtedRoutesForServer, routesForServerLoaderMatches, code1, serverRoutesCode, serverLoaderCombined, serverLoaderFile;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              entryName = entrypoint.entryName, isMainEntry = entrypoint.isMainEntry, isAutoMount = entrypoint.isAutoMount, pageRoutesEntry = entrypoint.pageRoutesEntry, nestedRoutesEntry = entrypoint.nestedRoutesEntry;
+              metaName = api.useAppContext().metaName;
+              if (!isAutoMount)
+                return [
+                  3,
+                  14
+                ];
+              if (!(pageRoutesEntry || nestedRoutesEntry))
+                return [
+                  3,
+                  14
+                ];
+              initialRoutes = [];
+              nestedRoutes = null;
+              if (entrypoint.entry) {
+                initialRoutes = getRoutes({
+                  entrypoint,
+                  srcDirectory,
+                  srcAlias: internalSrcAlias,
+                  internalDirectory,
+                  internalDirAlias
+                });
+              }
+              if (!(!isV5 && entrypoint.nestedRoutesEntry))
+                return [
+                  3,
+                  2
+                ];
+              return [
+                4,
+                walk(entrypoint.nestedRoutesEntry, entrypoint.nestedRoutesEntry, {
+                  name: internalSrcAlias,
+                  basename: srcDirectory
+                }, entrypoint.entryName, entrypoint.isMainEntry, oldVersion)
+              ];
+            case 1:
+              nestedRoutes = _state.sent();
+              if (nestedRoutes) {
+                if (!Array.isArray(nestedRoutes)) {
+                  nestedRoutes = [
+                    nestedRoutes
+                  ];
+                }
+                _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+                try {
+                  for (_iterator = nestedRoutes[Symbol.iterator](); !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                    route = _step.value;
+                    initialRoutes.unshift(route);
+                  }
+                } catch (err) {
+                  _didIteratorError = true;
+                  _iteratorError = err;
+                } finally {
+                  try {
+                    if (!_iteratorNormalCompletion && _iterator.return != null) {
+                      _iterator.return();
+                    }
+                  } finally {
+                    if (_didIteratorError) {
+                      throw _iteratorError;
+                    }
+                  }
+                }
+              }
+              _state.label = 2;
+            case 2:
+              _$config = api.useResolvedConfigContext();
+              ssrByRouteIds = _$config.server.ssrByRouteIds || [];
+              clonedRoutes = cloneDeep(initialRoutes);
+              markedRoutes = ssrByRouteIds.length > 0 ? markRoutes(clonedRoutes, ssrByRouteIds) : initialRoutes;
+              return [
+                4,
+                hookRunners.modifyFileSystemRoutes({
+                  entrypoint,
+                  routes: markedRoutes
+                })
+              ];
+            case 3:
+              routes = _state.sent().routes;
+              ssr = getEntryOptions(entryName, isMainEntry, _$config.server.ssr, _$config.server.ssrByEntries, packageName);
+              useSSG = isSSGEntry(_$config, entryName, entrypoints);
+              if (ssr) {
+                mode = (typeof ssr === "undefined" ? "undefined" : _type_of(ssr)) === "object" ? ssr.mode || "string" : "string";
+              }
+              if (mode === "stream") {
+                hasPageRoute = routes.some(function(route2) {
+                  return "type" in route2 && route2.type === "page";
+                });
+                if (hasPageRoute) {
+                  logger.error("Streaming ssr is not supported when pages dir exists");
+                  process.exit(1);
+                }
+              }
+              _ = hookRunners.beforeGenerateRoutes;
+              _tmp = {
+                entrypoint
+              };
+              return [
+                4,
+                templates.fileSystemRoutes({
+                  metaName,
+                  routes,
+                  ssrMode: useSSG ? "string" : mode,
+                  nestedRoutesEntry: entrypoint.nestedRoutesEntry,
+                  entryName: entrypoint.entryName,
+                  internalDirectory,
+                  splitRouteChunks: _$config === null || _$config === void 0 ? void 0 : (_config_output = _$config.output) === null || _config_output === void 0 ? void 0 : _config_output.splitRouteChunks
+                })
+              ];
+            case 4:
+              return [
+                4,
+                _.apply(hookRunners, [
+                  (_tmp.code = _state.sent(), _tmp)
+                ])
+              ];
+            case 5:
+              code = _state.sent().code;
+              if (!(entrypoint.nestedRoutesEntry && isUseSSRBundle(_$config)))
+                return [
+                  3,
+                  10
+                ];
+              routesServerFile = getServerLoadersFile(internalDirectory, entryName);
+              filtedRoutesForServer = filterRoutesForServer(routes);
+              routesForServerLoaderMatches = filterRoutesLoader(routes);
+              code1 = templates.routesForServer({
+                routesForServerLoaderMatches
+              });
+              return [
+                4,
+                fs.ensureFile(routesServerFile)
+              ];
+            case 6:
+              _state.sent();
+              return [
+                4,
+                fs.writeFile(routesServerFile, code1)
+              ];
+            case 7:
+              _state.sent();
+              return [
+                4,
+                templates.fileSystemRoutes({
+                  metaName,
+                  routes: filtedRoutesForServer,
+                  ssrMode: useSSG ? "string" : mode,
+                  nestedRoutesEntry: entrypoint.nestedRoutesEntry,
+                  entryName: entrypoint.entryName,
+                  internalDirectory,
+                  splitRouteChunks: _$config === null || _$config === void 0 ? void 0 : (_config_output1 = _$config.output) === null || _config_output1 === void 0 ? void 0 : _config_output1.splitRouteChunks
+                })
+              ];
+            case 8:
+              serverRoutesCode = _state.sent();
+              return [
+                4,
+                fs.outputFile(path.resolve(internalDirectory, "./".concat(entryName, "/routes.server.js")), serverRoutesCode, "utf8")
+              ];
+            case 9:
+              _state.sent();
+              _state.label = 10;
+            case 10:
+              serverLoaderCombined = templates.ssrLoaderCombinedModule(entrypoints, entrypoint, _$config, appContext);
+              if (!serverLoaderCombined)
+                return [
+                  3,
+                  12
+                ];
+              serverLoaderFile = getServerCombinedModueFile(internalDirectory, entryName);
+              return [
+                4,
+                fs.outputFile(serverLoaderFile, serverLoaderCombined)
+              ];
+            case 11:
+              _state.sent();
+              _state.label = 12;
+            case 12:
+              return [
+                4,
+                fs.outputFile(path.resolve(internalDirectory, "./".concat(entryName, "/").concat(FILE_SYSTEM_ROUTES_FILE_NAME)), code, "utf8")
+              ];
+            case 13:
+              _state.sent();
+              _state.label = 14;
+            case 14:
+              return [
+                2
+              ];
+          }
+        });
+      });
+      return _generateEntryCode.apply(this, arguments);
+    }
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          internalDirectory = appContext.internalDirectory, srcDirectory = appContext.srcDirectory, internalDirAlias = appContext.internalDirAlias, internalSrcAlias = appContext.internalSrcAlias, packageName = appContext.packageName;
+          hookRunners = api.useHookRunners();
+          isV5 = isRouterV5(config);
+          getRoutes = isV5 ? getClientRoutesLegacy : getClientRoutes;
+          oldVersion = _type_of(config === null || config === void 0 ? void 0 : config.runtime.router) === "object" ? Boolean((config === null || config === void 0 ? void 0 : config.runtime.router).oldVersion) : false;
+          return [
+            4,
+            Promise.all(entrypoints.map(generateEntryCode))
+          ];
+        case 1:
+          _state.sent();
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function generateCode2(appContext, config, entrypoints, api) {
+    return _ref.apply(this, arguments);
+  };
+}();
+function generatorRegisterCode(internalDirectory, entryName, code) {
+  fs.outputFileSync(path.resolve(internalDirectory, "./".concat(entryName, "/").concat(ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME)), code, "utf8");
+}
+export {
+  generateCode,
+  generatorRegisterCode
+};

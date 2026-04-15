@@ -1,0 +1,12 @@
+import type { Project } from '../project.js';
+import type { MonorepoAnalyzer } from '../types/index.js';
+import type { Filter } from './filter.js';
+export type ExtraMonorepoStrategies = Record<string, MonorepoAnalyzer>;
+export interface GetDependentProjectsOptions {
+    cwd?: string;
+    recursive?: boolean;
+    filter?: Filter;
+    extraMonorepoStrategies?: ExtraMonorepoStrategies;
+}
+declare const getDependentProjects: (projectNameOrRootPath: string, options: GetDependentProjectsOptions) => Promise<Project[]>;
+export { getDependentProjects };

@@ -1,0 +1,73 @@
+import path from "node:path";
+import { DEFAULT_SERVER_CONFIG, ROUTE_SPEC_FILE, chalk, fs as fse } from "@modern-js/utils";
+import { handleDependencies } from "../dependencies";
+import { genPluginImportsCode, getPluginsCode, serverAppContenxtTemplate } from "../utils";
+const createNodePreset = (appContext, config) => {
+  const { appDirectory, distDirectory, serverPlugins, moduleType } = appContext;
+  const isEsmProject = moduleType === "module";
+  const plugins = serverPlugins.map((plugin) => [
+    plugin.name,
+    plugin.options
+  ]);
+  const outputDirectory = path.join(appDirectory, ".output");
+  const staticDirectory = path.join(outputDirectory, "static");
+  const entryFilePath = path.join(outputDirectory, "index.js");
+  return {
+    async prepare() {
+      await fse.remove(outputDirectory);
+    },
+    async writeOutput() {
+      await fse.copy(distDirectory, outputDirectory);
+    },
+    async genEntry() {
+      var _config_bff;
+      const serverConfig = {
+        server: {
+          port: 8080
+        },
+        bff: {
+          prefix: config === null || config === void 0 ? void 0 : (_config_bff = config.bff) === null || _config_bff === void 0 ? void 0 : _config_bff.prefix
+        },
+        output: {
+          distPath: {
+            root: "."
+          }
+        }
+      };
+      const pluginImportCode = genPluginImportsCode(plugins || []);
+      const dynamicProdOptions = {
+        config: serverConfig,
+        serverConfigFile: DEFAULT_SERVER_CONFIG
+      };
+      const pluginsCode = getPluginsCode(plugins);
+      let entryCode = (await fse.readFile(path.join(__dirname, "./node-entry.js"))).toString();
+      const serverAppContext = serverAppContenxtTemplate(appContext);
+      entryCode = entryCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", `"${ROUTE_SPEC_FILE}"`).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+      if (isEsmProject) {
+        const cjsEntryFilePath = path.join(outputDirectory, "index.cjs");
+        await fse.writeFile(cjsEntryFilePath, entryCode);
+        await fse.writeFile(entryFilePath, `import('./index.cjs');`);
+      } else {
+        await fse.writeFile(entryFilePath, entryCode);
+      }
+    },
+    async end() {
+      console.log("Static directory:", chalk.blue(path.relative(appDirectory, staticDirectory)));
+      console.log(`You can preview this build by`, chalk.blue(`node .output/index`));
+      const filter = (filePath) => {
+        return !filePath.startsWith(staticDirectory);
+      };
+      await handleDependencies({
+        appDir: appDirectory,
+        serverRootDir: outputDirectory,
+        includeEntries: [
+          require.resolve("@modern-js/prod-server")
+        ],
+        entryFilter: filter
+      });
+    }
+  };
+};
+export {
+  createNodePreset
+};

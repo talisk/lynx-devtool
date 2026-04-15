@@ -1,0 +1,6 @@
+import { type Rspack } from '@rsbuild/core';
+import { type InitConfigsOptions } from './initConfigs.js';
+export declare function createCompiler(options: InitConfigsOptions): Promise<{
+    compiler: Rspack.Compiler | Rspack.MultiCompiler;
+    webpackConfigs: import("webpack").Configuration[];
+}>;

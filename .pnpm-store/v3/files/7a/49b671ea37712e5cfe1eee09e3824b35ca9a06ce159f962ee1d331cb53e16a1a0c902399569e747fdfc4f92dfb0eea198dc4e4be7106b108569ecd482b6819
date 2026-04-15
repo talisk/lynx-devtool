@@ -1,0 +1,55 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var change_exports = {};
+__export(change_exports, {
+  change: () => change
+});
+module.exports = __toCommonJS(change_exports);
+var import_utils = require("@modern-js/utils");
+var import_locale = require("../locale");
+var import_utils2 = require("../utils");
+async function change(options) {
+  const appDir = process.cwd();
+  if ((0, import_utils.isMonorepo)(appDir)) {
+    const packages = (0, import_utils.getMonorepoPackages)(appDir);
+    if (packages.length === 0) {
+      const packageManager = await (0, import_utils.getPackageManager)(appDir);
+      import_utils.logger.warn(import_locale.i18n.t(import_locale.localeKeys.command.change.no_packages, {
+        packageManager: packageManager === "yarn" ? "yarn" : `${packageManager} run`
+      }));
+      return;
+    }
+  }
+  const { empty, open } = options;
+  const params = [
+    import_utils2.CHANGESET_PATH,
+    "add"
+  ];
+  if (empty) {
+    params.push("--empty");
+  }
+  if (open) {
+    params.push("--open");
+  }
+  await (0, import_utils2.execaWithStreamLog)(process.execPath, params);
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  change
+});

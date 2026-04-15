@@ -1,0 +1,277 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _define_property } from "@swc/helpers/_/_define_property";
+import { _ as _sliced_to_array } from "@swc/helpers/_/_sliced_to_array";
+import { _ as _type_of } from "@swc/helpers/_/_type_of";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { createMemoryStorage } from "@modern-js/runtime-utils/storer";
+import { X_RENDER_CACHE } from "../../constants";
+import { createTransformStream, getPathname } from "../../utils";
+var ZERO_RENDER_LEVEL = /"renderLevel":0/;
+var NO_SSR_CACHE = /<meta\s+[^>]*name=["']no-ssr-cache["'][^>]*>/i;
+function processCache(_) {
+  return _processCache.apply(this, arguments);
+}
+function _processCache() {
+  _processCache = _async_to_generator(function(param) {
+    var request, key, requestHandler, requestHandlerOptions, ttl, container, cacheStatus, response, onError, decoder, stream, reader, writer, html, push;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          request = param.request, key = param.key, requestHandler = param.requestHandler, requestHandlerOptions = param.requestHandlerOptions, ttl = param.ttl, container = param.container, cacheStatus = param.cacheStatus;
+          return [
+            4,
+            requestHandler(request, requestHandlerOptions)
+          ];
+        case 1:
+          response = _state.sent();
+          onError = requestHandlerOptions.onError;
+          decoder = new TextDecoder();
+          if (response.body) {
+            stream = createTransformStream();
+            reader = response.body.getReader();
+            writer = stream.writable.getWriter();
+            html = "";
+            push = function() {
+              return reader.read().then(function(param2) {
+                var done = param2.done, value = param2.value;
+                if (done) {
+                  var match = ZERO_RENDER_LEVEL.test(html) || NO_SSR_CACHE.test(html);
+                  if (match) {
+                    writer.close();
+                    return;
+                  }
+                  var current = Date.now();
+                  var cache = {
+                    val: html,
+                    cursor: current
+                  };
+                  container.set(key, JSON.stringify(cache), {
+                    ttl
+                  }).catch(function() {
+                    if (onError) {
+                      onError("[render-cache] set cache failed, key: ".concat(key, ", value: ").concat(JSON.stringify(cache)));
+                    } else {
+                      console.error("[render-cache] set cache failed, key: ".concat(key, ", value: ").concat(JSON.stringify(cache)));
+                    }
+                  });
+                  writer.close();
+                  return;
+                }
+                var content = decoder.decode(value);
+                html += content;
+                writer.write(value);
+                push();
+              });
+            };
+            push();
+            cacheStatus && response.headers.set(X_RENDER_CACHE, cacheStatus);
+            return [
+              2,
+              new Response(stream.readable, {
+                status: response.status,
+                headers: response.headers
+              })
+            ];
+          }
+          return [
+            2,
+            response
+          ];
+      }
+    });
+  });
+  return _processCache.apply(this, arguments);
+}
+var CACHE_NAMESPACE = "__ssr__cache";
+var storage = createMemoryStorage(CACHE_NAMESPACE);
+function computedKey(req, cacheControl) {
+  var pathname = getPathname(req);
+  var customKey = cacheControl.customKey;
+  var defaultKey = pathname.replace(/.+\/+$/, "");
+  if (customKey) {
+    if (typeof customKey === "string") {
+      return customKey;
+    } else {
+      return customKey(defaultKey);
+    }
+  } else {
+    return defaultKey;
+  }
+}
+function matchCacheControl(cacheOption, req) {
+  if (!cacheOption || !req) {
+    return void 0;
+  } else if (isCacheControl(cacheOption)) {
+    return cacheOption;
+  } else if (isCacheOptionProvider(cacheOption)) {
+    return cacheOption(req);
+  } else {
+    var url = req.url;
+    var options = Object.entries(cacheOption);
+    var _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+    try {
+      for (var _iterator = options[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+        var _step_value = _sliced_to_array(_step.value, 2), key = _step_value[0], option = _step_value[1];
+        if (key === "*" || new RegExp(key).test(url)) {
+          if (typeof option === "function") {
+            return option(req);
+          } else {
+            return option;
+          }
+        }
+      }
+    } catch (err) {
+      _didIteratorError = true;
+      _iteratorError = err;
+    } finally {
+      try {
+        if (!_iteratorNormalCompletion && _iterator.return != null) {
+          _iterator.return();
+        }
+      } finally {
+        if (_didIteratorError) {
+          throw _iteratorError;
+        }
+      }
+    }
+    return void 0;
+  }
+  function isCacheOptionProvider(option2) {
+    return typeof option2 === "function";
+  }
+  function isCacheControl(option2) {
+    return (typeof option2 === "undefined" ? "undefined" : _type_of(option2)) === "object" && option2 !== null && "maxAge" in option2;
+  }
+}
+function getCacheResult(request, options) {
+  return _getCacheResult.apply(this, arguments);
+}
+function _getCacheResult() {
+  _getCacheResult = _async_to_generator(function(request, options) {
+    var cacheControl, _options_container, container, requestHandler, requestHandlerOptions, onError, key, value, _, maxAge, staleWhileRevalidate, ttl, cache, interval, cacheStatus, cacheStatus1;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          cacheControl = options.cacheControl, _options_container = options.container, container = _options_container === void 0 ? storage : _options_container, requestHandler = options.requestHandler, requestHandlerOptions = options.requestHandlerOptions;
+          onError = requestHandlerOptions.onError;
+          key = computedKey(request, cacheControl);
+          _state.label = 1;
+        case 1:
+          _state.trys.push([
+            1,
+            3,
+            ,
+            4
+          ]);
+          return [
+            4,
+            container.get(key)
+          ];
+        case 2:
+          value = _state.sent();
+          return [
+            3,
+            4
+          ];
+        case 3:
+          _ = _state.sent();
+          if (onError) {
+            onError("[render-cache] get cache failed, key: ".concat(key));
+          } else {
+            console.error("[render-cache] get cache failed, key: ".concat(key));
+          }
+          value = void 0;
+          return [
+            3,
+            4
+          ];
+        case 4:
+          maxAge = cacheControl.maxAge, staleWhileRevalidate = cacheControl.staleWhileRevalidate;
+          ttl = maxAge + staleWhileRevalidate;
+          if (value) {
+            cache = JSON.parse(value);
+            interval = Date.now() - cache.cursor;
+            if (interval <= maxAge) {
+              cacheStatus = "hit";
+              return [
+                2,
+                new Response(cache.val, {
+                  headers: _define_property({}, X_RENDER_CACHE, cacheStatus)
+                })
+              ];
+            } else if (interval <= staleWhileRevalidate + maxAge) {
+              processCache({
+                key,
+                request,
+                requestHandler,
+                requestHandlerOptions,
+                ttl,
+                container
+              }).then(function() {
+                var _ref = _async_to_generator(function(response) {
+                  return _ts_generator(this, function(_state2) {
+                    switch (_state2.label) {
+                      case 0:
+                        return [
+                          4,
+                          response.text()
+                        ];
+                      case 1:
+                        _state2.sent();
+                        return [
+                          2
+                        ];
+                    }
+                  });
+                });
+                return function(response) {
+                  return _ref.apply(this, arguments);
+                };
+              }());
+              cacheStatus1 = "stale";
+              return [
+                2,
+                new Response(cache.val, {
+                  headers: _define_property({}, X_RENDER_CACHE, cacheStatus1)
+                })
+              ];
+            } else {
+              return [
+                2,
+                processCache({
+                  key,
+                  request,
+                  requestHandler,
+                  requestHandlerOptions,
+                  ttl,
+                  container,
+                  cacheStatus: "expired"
+                })
+              ];
+            }
+          } else {
+            return [
+              2,
+              processCache({
+                key,
+                request,
+                requestHandler,
+                requestHandlerOptions,
+                ttl,
+                container,
+                cacheStatus: "miss"
+              })
+            ];
+          }
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return _getCacheResult.apply(this, arguments);
+}
+export {
+  getCacheResult,
+  matchCacheControl
+};

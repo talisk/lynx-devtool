@@ -1,0 +1,47 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var restart_exports = {};
+__export(restart_exports, {
+  restart: () => restart
+});
+module.exports = __toCommonJS(restart_exports);
+var import_cli = require("@modern-js/plugin-v2/cli");
+var import_utils = require("@modern-js/utils");
+var import_commander = require("@modern-js/utils/commander");
+async function restart(hooks, filename) {
+  (0, import_utils.clearConsole)();
+  import_utils.logger.info(`Restart because ${import_utils.chalk.yellow(filename)} is changed...
+`);
+  let hasGetError = false;
+  await hooks.onBeforeRestart.call();
+  try {
+    await import_cli.cli.init(import_cli.cli.getPrevInitOptions());
+  } catch (err) {
+    console.error(err);
+    hasGetError = true;
+  } finally {
+    if (!hasGetError) {
+      import_commander.program.parse((0, import_utils.getFullArgv)());
+    }
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  restart
+});

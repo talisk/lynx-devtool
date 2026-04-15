@@ -1,0 +1,116 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _object_spread_props } from "@swc/helpers/_/_object_spread_props";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { ensureAbsolutePath, getPort, isDev, isDevCommand } from "@modern-js/utils";
+import { checkIsLegacyConfig, createDefaultConfig, createLegacyDefaultConfig, transformNormalizedConfig } from "../../config";
+function initialize_default(param) {
+  var bundler = param.bundler;
+  return {
+    name: "@modern-js/plugin-initialize",
+    post: [
+      "@modern-js/plugin-ssr",
+      "@modern-js/plugin-document",
+      "@modern-js/plugin-state",
+      "@modern-js/plugin-router",
+      "@modern-js/plugin-router-v5",
+      "@modern-js/plugin-polyfill"
+    ],
+    setup: function setup(api) {
+      api.config(function() {
+        var appContext = api.getAppContext();
+        var userConfig = api.getConfig();
+        api.updateAppContext({
+          bundlerType: bundler
+        });
+        return checkIsLegacyConfig(userConfig) ? createLegacyDefaultConfig(appContext) : createDefaultConfig(appContext);
+      });
+      api.modifyResolvedConfig(function() {
+        var _ref = _async_to_generator(function(resolved) {
+          var _resolved_output_distPath, appContext, userConfig, port, normalizedConfig, _normalizedConfig_autoLoadPlugins;
+          return _ts_generator(this, function(_state) {
+            switch (_state.label) {
+              case 0:
+                appContext = api.getAppContext();
+                userConfig = api.getConfig();
+                return [
+                  4,
+                  getServerPort(resolved)
+                ];
+              case 1:
+                port = _state.sent();
+                appContext = _object_spread_props(_object_spread({}, appContext), {
+                  port,
+                  distDirectory: ensureAbsolutePath(appContext.appDirectory, ((_resolved_output_distPath = resolved.output.distPath) === null || _resolved_output_distPath === void 0 ? void 0 : _resolved_output_distPath.root) || "dist")
+                });
+                api.updateAppContext(appContext);
+                normalizedConfig = checkIsLegacyConfig(resolved) ? transformNormalizedConfig(resolved) : resolved;
+                resolved._raw = userConfig;
+                resolved.server = _object_spread_props(_object_spread({}, normalizedConfig.server || {}), {
+                  port
+                });
+                resolved.autoLoadPlugins = (_normalizedConfig_autoLoadPlugins = normalizedConfig.autoLoadPlugins) !== null && _normalizedConfig_autoLoadPlugins !== void 0 ? _normalizedConfig_autoLoadPlugins : false;
+                stabilizeConfig(resolved, normalizedConfig, [
+                  "source",
+                  "bff",
+                  "dev",
+                  "html",
+                  "output",
+                  "tools",
+                  "testing",
+                  "plugins",
+                  "builderPlugins",
+                  "runtime",
+                  "runtimeByEntries",
+                  "deploy",
+                  "performance"
+                ]);
+                if (bundler === "webpack") {
+                  resolved.security = normalizedConfig.security || {};
+                  resolved.experiments = normalizedConfig.experiments;
+                }
+                return [
+                  2,
+                  resolved
+                ];
+            }
+          });
+        });
+        return function(resolved) {
+          return _ref.apply(this, arguments);
+        };
+      }());
+    }
+  };
+}
+;
+function stabilizeConfig(resolve, config, keys) {
+  keys.forEach(function(key) {
+    resolve[key] = config[key] || {};
+  });
+}
+function getServerPort(config) {
+  return _getServerPort.apply(this, arguments);
+}
+function _getServerPort() {
+  _getServerPort = _async_to_generator(function(config) {
+    var prodPort;
+    return _ts_generator(this, function(_state) {
+      prodPort = Number(process.env.PORT) || config.server.port || 8080;
+      if (isDev() && isDevCommand()) {
+        return [
+          2,
+          getPort(Number(process.env.PORT) || config.dev.port || prodPort)
+        ];
+      }
+      return [
+        2,
+        prodPort
+      ];
+    });
+  });
+  return _getServerPort.apply(this, arguments);
+}
+export {
+  initialize_default as default
+};

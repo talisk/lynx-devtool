@@ -1,0 +1,21 @@
+/// <reference types="node" />
+import { EventEmitter } from "events";
+import { ClientOptions } from "./ClientOptions";
+import Connection from "./connection";
+import Target from "./Target";
+import TargetClient from "./TargetClient";
+import Tracker from "./tracker";
+export default class Client extends EventEmitter {
+    readonly options: ClientOptions;
+    readonly host: string;
+    readonly port: number;
+    readonly bin: string;
+    readonly timemout: number;
+    constructor({ host, port, bin, timeout, }?: ClientOptions);
+    connection(connectKey?: string): Promise<Connection>;
+    connect(host: string, port: number): Promise<boolean>;
+    kill(): Promise<void>;
+    listTargets(): Promise<Target[]>;
+    getDevice(serial: string): TargetClient;
+    trackTargets(): Promise<Tracker>;
+}

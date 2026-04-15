@@ -1,0 +1,232 @@
+let __rslib_import_meta_url__ = 'undefined' == typeof document ? new (require('url'.replace('', ''))).URL('file:' + __filename).href : document.currentScript && document.currentScript.src || new URL('main.js', document.baseURI).href;
+var __webpack_modules__ = {
+    "../../node_modules/.pnpm/randombytes@2.1.0/node_modules/randombytes/index.js": function(module, __unused_webpack_exports, __webpack_require__) {
+        module.exports = __webpack_require__("crypto").randomBytes;
+    },
+    "../../node_modules/.pnpm/serialize-javascript@6.0.2/node_modules/serialize-javascript/index.js": function(module, __unused_webpack_exports, __webpack_require__) {
+        "use strict";
+        var randomBytes = __webpack_require__("../../node_modules/.pnpm/randombytes@2.1.0/node_modules/randombytes/index.js"), UID = function() {
+            for(var bytes = randomBytes(16), result = '', i = 0; i < 16; ++i)result += bytes[i].toString(16);
+            return result;
+        }(), PLACE_HOLDER_REGEXP = RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID + '-(\\d+)__@"', 'g'), IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g, IS_PURE_FUNCTION = /function.*?\(/, IS_ARROW_FUNCTION = /.*?=>.*?/, UNSAFE_CHARS_REGEXP = /[<>\/\u2028\u2029]/g, RESERVED_SYMBOLS = [
+            '*',
+            'async'
+        ], ESCAPED_CHARS = {
+            '<': '\\u003C',
+            '>': '\\u003E',
+            '/': '\\u002F',
+            '\u2028': '\\u2028',
+            '\u2029': '\\u2029'
+        };
+        function escapeUnsafeChars(unsafeChar) {
+            return ESCAPED_CHARS[unsafeChar];
+        }
+        module.exports = function serialize(obj, options) {
+            options || (options = {}), ('number' == typeof options || 'string' == typeof options) && (options = {
+                space: options
+            });
+            var str, functions = [], regexps = [], dates = [], maps = [], sets = [], arrays = [], undefs = [], infinities = [], bigInts = [], urls = [];
+            return (options.ignoreFunction && "function" == typeof obj && (obj = void 0), void 0 === obj) ? String(obj) : 'string' != typeof (str = options.isJSON && !options.space ? JSON.stringify(obj) : JSON.stringify(obj, options.isJSON ? null : function(key, value) {
+                if (options.ignoreFunction && !function(obj) {
+                    var functionKeys = [];
+                    for(var key in obj)"function" == typeof obj[key] && functionKeys.push(key);
+                    for(var i = 0; i < functionKeys.length; i++)delete obj[functionKeys[i]];
+                }(value), !value && void 0 !== value && value !== BigInt(0)) return value;
+                var origValue = this[key], type = typeof origValue;
+                if ('object' === type) {
+                    if (origValue instanceof RegExp) return '@__R-' + UID + '-' + (regexps.push(origValue) - 1) + '__@';
+                    if (origValue instanceof Date) return '@__D-' + UID + '-' + (dates.push(origValue) - 1) + '__@';
+                    if (origValue instanceof Map) return '@__M-' + UID + '-' + (maps.push(origValue) - 1) + '__@';
+                    if (origValue instanceof Set) return '@__S-' + UID + '-' + (sets.push(origValue) - 1) + '__@';
+                    if (origValue instanceof Array && origValue.filter(function() {
+                        return !0;
+                    }).length !== origValue.length) return '@__A-' + UID + '-' + (arrays.push(origValue) - 1) + '__@';
+                    if (origValue instanceof URL) return '@__L-' + UID + '-' + (urls.push(origValue) - 1) + '__@';
+                }
+                return 'function' === type ? '@__F-' + UID + '-' + (functions.push(origValue) - 1) + '__@' : 'undefined' === type ? '@__U-' + UID + '-' + (undefs.push(origValue) - 1) + '__@' : 'number' !== type || isNaN(origValue) || isFinite(origValue) ? 'bigint' === type ? '@__B-' + UID + '-' + (bigInts.push(origValue) - 1) + '__@' : value : '@__I-' + UID + '-' + (infinities.push(origValue) - 1) + '__@';
+            }, options.space)) ? String(str) : (!0 !== options.unsafe && (str = str.replace(UNSAFE_CHARS_REGEXP, escapeUnsafeChars)), 0 === functions.length && 0 === regexps.length && 0 === dates.length && 0 === maps.length && 0 === sets.length && 0 === arrays.length && 0 === undefs.length && 0 === infinities.length && 0 === bigInts.length && 0 === urls.length) ? str : str.replace(PLACE_HOLDER_REGEXP, function(match, backSlash, type, valueIndex) {
+                return backSlash ? match : 'D' === type ? "new Date(\"" + dates[valueIndex].toISOString() + "\")" : 'R' === type ? "new RegExp(" + serialize(regexps[valueIndex].source) + ", \"" + regexps[valueIndex].flags + "\")" : 'M' === type ? "new Map(" + serialize(Array.from(maps[valueIndex].entries()), options) + ")" : 'S' === type ? "new Set(" + serialize(Array.from(sets[valueIndex].values()), options) + ")" : 'A' === type ? "Array.prototype.slice.call(" + serialize(Object.assign({
+                    length: arrays[valueIndex].length
+                }, arrays[valueIndex]), options) + ")" : 'U' === type ? 'undefined' : 'I' === type ? infinities[valueIndex] : 'B' === type ? "BigInt(\"" + bigInts[valueIndex] + "\")" : 'L' === type ? "new URL(" + serialize(urls[valueIndex].toString(), options) + ")" : function(fn) {
+                    var serializedFn = fn.toString();
+                    if (IS_NATIVE_CODE_REGEXP.test(serializedFn)) throw TypeError('Serializing native function: ' + fn.name);
+                    if (IS_PURE_FUNCTION.test(serializedFn) || IS_ARROW_FUNCTION.test(serializedFn)) return serializedFn;
+                    var argsStartsAt = serializedFn.indexOf('('), def = serializedFn.substr(0, argsStartsAt).trim().split(' ').filter(function(val) {
+                        return val.length > 0;
+                    });
+                    return def.filter(function(val) {
+                        return -1 === RESERVED_SYMBOLS.indexOf(val);
+                    }).length > 0 ? (def.indexOf('async') > -1 ? 'async ' : '') + 'function' + (def.join('').indexOf('*') > -1 ? '*' : '') + serializedFn.substr(argsStartsAt) : serializedFn;
+                }(functions[valueIndex]);
+            });
+        };
+    },
+    crypto: function(module) {
+        "use strict";
+        module.exports = require("crypto");
+    }
+}, __webpack_module_cache__ = {};
+function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (void 0 !== cachedModule) return cachedModule.exports;
+    var module = __webpack_module_cache__[moduleId] = {
+        exports: {}
+    };
+    return __webpack_modules__[moduleId](module, module.exports, __webpack_require__), module.exports;
+}
+__webpack_require__.n = function(module) {
+    var getter = module && module.__esModule ? function() {
+        return module.default;
+    } : function() {
+        return module;
+    };
+    return __webpack_require__.d(getter, {
+        a: getter
+    }), getter;
+}, __webpack_require__.d = function(exports1, definition) {
+    for(var key in definition)__webpack_require__.o(definition, key) && !__webpack_require__.o(exports1, key) && Object.defineProperty(exports1, key, {
+        enumerable: !0,
+        get: definition[key]
+    });
+}, __webpack_require__.o = function(obj, prop) {
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+}, __webpack_require__.r = function(exports1) {
+    'undefined' != typeof Symbol && Symbol.toStringTag && Object.defineProperty(exports1, Symbol.toStringTag, {
+        value: 'Module'
+    }), Object.defineProperty(exports1, '__esModule', {
+        value: !0
+    });
+};
+var __webpack_exports__ = {};
+(()=>{
+    "use strict";
+    __webpack_require__.r(__webpack_exports__), __webpack_require__.d(__webpack_exports__, {
+        PLUGIN_ASSETS_RETRY_NAME: ()=>PLUGIN_ASSETS_RETRY_NAME,
+        pluginAssetsRetry: ()=>pluginAssetsRetry
+    });
+    let external_node_fs_namespaceObject = require("node:fs");
+    var external_node_fs_default = __webpack_require__.n(external_node_fs_namespaceObject);
+    let external_node_path_namespaceObject = require("node:path");
+    var external_node_path_default = __webpack_require__.n(external_node_path_namespaceObject);
+    let external_node_url_namespaceObject = require("node:url"), core_namespaceObject = require("@rsbuild/core");
+    var serialize_javascript = __webpack_require__("../../node_modules/.pnpm/serialize-javascript@6.0.2/node_modules/serialize-javascript/index.js"), serialize_javascript_default = __webpack_require__.n(serialize_javascript);
+    function _define_property(obj, key, value) {
+        return key in obj ? Object.defineProperty(obj, key, {
+            value: value,
+            enumerable: !0,
+            configurable: !0,
+            writable: !0
+        }) : obj[key] = value, obj;
+    }
+    let AsyncChunkRetryPlugin_dirname = external_node_path_default().dirname((0, external_node_url_namespaceObject.fileURLToPath)(__rslib_import_meta_url__));
+    class AsyncChunkRetryPlugin {
+        getRawRuntimeRetryCode() {
+            let { RuntimeGlobals } = core_namespaceObject.rspack, filename = 'asyncChunkRetry', runtimeFilePath = external_node_path_default().join(AsyncChunkRetryPlugin_dirname, 'runtime', this.options.minify ? `${filename}.min.js` : `${filename}.js`);
+            return external_node_fs_default().readFileSync(runtimeFilePath, 'utf-8').replaceAll('__RUNTIME_GLOBALS_REQUIRE__', RuntimeGlobals.require).replaceAll('__RUNTIME_GLOBALS_ENSURE_CHUNK__', RuntimeGlobals.ensureChunk).replaceAll('__RUNTIME_GLOBALS_GET_CHUNK_SCRIPT_FILENAME__', RuntimeGlobals.getChunkScriptFilename).replaceAll('__RUNTIME_GLOBALS_GET_CSS_FILENAME__', RuntimeGlobals.getChunkCssFilename).replaceAll('__RUNTIME_GLOBALS_GET_MINI_CSS_EXTRACT_FILENAME__', '__webpack_require__.miniCssF').replaceAll('__RUNTIME_GLOBALS_PUBLIC_PATH__', RuntimeGlobals.publicPath).replaceAll('__RUNTIME_GLOBALS_LOAD_SCRIPT__', RuntimeGlobals.loadScript).replaceAll('__RETRY_OPTIONS__', serialize_javascript_default()(this.runtimeOptions));
+        }
+        apply(compiler) {
+            compiler.hooks.thisCompilation.tap(this.name, (compilation)=>{
+                compilation.hooks.runtimeModule.tap(this.name, (module)=>{
+                    var _module_constructor;
+                    let { isRspack } = this.options, constructorName = isRspack ? module.constructorName : null === (_module_constructor = module.constructor) || void 0 === _module_constructor ? void 0 : _module_constructor.name;
+                    if (!('publicPath' === module.name || 'PublicPathRuntimeModule' === constructorName || 'AutoPublicPathRuntimeModule' === constructorName)) return;
+                    let runtimeCode = this.getRawRuntimeRetryCode();
+                    isRspack ? !function(module, appendSource) {
+                        try {
+                            let source = module.source.source.toString();
+                            module.source.source = Buffer.from(`${source}\n${appendSource}`, 'utf-8');
+                        } catch (err) {
+                            throw console.error('Failed to modify Rspack RuntimeModule'), err;
+                        }
+                    }(module, runtimeCode) : !function(module, appendSource) {
+                        try {
+                            let originSource = module.getGeneratedCode();
+                            module.getGeneratedCode = ()=>`${originSource}\n${appendSource}`;
+                        } catch (err) {
+                            throw console.error('Failed to modify Webpack RuntimeModule'), err;
+                        }
+                    }(module, runtimeCode);
+                });
+            });
+        }
+        constructor(options){
+            _define_property(this, "name", 'ASYNC_CHUNK_RETRY_PLUGIN'), _define_property(this, "options", void 0), _define_property(this, "runtimeOptions", void 0), this.options = options, this.runtimeOptions = function(obj, keys) {
+                return keys.reduce((ret, key)=>(void 0 !== obj[key] && (ret[key] = obj[key]), ret), {});
+            }(options, [
+                'domain',
+                'max',
+                'onRetry',
+                'onSuccess',
+                'onFail',
+                'addQuery',
+                'test'
+            ]);
+        }
+    }
+    let src_dirname = external_node_path_default().dirname((0, external_node_url_namespaceObject.fileURLToPath)(__rslib_import_meta_url__)), PLUGIN_ASSETS_RETRY_NAME = 'rsbuild:assets-retry';
+    async function getRetryCode(options) {
+        let filename = 'initialChunkRetry', { minify, inlineScript: _, ...restOptions } = options, runtimeFilePath = external_node_path_default().join(src_dirname, 'runtime', minify ? `${filename}.min.js` : `${filename}.js`), runtimeCode = await external_node_fs_default().promises.readFile(runtimeFilePath, 'utf-8');
+        return `(function(){${runtimeCode};init(${serialize_javascript_default()(restOptions)});})()`;
+    }
+    let pluginAssetsRetry = (userOptions = {})=>({
+            name: PLUGIN_ASSETS_RETRY_NAME,
+            setup (api) {
+                let { inlineScript = !0 } = userOptions, getScriptPath = (environment)=>{
+                    let distDir = environment.config.output.distPath.js;
+                    return external_node_path_default().posix.join(distDir, "assets-retry.1-0-7.js");
+                }, formatOptions = (config)=>{
+                    let options = {
+                        ...userOptions
+                    };
+                    if (void 0 === options.crossOrigin && (options.crossOrigin = config.html.crossorigin), void 0 === options.minify) {
+                        var _config_output_minify;
+                        let minify = 'boolean' == typeof config.output.minify ? config.output.minify : null === (_config_output_minify = config.output.minify) || void 0 === _config_output_minify ? void 0 : _config_output_minify.js;
+                        options.minify = minify && 'production' === config.mode;
+                    }
+                    return options;
+                };
+                inlineScript ? api.modifyHTMLTags(async ({ headTags, bodyTags }, { environment })=>{
+                    let code = await getRetryCode(formatOptions(environment.config));
+                    return headTags.unshift({
+                        tag: 'script',
+                        attrs: {},
+                        children: code
+                    }), {
+                        headTags,
+                        bodyTags
+                    };
+                }) : (api.modifyHTMLTags(async ({ headTags, bodyTags }, { assetPrefix, environment })=>{
+                    let scriptPath = getScriptPath(environment), url = (0, core_namespaceObject.ensureAssetPrefix)(scriptPath, assetPrefix);
+                    return headTags.unshift({
+                        tag: 'script',
+                        attrs: {
+                            src: url
+                        }
+                    }), {
+                        headTags,
+                        bodyTags
+                    };
+                }), api.processAssets({
+                    stage: 'additional'
+                }, async ({ sources, compilation, environment })=>{
+                    let scriptPath = getScriptPath(environment), code = await getRetryCode(formatOptions(environment.config));
+                    compilation.emitAsset(scriptPath, new sources.RawSource(code));
+                })), api.modifyBundlerChain(async (chain, { environment })=>{
+                    let { config, htmlPaths } = environment;
+                    if (!userOptions || 0 === Object.keys(htmlPaths).length) return;
+                    let options = formatOptions(config), isRspack = 'rspack' === api.context.bundlerType;
+                    chain.plugin('async-chunk-retry').use(AsyncChunkRetryPlugin, [
+                        {
+                            ...options,
+                            isRspack
+                        }
+                    ]);
+                });
+            }
+        });
+})();
+var __webpack_export_target__ = exports;
+for(var __webpack_i__ in __webpack_exports__)__webpack_export_target__[__webpack_i__] = __webpack_exports__[__webpack_i__];
+__webpack_exports__.__esModule && Object.defineProperty(__webpack_export_target__, '__esModule', {
+    value: !0
+});

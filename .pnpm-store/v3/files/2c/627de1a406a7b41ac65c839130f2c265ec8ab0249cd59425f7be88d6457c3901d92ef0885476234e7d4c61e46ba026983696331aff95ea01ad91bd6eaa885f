@@ -1,0 +1,110 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var style_exports = {};
+__export(style_exports, {
+  getLessConfig: () => getLessConfig,
+  getPostcssConfig: () => getPostcssConfig,
+  getSassConfig: () => getSassConfig,
+  getStyleConfig: () => getStyleConfig
+});
+module.exports = __toCommonJS(style_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+const getCompiledPath = async (packageName) => {
+  const { slash } = await Promise.resolve().then(() => __toESM(require("@modern-js/utils")));
+  return slash(import_path.default.join(__dirname, "../../compiled", packageName));
+};
+const getLessConfig = async (config) => {
+  var _config_style;
+  const mergedOptions = (0, import_utils.applyOptionsChain)({
+    lessOptions: {
+      javascriptEnabled: true
+    },
+    implementation: await getCompiledPath("less")
+  }, (config === null || config === void 0 ? void 0 : (_config_style = config.style) === null || _config_style === void 0 ? void 0 : _config_style.less) || {});
+  return mergedOptions;
+};
+const getSassConfig = async (config) => {
+  var _config_style;
+  const mergedOptions = (0, import_utils.applyOptionsChain)({
+    implementation: await getCompiledPath("sass")
+  }, (config === null || config === void 0 ? void 0 : (_config_style = config.style) === null || _config_style === void 0 ? void 0 : _config_style.sass) || {});
+  return mergedOptions;
+};
+const getPostcssConfig = async (config) => {
+  var _config_style;
+  const extraPlugins = [];
+  const utils = {
+    addPlugins(plugins) {
+      if (Array.isArray(plugins)) {
+        extraPlugins.push(...plugins);
+      } else {
+        extraPlugins.push(plugins);
+      }
+    }
+  };
+  const targetLegacyBrowsers = config.target === "es5";
+  const getLegacyPostCSSPlugins = async () => [
+    require(await getCompiledPath("postcss-custom-properties")),
+    require(await getCompiledPath("postcss-initial")),
+    require(await getCompiledPath("postcss-page-break")),
+    require(await getCompiledPath("postcss-font-variant"))
+  ];
+  const mergedConfig = (0, import_utils.applyOptionsChain)({
+    // TODO: when schema support redefine
+    // $$tools: 'module-tools',
+    plugins: [
+      ...targetLegacyBrowsers ? await getLegacyPostCSSPlugins() : [],
+      require(await getCompiledPath("postcss-flexbugs-fixes")),
+      require(await getCompiledPath("postcss-media-minmax")),
+      require(await getCompiledPath("postcss-nesting"))
+    ].filter(Boolean)
+  }, (config === null || config === void 0 ? void 0 : (_config_style = config.style) === null || _config_style === void 0 ? void 0 : _config_style.postcss) || {}, utils);
+  if (extraPlugins.length) {
+    mergedConfig.plugins.push(...extraPlugins);
+  }
+  return mergedConfig;
+};
+const getStyleConfig = async (config) => {
+  const postcssConfig = await getPostcssConfig(config);
+  const lessConfig = await getLessConfig(config);
+  const sassConfig = await getSassConfig(config);
+  return {
+    less: lessConfig,
+    sass: sassConfig,
+    postcss: postcssConfig
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getLessConfig,
+  getPostcssConfig,
+  getSassConfig,
+  getStyleConfig
+});

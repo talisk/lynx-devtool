@@ -1,0 +1,23 @@
+import React from 'react';
+import type { Renderer } from 'react-dom';
+import type { createRoot, hydrateRoot } from 'react-dom/client';
+import { type RuntimeContext, type TRuntimeContext } from './context/runtime';
+import { type Plugin, type runtime } from './plugin';
+export type CreateAppOptions = {
+    plugins: Plugin[];
+    /**
+     * In the test cases, we need to execute multiple createApp instances simultaneously, and they must not share the runtime.
+     */
+    runtime?: typeof runtime;
+    props?: any;
+};
+export declare const createApp: ({ plugins, runtime, props: globalProps, }: CreateAppOptions) => (App?: React.ComponentType<any>) => (props: any) => React.JSX.Element;
+type BootStrap<T = unknown> = (App: React.ComponentType, id: string | HTMLElement | RuntimeContext, root?: any, ReactDOM?: {
+    render?: Renderer;
+    hydrate?: Renderer;
+    createRoot?: typeof createRoot;
+    hydrateRoot?: typeof hydrateRoot;
+}) => Promise<T>;
+export declare const bootstrap: BootStrap;
+export declare const useRuntimeContext: () => TRuntimeContext;
+export {};

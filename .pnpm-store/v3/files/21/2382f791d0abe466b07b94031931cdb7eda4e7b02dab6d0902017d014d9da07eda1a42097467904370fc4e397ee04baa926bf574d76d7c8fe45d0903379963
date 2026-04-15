@@ -1,0 +1,51 @@
+import path from "node:path";
+import { createServerBase } from "@modern-js/server-core";
+import { createNodeServer, loadServerRuntimeConfig } from "@modern-js/server-core/node";
+import { devPlugin } from "./dev";
+import { getDevOptions } from "./helpers";
+async function createDevServer(options, applyPlugins) {
+  var _config_output_distPath;
+  const { config, pwd, serverConfigFile, serverConfigPath, builder } = options;
+  const dev = getDevOptions(options);
+  const distDir = path.resolve(pwd, ((_config_output_distPath = config.output.distPath) === null || _config_output_distPath === void 0 ? void 0 : _config_output_distPath.root) || "dist");
+  const serverConfig = await loadServerRuntimeConfig(distDir, serverConfigFile, serverConfigPath);
+  const prodServerOptions = {
+    ...options,
+    pwd: distDir
+  };
+  if (serverConfig) {
+    prodServerOptions.serverConfig = serverConfig;
+  }
+  const server = createServerBase(prodServerOptions);
+  const devHttpsOption = typeof dev === "object" && dev.https;
+  let nodeServer;
+  if (devHttpsOption) {
+    const { genHttpsOptions } = await import("./dev-tools/https");
+    const httpsOptions = await genHttpsOptions(devHttpsOption, pwd);
+    nodeServer = await createNodeServer(server.handle.bind(server), httpsOptions);
+  } else {
+    nodeServer = await createNodeServer(server.handle.bind(server));
+  }
+  const builderDevServer = await (builder === null || builder === void 0 ? void 0 : builder.createDevServer({
+    runCompile: options.runCompile,
+    compiler: options.compilier
+  }));
+  server.addPlugins([
+    devPlugin({
+      ...options,
+      builderDevServer
+    })
+  ]);
+  await applyPlugins(server, prodServerOptions, nodeServer);
+  await server.init();
+  const afterListen = async () => {
+    await (builderDevServer === null || builderDevServer === void 0 ? void 0 : builderDevServer.afterListen());
+  };
+  return {
+    server: nodeServer,
+    afterListen
+  };
+}
+export {
+  createDevServer
+};

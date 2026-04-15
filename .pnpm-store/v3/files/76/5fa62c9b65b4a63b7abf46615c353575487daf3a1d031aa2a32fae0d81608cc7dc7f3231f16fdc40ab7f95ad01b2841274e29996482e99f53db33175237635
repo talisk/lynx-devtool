@@ -1,0 +1,22 @@
+export type LogLevel = "error" | "warn" | "info" | "silent" | "debug" | "trace";
+interface LoggerOptions {
+    level?: LogLevel;
+}
+export default class Logger {
+    level: LogLevel;
+    timesMap: Map<string, any>;
+    private output;
+    constructor(opts?: LoggerOptions);
+    setOutput(output: (level: LogLevel, ...message: string[]) => void): void;
+    private defaultOutput;
+    setLevel(level: LogLevel): void;
+    info(msg: string): void;
+    warn(msg: string): void;
+    error(msg: string): void;
+    debug(...info: any[]): void;
+    time(label: string): void;
+    timeEnd(label: string): void;
+}
+export declare function createLogger(options: LoggerOptions): Logger;
+declare const defaultLogger: Logger;
+export { defaultLogger };

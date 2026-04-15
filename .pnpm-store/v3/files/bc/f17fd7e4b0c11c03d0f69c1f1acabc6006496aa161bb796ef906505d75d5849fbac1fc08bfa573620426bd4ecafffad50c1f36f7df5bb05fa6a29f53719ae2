@@ -1,0 +1,50 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var adapterCopy_exports = {};
+__export(adapterCopy_exports, {
+  builderPluginAdapterCopy: () => builderPluginAdapterCopy
+});
+module.exports = __toCommonJS(adapterCopy_exports);
+var import_createCopyPattern = require("./createCopyPattern");
+const builderPluginAdapterCopy = (options) => ({
+  name: "builder-plugin-adapter-copy",
+  setup(api) {
+    const { normalizedConfig: modernConfig, appContext } = options;
+    api.modifyBundlerChain((chain, { CHAIN_ID }) => {
+      if (chain.plugins.has(CHAIN_ID.PLUGIN.COPY)) {
+        const defaultCopyPattern = (0, import_createCopyPattern.createPublicPattern)(appContext, modernConfig, chain);
+        chain.plugin(CHAIN_ID.PLUGIN.COPY).tap((args) => {
+          var _args_;
+          return [
+            {
+              patterns: [
+                ...((_args_ = args[0]) === null || _args_ === void 0 ? void 0 : _args_.patterns) || [],
+                defaultCopyPattern
+              ]
+            }
+          ];
+        });
+      }
+    });
+  }
+});
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  builderPluginAdapterCopy
+});

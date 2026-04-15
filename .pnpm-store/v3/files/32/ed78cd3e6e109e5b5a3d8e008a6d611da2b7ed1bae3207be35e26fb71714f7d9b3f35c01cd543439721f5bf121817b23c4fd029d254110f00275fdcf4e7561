@@ -1,0 +1,17 @@
+import { watch } from '@modern-js/utils';
+import type { BaseBuildConfig } from '../types/config';
+import type { CopyOptions, CopyPattern } from '../types/config/copy';
+export declare const runPatterns: (pattern: CopyPattern, options: {
+    appDirectory: string;
+    enableCopySync?: boolean;
+    outDir: string;
+    defaultContext: string;
+    watch?: boolean;
+}) => Promise<void>;
+export declare const watchCopyFiles: (options: {
+    appDirectory: string;
+}, copyConfig: CopyOptions) => Promise<void>;
+export declare const copyTask: (buildConfig: BaseBuildConfig, options: {
+    appDirectory: string;
+    watch?: boolean;
+}) => Promise<void>;

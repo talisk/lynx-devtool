@@ -1,0 +1,3 @@
+import type { CliPlugin } from '@modern-js/core';
+import type { ModuleTools } from './types';
+export declare const moduleTools: () => CliPlugin<ModuleTools>;

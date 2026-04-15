@@ -1,0 +1,95 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var postcssTransformer_exports = {};
+__export(postcssTransformer_exports, {
+  isCssModule: () => isCssModule,
+  postcssTransformer: () => postcssTransformer
+});
+module.exports = __toCommonJS(postcssTransformer_exports);
+var import_postcss = __toESM(require("postcss"));
+var import_utils = require("../../../utils");
+var import_postcssUrlPlugin = require("./postcssUrlPlugin");
+const cssLangs = `\\.(css|less|sass|scss)($|\\?)`;
+const cssModuleRE = new RegExp(`\\.module${cssLangs}`);
+const isCssModule = (filePath, autoModules) => {
+  return typeof autoModules === "boolean" ? autoModules && cssModuleRE.test(filePath) : autoModules.test(filePath);
+};
+const postcssTransformer = async (css, entryPath, compilation) => {
+  const postcssConfig = compilation.config.style.postcss;
+  const { plugins = [], processOptions = {} } = postcssConfig;
+  const { modules: modulesOption = {}, autoModules = true } = compilation.config.style;
+  const { getJSON: userGetJSON } = modulesOption;
+  let modules = {};
+  const finalPlugins = [
+    (0, import_postcssUrlPlugin.postcssUrlPlugin)({
+      entryPath,
+      compilation
+    }),
+    ...plugins
+  ];
+  if (isCssModule(entryPath, autoModules)) {
+    finalPlugins.push((await Promise.resolve().then(() => __toESM(require("postcss-modules")))).default({
+      generateScopedName(name, filename, _css) {
+        const hash = (0, import_utils.getHash)(filename, "utf-8").substring(0, 5);
+        return `${name}_${hash}`;
+      },
+      async resolve(id) {
+        return id;
+      },
+      ...modulesOption,
+      getJSON(cssFileName, _modules, outputFileName) {
+        if (userGetJSON) {
+          userGetJSON(cssFileName, _modules, outputFileName);
+        }
+        modules = _modules;
+      }
+    }));
+  }
+  let loader = "css";
+  let { css: code } = await (0, import_postcss.default)(finalPlugins).process(css, {
+    from: entryPath,
+    ...processOptions
+  });
+  if (Object.values(modules).length) {
+    const normalizedPath = (0, import_utils.normalizeSlashes)(entryPath);
+    const key = (0, import_utils.getHash)(code, "utf-8").slice(0, 5);
+    compilation.virtualModule.set(key, code);
+    code = `import "${normalizedPath}?css_virtual&hash=${key}";export default ${JSON.stringify(modules)}`;
+    loader = "js";
+  }
+  return {
+    code,
+    loader
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  isCssModule,
+  postcssTransformer
+});

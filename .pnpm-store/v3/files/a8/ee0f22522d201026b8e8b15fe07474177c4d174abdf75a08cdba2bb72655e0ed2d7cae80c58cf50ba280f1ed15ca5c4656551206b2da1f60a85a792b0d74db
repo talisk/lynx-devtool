@@ -1,0 +1,16 @@
+import type { RuntimeRetryOptions } from '../types.js';
+type ChunkId = string;
+type ChunkFilename = string;
+type ChunkSrcUrl = string;
+declare global {
+    var __RUNTIME_GLOBALS_REQUIRE__: unknown;
+    var __RUNTIME_GLOBALS_ENSURE_CHUNK__: (chunkId: ChunkId, ...args: unknown[]) => Promise<unknown>;
+    var __RUNTIME_GLOBALS_GET_CHUNK_SCRIPT_FILENAME__: (chunkId: ChunkId, ...args: unknown[]) => string;
+    var __RUNTIME_GLOBALS_GET_CSS_FILENAME__: ((chunkId: ChunkId, ...args: unknown[]) => string) | undefined;
+    var __RUNTIME_GLOBALS_GET_MINI_CSS_EXTRACT_FILENAME__: ((chunkId: ChunkId, ...args: unknown[]) => string) | undefined;
+    var __RUNTIME_GLOBALS_LOAD_SCRIPT__: (url: ChunkSrcUrl, done: unknown, key: string, chunkId: ChunkId, ...args: unknown[]) => void;
+    var __RUNTIME_GLOBALS_PUBLIC_PATH__: string;
+    var __RETRY_OPTIONS__: RuntimeRetryOptions;
+    var __RB_ASYNC_CHUNKS__: Record<ChunkFilename, boolean>;
+}
+export {};

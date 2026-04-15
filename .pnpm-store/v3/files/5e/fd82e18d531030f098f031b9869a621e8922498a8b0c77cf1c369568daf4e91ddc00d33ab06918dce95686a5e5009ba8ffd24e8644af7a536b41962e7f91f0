@@ -1,0 +1,189 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var copy_exports = {};
+__export(copy_exports, {
+  copyTask: () => copyTask,
+  runPatterns: () => runPatterns,
+  watchCopyFiles: () => watchCopyFiles
+});
+module.exports = __toCommonJS(copy_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_p_map = __toESM(require("../../compiled/p-map"));
+var import_debug = require("../debug");
+const watchMap = /* @__PURE__ */ new Map();
+const runPatterns = async (pattern, options) => {
+  const { default: normalizePath } = await Promise.resolve().then(() => __toESM(require("../../compiled/normalize-path")));
+  const { appDirectory, enableCopySync = false } = options;
+  const { from, globOptions = {} } = pattern;
+  const targetPattern = {
+    ...pattern
+  };
+  const normalizedFrom = import_path.default.normalize(from);
+  const defaultAbsContext = options.defaultContext;
+  if (typeof pattern.context === "string") {
+    targetPattern.context = import_path.default.isAbsolute(pattern.context) ? pattern.context : import_path.default.join(appDirectory, pattern.context);
+  } else {
+    targetPattern.context = defaultAbsContext;
+  }
+  let absoluteFrom;
+  if (import_path.default.isAbsolute(normalizedFrom)) {
+    absoluteFrom = normalizedFrom;
+  } else {
+    absoluteFrom = import_path.default.resolve(targetPattern.context, normalizedFrom);
+  }
+  let stats;
+  try {
+    stats = await import_utils.fs.stat(absoluteFrom);
+  } catch (error) {
+  }
+  let fromType;
+  if (stats) {
+    if (stats.isDirectory()) {
+      fromType = "dir";
+    } else if (stats.isFile()) {
+      fromType = "file";
+    } else {
+      fromType = "glob";
+    }
+  } else {
+    fromType = "glob";
+  }
+  let glob;
+  switch (fromType) {
+    case "dir":
+      targetPattern.context = absoluteFrom;
+      glob = import_path.default.posix.join(import_utils.fastGlob.escapePath(normalizePath(import_path.default.resolve(absoluteFrom))), "**/*");
+      absoluteFrom = import_path.default.join(absoluteFrom, "**/*");
+      if (typeof globOptions.dot === "undefined") {
+        globOptions.dot = true;
+      }
+      break;
+    case "file":
+      targetPattern.context = import_path.default.dirname(absoluteFrom);
+      glob = import_utils.fastGlob.escapePath(normalizePath(import_path.default.resolve(absoluteFrom)));
+      if (typeof globOptions.dot === "undefined") {
+        globOptions.dot = true;
+      }
+      break;
+    default: {
+      var _targetPattern_context;
+      glob = import_path.default.isAbsolute(from) ? from : import_path.default.posix.join(import_utils.fastGlob.escapePath(normalizePath(import_path.default.resolve((_targetPattern_context = targetPattern.context) !== null && _targetPattern_context !== void 0 ? _targetPattern_context : appDirectory))), from);
+    }
+  }
+  const globEntries = await (0, import_utils.globby)(glob, {
+    ...{
+      followSymbolicLinks: true
+    },
+    ...targetPattern.globOptions || {},
+    cwd: targetPattern.context,
+    objectMode: true
+  });
+  (0, import_p_map.default)(globEntries, async (globEntry) => {
+    if (!globEntry.dirent.isFile()) {
+      return;
+    }
+    const from2 = globEntry.path;
+    const absoluteFrom2 = import_path.default.resolve(targetPattern.context, from2);
+    const to = import_path.default.normalize(typeof targetPattern.to !== "undefined" ? targetPattern.to : "");
+    const toType = import_path.default.extname(to) === "" || to.slice(-1) === import_path.default.sep ? "dir" : "file";
+    var _targetPattern_context2;
+    const relativeFrom = import_path.default.relative((_targetPattern_context2 = targetPattern.context) !== null && _targetPattern_context2 !== void 0 ? _targetPattern_context2 : defaultAbsContext, absoluteFrom2);
+    const filename = toType === "dir" ? import_path.default.join(to, relativeFrom) : to;
+    const absoluteTo = import_path.default.isAbsolute(filename) ? filename : import_path.default.join(options.outDir, filename);
+    if (options.watch) {
+      watchMap.set(absoluteFrom2, absoluteTo);
+    }
+    if (enableCopySync) {
+      import_utils.fs.copySync(absoluteFrom2, absoluteTo);
+    } else {
+      await import_utils.fs.copy(absoluteFrom2, absoluteTo);
+    }
+  });
+};
+const watchCopyFiles = async (options, copyConfig) => {
+  (0, import_debug.debug)("watchMap", watchMap);
+  const watchList = Array.from(watchMap.keys());
+  (0, import_debug.debug)("watchList", watchList);
+  (0, import_utils.watch)(watchList, async ({ changedFilePath, changeType }) => {
+    var _copyConfig_options;
+    const result = watchMap.get(changedFilePath);
+    if (!result) {
+      return;
+    }
+    const formatFilePath = import_path.default.relative(options.appDirectory, changedFilePath);
+    if (changeType === "unlink") {
+      import_utils.fs.remove(result);
+      import_utils.logger.info(`Copied file removed: ${import_utils.chalk.dim(formatFilePath)}`);
+      return;
+    }
+    if (copyConfig === null || copyConfig === void 0 ? void 0 : (_copyConfig_options = copyConfig.options) === null || _copyConfig_options === void 0 ? void 0 : _copyConfig_options.enableCopySync) {
+      import_utils.fs.copySync(changedFilePath, result);
+    } else {
+      await import_utils.fs.copy(changedFilePath, result);
+    }
+    import_utils.logger.info(`Copy file: ${import_utils.chalk.dim(formatFilePath)}`);
+  });
+};
+const copyTask = async (buildConfig, options) => {
+  var _copyConfig_options;
+  const copyConfig = buildConfig.copy;
+  if (!copyConfig.patterns || copyConfig.patterns.length === 0) {
+    return;
+  }
+  (0, import_debug.debug)("run copy task");
+  const concurrency = (copyConfig === null || copyConfig === void 0 ? void 0 : (_copyConfig_options = copyConfig.options) === null || _copyConfig_options === void 0 ? void 0 : _copyConfig_options.concurrency) || 100;
+  try {
+    await (0, import_p_map.default)(copyConfig.patterns, async (copyOption) => {
+      var _copyConfig_options2;
+      await runPatterns(copyOption, {
+        ...options,
+        enableCopySync: (_copyConfig_options2 = copyConfig.options) === null || _copyConfig_options2 === void 0 ? void 0 : _copyConfig_options2.enableCopySync,
+        outDir: buildConfig.outDir,
+        defaultContext: buildConfig.sourceDir
+      });
+    }, {
+      concurrency
+    });
+  } catch (e) {
+    if (e instanceof Error) {
+      import_utils.logger.error(`copy error: ${e.message}`);
+    }
+  }
+  (0, import_debug.debug)("run copy task done");
+  if (options.watch) {
+    await watchCopyFiles(options, copyConfig);
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  copyTask,
+  runPatterns,
+  watchCopyFiles
+});

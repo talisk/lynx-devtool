@@ -1,0 +1,6 @@
+import type { PluginAPI } from '@modern-js/core';
+import type { DevToolData, ModuleTools } from './types';
+import type { DevCommandOptions } from './types/command';
+import type { ModuleContext } from './types/context';
+export declare const showMenu: (metas: DevToolData[], devCmdOptions: DevCommandOptions, api: PluginAPI<ModuleTools>, context: ModuleContext) => Promise<void>;
+export declare const dev: (options: DevCommandOptions, metas: DevToolData[], api: PluginAPI<ModuleTools>, context: ModuleContext) => Promise<void>;

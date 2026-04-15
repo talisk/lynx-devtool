@@ -1,0 +1,35 @@
+/// <reference types="node" />
+export var devices: {};
+export function Relay(devicePort: integer, relayPort: integer, opts?: {
+    timeout?: any;
+    udid?: string | undefined;
+} | undefined, ...args: any[]): Relay;
+export class Relay {
+    constructor(devicePort: integer, relayPort: integer, opts?: {
+        timeout?: any;
+        udid?: string | undefined;
+    } | undefined, ...args: any[]);
+    _devicePort: any;
+    _relayPort: any;
+    _udid: string | undefined;
+    stop(): void;
+    _emit(event: string, data?: any): void;
+    _startListener(timeout?: any): void;
+    _listener: net.Socket | undefined;
+    _startServer(): void;
+    _server: net.Server | undefined;
+    _handler(conn: net.Socket): void;
+}
+export function getTunnel(devicePort: integer, opts?: {
+    timeout?: any;
+    udid?: string | undefined;
+} | undefined): Q.promise;
+export function createListener(): net.Socket;
+import net = require("net");
+export declare const address: {
+    port: number;
+    path?: undefined;
+} | {
+    path: string;
+    port?: undefined;
+};

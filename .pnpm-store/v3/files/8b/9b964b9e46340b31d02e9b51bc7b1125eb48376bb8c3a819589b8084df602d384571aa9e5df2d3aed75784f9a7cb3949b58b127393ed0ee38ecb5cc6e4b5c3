@@ -1,0 +1,20 @@
+import { DebugRouterConnector } from "../connector";
+import { ClientController } from "../usb/ClientController";
+import { DeviceDescription } from "../utils/type";
+export declare abstract class BaseDevice {
+    readonly info: DeviceDescription;
+    protected readonly driver: DebugRouterConnector;
+    protected connected: boolean;
+    protected clientController?: ClientController;
+    protected static readonly remoteBasePort: number;
+    protected static readonly monitorCount: number;
+    protected readonly remotePorts: number[];
+    protected port: number[];
+    constructor(driver: DebugRouterConnector, info: DeviceDescription);
+    get ports(): number[];
+    get serial(): string;
+    abstract getHost(): string;
+    startWatchClient(): void;
+    stopWatchClient(): Promise<void>;
+    disConnect(): void;
+}

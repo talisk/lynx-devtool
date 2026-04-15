@@ -1,0 +1,13 @@
+export interface ImportItem {
+    libraryName: string;
+    libraryDirectory?: string;
+    customName?: string;
+    customStyleName?: string;
+    styleLibraryDirectory?: string;
+    style?: boolean | 'css' | string;
+    camelToDashComponentName?: boolean;
+    camel2DashComponentName?: boolean;
+    transformToDefaultImport?: boolean;
+    ignoreEsComponent?: string[];
+    ignoreStyleComponent?: string[];
+}

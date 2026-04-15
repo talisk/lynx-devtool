@@ -1,0 +1,14 @@
+import type { NestedRoute, Reporter, ServerRoute } from '@modern-js/types';
+export declare function isRedirectResponse(status: number): boolean;
+export declare function isResponse(value: any): value is Response;
+export declare const handleRequest: ({ request, serverRoutes, routes: routesConfig, context, onTiming, }: {
+    request: Request;
+    serverRoutes: ServerRoute[];
+    routes: NestedRoute[];
+    onError?: ((error: unknown) => void) | undefined;
+    onTiming?: ((name: string, dur: number) => void) | undefined;
+    context: {
+        loaderContext?: Map<string, unknown>;
+        reporter?: Reporter;
+    };
+}) => Promise<Response | void>;

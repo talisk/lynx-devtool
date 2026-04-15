@@ -1,0 +1,79 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var sourcemap_exports = {};
+__export(sourcemap_exports, {
+  SourcemapContext: () => SourcemapContext
+});
+module.exports = __toCommonJS(sourcemap_exports);
+var import_utils = require("../../utils");
+class SourcemapContext {
+  markSourceMapStatus(dirty) {
+    this.sourceMapDirty = dirty;
+  }
+  addSourceMap(pluginId, map) {
+    if (this.enableSourceMap && this.sourceMapChain[pluginId] !== map) {
+      this.sourceMapChain[pluginId] = map;
+      this.markSourceMapStatus(true);
+    }
+  }
+  getInlineSourceMap() {
+    if (this.sourceMapDirty && this.enableSourceMap) {
+      const effectMapList = this.getSourceMapChain().reverse();
+      if (effectMapList.length > 0) {
+        this.cachedInlineSourceMap = (0, import_utils.mergeMaps)(effectMapList).toComment();
+      } else {
+        this.cachedInlineSourceMap = "";
+      }
+      this.markSourceMapStatus(false);
+    }
+    return this.cachedInlineSourceMap;
+  }
+  getSourceMap() {
+    if (this.sourceMapDirty && this.enableSourceMap) {
+      const effectMapList = this.getSourceMapChain().reverse();
+      if (effectMapList.length > 0) {
+        this.cachedSourceMap = (0, import_utils.mergeMaps)(effectMapList).toMap();
+      }
+      this.markSourceMapStatus(false);
+    }
+    return this.cachedSourceMap;
+  }
+  getSourceMapChain() {
+    return this.sourceMapChain.filter((m) => Boolean(m === null || m === void 0 ? void 0 : m.mappings));
+  }
+  genPluginId(name) {
+    if (this.pluginIdMap.has(name)) {
+      return this.pluginIdMap.get(name);
+    }
+    const id = this.sourceMapChain.length;
+    this.pluginIdMap.set(name, id);
+    return id;
+  }
+  constructor(enableSourceMap) {
+    this.enableSourceMap = enableSourceMap;
+    this.sourceMapChain = [];
+    this.sourceMapDirty = false;
+    this.cachedInlineSourceMap = "";
+    this.pluginIdMap = /* @__PURE__ */ new Map();
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  SourcemapContext
+});

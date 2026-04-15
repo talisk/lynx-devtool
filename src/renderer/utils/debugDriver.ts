@@ -54,7 +54,9 @@ class DebugDriver implements IDebugDriver {
     if (url.includes('127.0.0.1')) {
       const useVpn = localStorage.getItem(LDT_CONST.KEY_USE_VPN_IP) === 'true';
       const innerIp = await getCurrentIntranetIp(!useVpn);
-      url = url.replace('127.0.0.1', innerIp);
+      if (innerIp) {
+        url = url.replace('127.0.0.1', innerIp);
+      }
     }
     return url;
   }
@@ -226,15 +228,17 @@ class DebugDriver implements IDebugDriver {
       } else {
         this._listenerMap.set(name, [callback]);
       }
-    } catch {}
+    } catch (e) {
+      console.error('[Debug Driver] Failed to register listener:', name, e);
+    }
   }
 
   off<T extends EDebugDriverEventNames>(name: T, callback: (payload: IDebugDriverEvent2Payload[T]) => void) {
     if (this._isRemoteEvent(name)) {
       this.getRemoteDebugDriver()
         .then((driver) => driver.off(name as ERemoteDebugDriverEventNames, callback as any))
-        .catch(() => {
-          //
+        .catch((e) => {
+          console.error('[Debug Driver] Failed to unregister listener:', name, e);
         });
     }
     const listeners = this._listenerMap.get(name);

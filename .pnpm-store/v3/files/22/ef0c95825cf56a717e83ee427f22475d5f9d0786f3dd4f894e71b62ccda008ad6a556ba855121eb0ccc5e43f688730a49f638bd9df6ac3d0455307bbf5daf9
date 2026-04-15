@@ -1,0 +1,23 @@
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { renderToString } from "react-dom/server";
+import { DOCUMENT_SCRIPT_ATTRIBUTES_END, DOCUMENT_SCRIPT_ATTRIBUTES_START, DOCUMENT_SCRIPT_PLACEHOLDER_END, DOCUMENT_SCRIPT_PLACEHOLDER_START } from "./constants";
+function Script(props) {
+  const { content, ...rests } = props;
+  const contentStr = content === null || content === void 0 ? void 0 : content.toString();
+  const contentIIFE = (contentStr === null || contentStr === void 0 ? void 0 : contentStr.length) ? encodeURIComponent(`(${contentStr})()`) : "";
+  const scriptProperties = renderToString(/* @__PURE__ */ _jsx("script", {
+    ...rests
+  }));
+  const scriptpPropertiesStr = encodeURIComponent(scriptProperties.replace("<script ", "").replace("></script>", ""));
+  return /* @__PURE__ */ _jsxs(_Fragment, {
+    children: [
+      `${DOCUMENT_SCRIPT_PLACEHOLDER_START}`,
+      `${DOCUMENT_SCRIPT_ATTRIBUTES_START}${scriptpPropertiesStr}${DOCUMENT_SCRIPT_ATTRIBUTES_END}`,
+      `${contentIIFE}`,
+      `${DOCUMENT_SCRIPT_PLACEHOLDER_END}`
+    ]
+  });
+}
+export {
+  Script
+};

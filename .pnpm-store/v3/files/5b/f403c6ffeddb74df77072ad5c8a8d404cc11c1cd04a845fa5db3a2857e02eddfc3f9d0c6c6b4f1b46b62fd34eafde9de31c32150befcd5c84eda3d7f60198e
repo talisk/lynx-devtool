@@ -1,0 +1,5 @@
+import React from 'react';
+export declare function Comment(props: {
+    comment?: string;
+    children?: string;
+}): React.JSX.Element;

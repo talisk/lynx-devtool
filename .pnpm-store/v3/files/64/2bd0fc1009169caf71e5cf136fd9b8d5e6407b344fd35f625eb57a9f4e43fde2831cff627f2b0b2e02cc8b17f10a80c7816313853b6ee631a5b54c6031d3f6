@@ -1,0 +1,76 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var generator_exports = {};
+__export(generator_exports, {
+  generateBuilder: () => generateBuilder
+});
+module.exports = __toCommonJS(generator_exports);
+var import_uni_builder = require("@modern-js/uni-builder");
+var import_core = require("@rsbuild/core");
+var import_adapterCopy = require("./adapterCopy");
+var import_createBuilderProviderConfig = require("./createBuilderProviderConfig");
+var import_getBuilderEnvironments = require("./getBuilderEnvironments");
+async function generateBuilder(options, bundlerType) {
+  const { normalizedConfig, appContext } = options;
+  const tempBuilderConfig = (0, import_createBuilderProviderConfig.createBuilderProviderConfig)(normalizedConfig, appContext);
+  const { environments, builderConfig } = (0, import_getBuilderEnvironments.getBuilderEnvironments)(normalizedConfig, appContext, tempBuilderConfig);
+  builderConfig.environments = builderConfig.environments ? (0, import_core.mergeRsbuildConfig)(environments, builderConfig.environments) : environments;
+  const builder = await (0, import_uni_builder.createUniBuilder)({
+    cwd: appContext.appDirectory,
+    frameworkConfigPath: appContext.configFile || void 0,
+    bundlerType,
+    config: builderConfig
+  });
+  await applyBuilderPlugins(builder, options);
+  return builder;
+}
+async function applyBuilderPlugins(builder, options) {
+  const { builderPluginAdapterBasic, builderPluginAdapterHtml, builderPluginAdapterSSR } = await import("../shared/builderPlugins/index.js");
+  builder.addPlugins([
+    builderPluginAdapterBasic(),
+    builderPluginAdapterSSR(options),
+    builderPluginAdapterHtml(options)
+  ]);
+  builder.addPlugins([
+    (0, import_adapterCopy.builderPluginAdapterCopy)(options)
+  ], {
+    environment: "web"
+  });
+  const { normalizedConfig } = options;
+  if (!normalizedConfig.output.disableNodePolyfill) {
+    const { pluginNodePolyfill } = await import("@rsbuild/plugin-node-polyfill");
+    builder.addPlugins([
+      pluginNodePolyfill()
+    ]);
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  generateBuilder
+});

@@ -1,0 +1,6 @@
+import { DebugRouterConnector } from "../connector";
+export declare abstract class DeviceManager {
+    protected readonly driver: DebugRouterConnector;
+    constructor(driver: DebugRouterConnector);
+    abstract watchDevices(): Promise<void>;
+}

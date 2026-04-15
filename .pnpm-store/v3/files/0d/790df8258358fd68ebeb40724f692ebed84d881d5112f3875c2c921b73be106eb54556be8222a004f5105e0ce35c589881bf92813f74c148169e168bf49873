@@ -1,0 +1,25 @@
+/**
+ * Get user config from package.json.
+ * @param appDirectory - App root directory.
+ * @returns modernConfig or undefined
+ */
+export declare const getPackageConfig: <T>(appDirectory: string, packageJsonConfig: string) => T | undefined;
+export declare const getConfigFilePath: (appDirectory: string, configFilePath: string) => string;
+/**
+ *
+ * @param targetDir target dir
+ * @param overtime Unit of second
+ */
+export declare const clearFilesOverTime: (targetDir: string, overtime: number) => Promise<void>;
+/**
+ * Parse and load user config file, support extensions like .ts, mjs, js, ejs.
+ * @param appDirectory - App root directory, from which start search user config file.
+ * @param configFile - Specific absolute config file path.
+ * @returns Object contain config file path, user config object and dependency files used by config file.
+ */
+export declare const loadConfig: <T>(appDirectory: string, configFile: string, packageJsonConfig?: string) => Promise<{
+    packageName: string;
+    configFile: string;
+    config?: T;
+    pkgConfig?: T;
+}>;

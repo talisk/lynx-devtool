@@ -1,0 +1,14 @@
+import { DebugRouterConnector } from "../../connector";
+import { DeviceManager } from "../DeviceManager";
+export declare class AndroidDeviceManager extends DeviceManager {
+    private currentWatchStatus;
+    private retryCount;
+    private readonly adbOptions;
+    private adbClient;
+    constructor(driver: DebugRouterConnector, options: any);
+    private createDevice;
+    private reWatchAndroidDevices;
+    private unregisterAllAndroidDevice;
+    watchDevices(killAdb?: boolean): Promise<void>;
+    private registerDevice;
+}

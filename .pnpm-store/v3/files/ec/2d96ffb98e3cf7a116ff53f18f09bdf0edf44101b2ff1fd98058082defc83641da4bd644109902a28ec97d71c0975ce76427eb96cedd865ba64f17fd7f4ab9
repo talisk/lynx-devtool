@@ -1,0 +1,23 @@
+import { CHANGESET_PATH, execaWithStreamLog } from "../utils";
+async function status(options) {
+  const params = [
+    CHANGESET_PATH,
+    "status"
+  ];
+  const { verbose, output, since } = options;
+  if (verbose) {
+    params.push("--verbose");
+  }
+  if (output) {
+    params.push("--output");
+    params.push(output);
+  }
+  if (since) {
+    params.push("--since");
+    params.push(since);
+  }
+  await execaWithStreamLog(process.execPath, params);
+}
+export {
+  status
+};

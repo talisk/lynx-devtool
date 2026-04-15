@@ -1,0 +1,30 @@
+import path from "path";
+import { fs, address } from "@modern-js/utils";
+var initAppContext = function(param) {
+  var appDirectory = param.appDirectory, runtimeConfigFile = param.runtimeConfigFile, options = param.options, serverConfigFile = param.serverConfigFile, tempDir = param.tempDir;
+  var _ref = options || {}, _ref_metaName = _ref.metaName, metaName = _ref_metaName === void 0 ? "modern-js" : _ref_metaName, _ref_apiDir = _ref.apiDir, apiDir = _ref_apiDir === void 0 ? "api" : _ref_apiDir, _ref_distDir = _ref.distDir, distDir = _ref_distDir === void 0 ? "" : _ref_distDir, _ref_sharedDir = _ref.sharedDir, sharedDir = _ref_sharedDir === void 0 ? "shared" : _ref_sharedDir;
+  var pkgPath = path.resolve(appDirectory, "./package.json");
+  return {
+    metaName,
+    runtimeConfigFile,
+    serverConfigFile,
+    ip: address.ip(),
+    port: 0,
+    moduleType: fs.existsSync(pkgPath) ? require(pkgPath).type || "commonjs" : "commonjs",
+    apiDirectory: path.resolve(appDirectory, apiDir),
+    lambdaDirectory: path.resolve(appDirectory, apiDir, "lambda"),
+    sharedDirectory: path.resolve(appDirectory, sharedDir),
+    serverPlugins: [],
+    internalDirectory: path.resolve(appDirectory, tempDir || "./node_modules/.".concat(metaName)),
+    htmlTemplates: {},
+    serverRoutes: [],
+    entrypoints: [],
+    checkedEntries: [],
+    apiOnly: false,
+    internalDirAlias: "@_".concat(metaName.replace(/-/g, "_"), "_internal"),
+    internalSrcAlias: "@_".concat(metaName.replace(/-/g, "_"), "_src")
+  };
+};
+export {
+  initAppContext
+};

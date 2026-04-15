@@ -1,0 +1,400 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var transformLegacyConfig_exports = {};
+__export(transformLegacyConfig_exports, {
+  commonTransformAndLog: () => commonTransformAndLog,
+  createConfigByBuildConfig: () => createConfigByBuildConfig,
+  createConfigByBuildPreset: () => createConfigByBuildPreset,
+  createConfigByDefault: () => createConfigByDefault,
+  createConfigByPackageFields: () => createConfigByPackageFields,
+  createConfigByPackageMode: () => createConfigByPackageMode,
+  createUserConfigFromLegacy: () => createUserConfigFromLegacy,
+  transformOutputToBuildConfig: () => transformOutputToBuildConfig,
+  transformSourceToBuildConfig: () => transformSourceToBuildConfig,
+  transformToolsToBuildConfig: () => transformToolsToBuildConfig
+});
+module.exports = __toCommonJS(transformLegacyConfig_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_legacy_preset = require("../constants/legacy-preset");
+const transformToolsToBuildConfig = (buildConfig, legacyUserConfig) => {
+  if (!legacyUserConfig.tools) {
+    return;
+  }
+  const legacyTools = legacyUserConfig.tools;
+  var _buildConfig_style, _legacyTools_less, _legacyTools_sass, _legacyTools_tailwindcss;
+  buildConfig.style = {
+    ...(_buildConfig_style = buildConfig.style) !== null && _buildConfig_style !== void 0 ? _buildConfig_style : {},
+    less: (_legacyTools_less = legacyTools.less) !== null && _legacyTools_less !== void 0 ? _legacyTools_less : {},
+    sass: (_legacyTools_sass = legacyTools.sass) !== null && _legacyTools_sass !== void 0 ? _legacyTools_sass : {},
+    tailwindcss: (_legacyTools_tailwindcss = legacyTools.tailwindcss) !== null && _legacyTools_tailwindcss !== void 0 ? _legacyTools_tailwindcss : {}
+  };
+  if (legacyTools.postcss) {
+    var _legacyTools_postcss_postcssOptions;
+    buildConfig.style.postcss = typeof legacyTools.postcss === "function" ? (opts, utils) => {
+      var _legacyOpts_postcssOptions;
+      const legacyOpts = {
+        postcssOptions: {
+          plugins: opts.plugins
+        }
+      };
+      legacyTools.postcss(legacyOpts, utils);
+      opts.plugins = (_legacyOpts_postcssOptions = legacyOpts.postcssOptions) === null || _legacyOpts_postcssOptions === void 0 ? void 0 : _legacyOpts_postcssOptions.plugins;
+      opts.processOptions = legacyOpts.postcssOptions;
+    } : {
+      plugins: (_legacyTools_postcss_postcssOptions = legacyTools.postcss.postcssOptions) === null || _legacyTools_postcss_postcssOptions === void 0 ? void 0 : _legacyTools_postcss_postcssOptions.plugins,
+      processOptions: legacyTools.postcss.postcssOptions
+    };
+  }
+};
+const transformSourceToBuildConfig = (buildConfig, legacyUserConfig) => {
+  var _legacySource_envVars;
+  if (!legacyUserConfig.source) {
+    return;
+  }
+  const legacySource = legacyUserConfig.source;
+  var _legacySource_alias;
+  buildConfig.alias = (_legacySource_alias = legacySource.alias) !== null && _legacySource_alias !== void 0 ? _legacySource_alias : {};
+  buildConfig.define = {};
+  (_legacySource_envVars = legacySource.envVars) === null || _legacySource_envVars === void 0 ? void 0 : _legacySource_envVars.forEach((envVar) => {
+    buildConfig.define[`process.env.${envVar}`] = process.env[envVar];
+  });
+  buildConfig.define = {
+    ...buildConfig.define,
+    ...legacySource.globalVars
+  };
+  buildConfig.jsx = legacySource.jsxTransformRuntime === "classic" ? "transform" : "automatic";
+};
+const transformOutputToBuildConfig = (buildConfig, legacyUserConfig) => {
+  var _legacyUserConfig_output, _legacyUserConfig_output1;
+  if ((_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.disableTsChecker) {
+    buildConfig.dts = false;
+  }
+  if ((_legacyUserConfig_output1 = legacyUserConfig.output) === null || _legacyUserConfig_output1 === void 0 ? void 0 : _legacyUserConfig_output1.disableSourceMap) {
+    buildConfig.sourceMap = false;
+  }
+};
+const commonTransformAndLog = async (legacyUserConfig) => {
+  var _legacyUserConfig_source, _legacyUserConfig_output, _legacyUserConfig_output1;
+  const finalConfig = {};
+  finalConfig.designSystem = (_legacyUserConfig_source = legacyUserConfig.source) === null || _legacyUserConfig_source === void 0 ? void 0 : _legacyUserConfig_source.designSystem;
+  if (legacyUserConfig.tools) {
+    const legacyTools = legacyUserConfig.tools;
+    if (legacyTools.babel) {
+      import_utils.logger.warn("`tools.babel` is not support in legacy mode. Please check migrate documentation.");
+    }
+    if (legacyTools.lodash) {
+      import_utils.logger.warn("`tools.lodash` is not support in legacy mode. Please check migrate documentation.");
+    }
+    if (legacyTools.jest) {
+      finalConfig.testing = {
+        jest: legacyTools.jest
+      };
+    }
+  }
+  if ((_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.importStyle) {
+    import_utils.logger.warn("`output.importStyle` is not support in legacy mode. Please check migrate documentation. By default, the style will be compiled");
+  }
+  if ((_legacyUserConfig_output1 = legacyUserConfig.output) === null || _legacyUserConfig_output1 === void 0 ? void 0 : _legacyUserConfig_output1.jsPath) {
+    import_utils.logger.warn("`output.jsPath` is not support in legacy mode.");
+  }
+  return finalConfig;
+};
+const createConfigByBuildConfig = async (legacyUserConfig) => {
+  var _legacyUserConfig_source, _legacyUserConfig_output;
+  const legacyBuildConfig = legacyUserConfig.output.buildConfig;
+  const createBuildConfig = (config) => {
+    var _legacyUserConfig_output2, _legacyUserConfig_output1, _legacyUserConfig_output22, _legacyUserConfig_output3, _legacyUserConfig_output4, _legacyUserConfig_output5;
+    const newConfig = {};
+    transformSourceToBuildConfig(newConfig, legacyUserConfig);
+    var _legacyUserConfig_output_path;
+    const legacyPath = (_legacyUserConfig_output_path = (_legacyUserConfig_output2 = legacyUserConfig.output) === null || _legacyUserConfig_output2 === void 0 ? void 0 : _legacyUserConfig_output2.path) !== null && _legacyUserConfig_output_path !== void 0 ? _legacyUserConfig_output_path : "dist";
+    var _config_outputPath;
+    newConfig.outDir = import_path.default.join(legacyPath, (_config_outputPath = config.outputPath) !== null && _config_outputPath !== void 0 ? _config_outputPath : "./");
+    newConfig.asset = {
+      path: (_legacyUserConfig_output1 = legacyUserConfig.output) === null || _legacyUserConfig_output1 === void 0 ? void 0 : _legacyUserConfig_output1.assetsPath
+    };
+    newConfig.sourceMap = !((_legacyUserConfig_output22 = legacyUserConfig.output) === null || _legacyUserConfig_output22 === void 0 ? void 0 : _legacyUserConfig_output22.disableSourceMap);
+    var _config_sourceMap;
+    newConfig.sourceMap = (_config_sourceMap = config.sourceMap) !== null && _config_sourceMap !== void 0 ? _config_sourceMap : config.buildType === "bundle";
+    var _config_buildType;
+    newConfig.buildType = (_config_buildType = config.buildType) !== null && _config_buildType !== void 0 ? _config_buildType : "bundleless";
+    var _config_format;
+    newConfig.format = (_config_format = config.format) !== null && _config_format !== void 0 ? _config_format : "cjs";
+    var _config_target;
+    newConfig.target = (_config_target = config.target) !== null && _config_target !== void 0 ? _config_target : "esnext";
+    newConfig.dts = ((_legacyUserConfig_output3 = legacyUserConfig.output) === null || _legacyUserConfig_output3 === void 0 ? void 0 : _legacyUserConfig_output3.disableTsChecker) ? false : {};
+    if (config.dtsOnly) {
+      newConfig.dts = {
+        ...typeof newConfig.dts === "object" ? newConfig.dts : {},
+        only: true
+      };
+    }
+    if (config.tsconfig) {
+      newConfig.tsconfig = config.tsconfig;
+    }
+    if (!config.enableDts) {
+      newConfig.dts = false;
+    }
+    if (config.bundleOptions) {
+      const { bundleOptions } = config;
+      if (bundleOptions.entry) {
+        newConfig.input = config.bundleOptions.entry;
+      }
+      var _bundleOptions_splitting;
+      newConfig.splitting = (_bundleOptions_splitting = bundleOptions.splitting) !== null && _bundleOptions_splitting !== void 0 ? _bundleOptions_splitting : false;
+      var _bundleOptions_platform;
+      newConfig.platform = (_bundleOptions_platform = bundleOptions.platform) !== null && _bundleOptions_platform !== void 0 ? _bundleOptions_platform : "node";
+      var _bundleOptions_minify;
+      newConfig.minify = (_bundleOptions_minify = bundleOptions.minify) !== null && _bundleOptions_minify !== void 0 ? _bundleOptions_minify : false;
+      var _bundleOptions_externals;
+      newConfig.externals = (_bundleOptions_externals = bundleOptions.externals) !== null && _bundleOptions_externals !== void 0 ? _bundleOptions_externals : [];
+      var _bundleOptions_skipDeps;
+      newConfig.autoExternal = (_bundleOptions_skipDeps = bundleOptions.skipDeps) !== null && _bundleOptions_skipDeps !== void 0 ? _bundleOptions_skipDeps : true;
+    }
+    if (config.bundlelessOptions) {
+      var _bundlelessOptions_static;
+      const { bundlelessOptions } = config;
+      var _bundlelessOptions_sourceDir;
+      newConfig.sourceDir = (_bundlelessOptions_sourceDir = bundlelessOptions.sourceDir) !== null && _bundlelessOptions_sourceDir !== void 0 ? _bundlelessOptions_sourceDir : "./src";
+      if (bundlelessOptions.style) {
+        import_utils.logger.warn("bundlelessOptions.style is not support in legacy mode. Please check migrate documentation. By default, the style will be compiled.");
+      }
+      if ((_bundlelessOptions_static = bundlelessOptions.static) === null || _bundlelessOptions_static === void 0 ? void 0 : _bundlelessOptions_static.path) {
+        var _bundlelessOptions_static1;
+        newConfig.asset = {
+          path: (_bundlelessOptions_static1 = bundlelessOptions.static) === null || _bundlelessOptions_static1 === void 0 ? void 0 : _bundlelessOptions_static1.path
+        };
+      }
+    }
+    if ((_legacyUserConfig_output4 = legacyUserConfig.output) === null || _legacyUserConfig_output4 === void 0 ? void 0 : _legacyUserConfig_output4.importStyle) {
+      import_utils.logger.warn("`output.importStyle` is not support in legacy mode. Please check migrate documentation. By default, the style will be compiled");
+    }
+    if ((_legacyUserConfig_output5 = legacyUserConfig.output) === null || _legacyUserConfig_output5 === void 0 ? void 0 : _legacyUserConfig_output5.jsPath) {
+      import_utils.logger.warn("`output.jsPath` is not support in legacy mode.");
+    }
+    if (legacyUserConfig.tools) {
+      transformToolsToBuildConfig(newConfig, legacyUserConfig);
+    }
+    return newConfig;
+  };
+  const finalConfig = {};
+  if (Array.isArray(legacyBuildConfig)) {
+    finalConfig.buildConfig = legacyBuildConfig.map((config) => createBuildConfig(config));
+  } else {
+    finalConfig.buildConfig = [
+      createBuildConfig(legacyBuildConfig)
+    ];
+  }
+  finalConfig.designSystem = (_legacyUserConfig_source = legacyUserConfig.source) === null || _legacyUserConfig_source === void 0 ? void 0 : _legacyUserConfig_source.designSystem;
+  if ((_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.copy) {
+    finalConfig.buildConfig.push({
+      copy: {
+        patterns: legacyUserConfig.output.copy
+      }
+    });
+  }
+  if (legacyUserConfig.tools) {
+    const legacyTools = legacyUserConfig.tools;
+    if (legacyTools.babel) {
+      import_utils.logger.warn("`tools.babel` is not support in legacy mode. Please check migrate documentation.");
+    }
+    if (legacyTools.lodash) {
+      import_utils.logger.warn("`tools.lodash` is not support in legacy mode. Please check migrate documentation.");
+    }
+    if (legacyTools.jest) {
+      finalConfig.testing = {
+        jest: legacyTools.jest
+      };
+    }
+  }
+  return finalConfig;
+};
+const createConfigByBuildPreset = async (legacyUserConfig) => {
+  var _legacyUserConfig_output;
+  const legacyBuildPreset = (_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.buildPreset;
+  const finalConfig = await commonTransformAndLog(legacyUserConfig);
+  return {
+    ...finalConfig,
+    buildPreset({ preset }) {
+      var _legacyUserConfig_output2;
+      const buildConfigs = preset[legacyBuildPreset !== null && legacyBuildPreset !== void 0 ? legacyBuildPreset : "npm-library"];
+      buildConfigs.forEach((buildConfig) => {
+        transformSourceToBuildConfig(buildConfig, legacyUserConfig);
+        transformToolsToBuildConfig(buildConfig, legacyUserConfig);
+        transformOutputToBuildConfig(buildConfig, legacyUserConfig);
+      });
+      if ((_legacyUserConfig_output2 = legacyUserConfig.output) === null || _legacyUserConfig_output2 === void 0 ? void 0 : _legacyUserConfig_output2.copy) {
+        buildConfigs.push({
+          copy: {
+            patterns: legacyUserConfig.output.copy
+          }
+        });
+      }
+      return buildConfigs;
+    }
+  };
+};
+const createConfigByPackageFields = async (legacyUserConfig) => {
+  var _legacyUserConfig_output;
+  const finalConfig = await commonTransformAndLog(legacyUserConfig);
+  const output = legacyUserConfig.output;
+  const packageFields = output.packageFields;
+  const buildConfigs = [];
+  const packageFieldsKeys = Object.keys(packageFields);
+  for (const packageField of packageFieldsKeys) {
+    const packageFieldValue = packageFields[packageField];
+    let buildConfig = {};
+    let outDir;
+    if (packageField === "main") {
+      var _output_path;
+      outDir = `./${(_output_path = output.path) !== null && _output_path !== void 0 ? _output_path : "dist"}/js/node`;
+    } else if (packageField === "module") {
+      var _output_path1;
+      outDir = `./${(_output_path1 = output.path) !== null && _output_path1 !== void 0 ? _output_path1 : "dist"}/js/treeshaking`;
+    } else {
+      var _output_path2;
+      outDir = `./${(_output_path2 = output.path) !== null && _output_path2 !== void 0 ? _output_path2 : "dist"}/js/modern`;
+    }
+    if (packageFieldValue === "CJS+ES6") {
+      buildConfig = {
+        format: "cjs",
+        target: "es6",
+        outDir
+      };
+    } else if (packageFieldValue === "ESM+ES5") {
+      buildConfig = {
+        format: "esm",
+        target: "es5",
+        outDir
+      };
+    } else if (packageFieldValue === "ESM+ES6") {
+      buildConfig = {
+        format: "esm",
+        target: "es6",
+        outDir
+      };
+    }
+    transformSourceToBuildConfig(buildConfig, legacyUserConfig);
+    transformToolsToBuildConfig(buildConfig, legacyUserConfig);
+    transformOutputToBuildConfig(buildConfig, legacyUserConfig);
+    buildConfigs.push(buildConfig);
+  }
+  buildConfigs.push({
+    buildType: "bundleless",
+    outDir: "./dist/types",
+    dts: {
+      only: true
+    }
+  });
+  if ((_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.copy) {
+    buildConfigs.push({
+      copy: {
+        patterns: legacyUserConfig.output.copy
+      }
+    });
+  }
+  return {
+    ...finalConfig,
+    buildConfig: buildConfigs
+  };
+};
+const createConfigByPackageMode = async (legacyUserConfig) => {
+  var _legacyUserConfig_output;
+  const finalConfig = await commonTransformAndLog(legacyUserConfig);
+  const packageMode = legacyUserConfig.output.packageMode;
+  const buildConfigs = import_legacy_preset.legacyPresets[packageMode];
+  for (const buildConfig of buildConfigs) {
+    transformSourceToBuildConfig(buildConfig, legacyUserConfig);
+    transformToolsToBuildConfig(buildConfig, legacyUserConfig);
+    transformOutputToBuildConfig(buildConfig, legacyUserConfig);
+  }
+  if ((_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.copy) {
+    buildConfigs.push({
+      copy: {
+        patterns: legacyUserConfig.output.copy
+      }
+    });
+  }
+  return {
+    ...finalConfig,
+    buildConfig: buildConfigs
+  };
+};
+const createConfigByDefault = async (legacyUserConfig) => {
+  var _legacyUserConfig_output;
+  const finalConfig = await commonTransformAndLog(legacyUserConfig);
+  const buildConfigs = import_legacy_preset.legacyPresets["universal-js"];
+  for (const buildConfig of buildConfigs) {
+    transformSourceToBuildConfig(buildConfig, legacyUserConfig);
+    transformToolsToBuildConfig(buildConfig, legacyUserConfig);
+    transformOutputToBuildConfig(buildConfig, legacyUserConfig);
+  }
+  if ((_legacyUserConfig_output = legacyUserConfig.output) === null || _legacyUserConfig_output === void 0 ? void 0 : _legacyUserConfig_output.copy) {
+    buildConfigs.push({
+      copy: {
+        patterns: legacyUserConfig.output.copy
+      }
+    });
+  }
+  return {
+    ...finalConfig,
+    buildConfig: buildConfigs
+  };
+};
+const createUserConfigFromLegacy = async (config) => {
+  var _config_output;
+  const { buildConfig, buildPreset, packageFields, packageMode } = (_config_output = config.output) !== null && _config_output !== void 0 ? _config_output : {};
+  if (buildConfig) {
+    return createConfigByBuildConfig(config);
+  }
+  if (buildPreset) {
+    return createConfigByBuildPreset(config);
+  }
+  if (packageFields) {
+    return createConfigByPackageFields(config);
+  }
+  if (packageMode) {
+    return createConfigByPackageFields(config);
+  }
+  return createConfigByDefault(config);
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  commonTransformAndLog,
+  createConfigByBuildConfig,
+  createConfigByBuildPreset,
+  createConfigByDefault,
+  createConfigByPackageFields,
+  createConfigByPackageMode,
+  createUserConfigFromLegacy,
+  transformOutputToBuildConfig,
+  transformSourceToBuildConfig,
+  transformToolsToBuildConfig
+});

@@ -1,0 +1,23 @@
+export var ServerLogLevel;
+(function (ServerLogLevel) {
+    ServerLogLevel[ServerLogLevel["verbose"] = 0] = "verbose";
+    ServerLogLevel[ServerLogLevel["debug"] = 1] = "debug";
+    ServerLogLevel[ServerLogLevel["info"] = 2] = "info";
+    ServerLogLevel[ServerLogLevel["warn"] = 3] = "warn";
+    ServerLogLevel[ServerLogLevel["error"] = 4] = "error";
+    ServerLogLevel[ServerLogLevel["fatal"] = 5] = "fatal";
+})(ServerLogLevel || (ServerLogLevel = {}));
+export var ServerEventTrackType;
+(function (ServerEventTrackType) {
+    ServerEventTrackType["ClientConnect"] = "client_connect";
+    ServerEventTrackType["ServerInitClient"] = "server_init_client";
+    ServerEventTrackType["ClientRegister"] = "client_register";
+    ServerEventTrackType["ClientRegisterFailed"] = "client_register_failed";
+    ServerEventTrackType["ServerRegisteredClient"] = "server_registered_client";
+    ServerEventTrackType["ClientConnectError"] = "client_connect_error";
+    ServerEventTrackType["ClientConnectClose"] = "client_connect_close";
+    ServerEventTrackType["ClientJoinRoom"] = "client_join_room";
+    ServerEventTrackType["ClientJoinRoomFailed"] = "client_join_room_failed";
+    ServerEventTrackType["ClientRoomJoined"] = "client_room_joined";
+})(ServerEventTrackType || (ServerEventTrackType = {}));
+//# sourceMappingURL=socket.model.js.map

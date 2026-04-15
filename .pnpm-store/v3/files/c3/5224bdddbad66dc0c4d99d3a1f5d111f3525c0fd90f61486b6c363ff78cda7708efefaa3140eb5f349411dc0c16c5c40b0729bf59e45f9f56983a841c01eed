@@ -1,0 +1,2 @@
+import type { ICompilerOptions, ICompilerOptionsWithDefault } from './type';
+export declare const mergeDefaultOption: (compilerOptions: ICompilerOptions) => ICompilerOptionsWithDefault;

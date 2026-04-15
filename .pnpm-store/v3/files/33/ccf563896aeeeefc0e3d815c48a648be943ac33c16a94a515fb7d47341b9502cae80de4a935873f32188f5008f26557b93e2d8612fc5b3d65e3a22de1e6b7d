@@ -1,0 +1,9 @@
+import type { MonorepoAnalyzer } from '../types/index.js';
+import type { GetProjectsFunc } from './getProjects.js';
+export interface IMonorepoBaseData {
+    isMonorepo: boolean;
+    type: string;
+    rootPath: string;
+    getProjects?: GetProjectsFunc;
+}
+export declare const getMonorepoBaseData: (starFindPath: string, otherMonorepoAnalyzer?: Record<string, MonorepoAnalyzer>) => Promise<IMonorepoBaseData>;

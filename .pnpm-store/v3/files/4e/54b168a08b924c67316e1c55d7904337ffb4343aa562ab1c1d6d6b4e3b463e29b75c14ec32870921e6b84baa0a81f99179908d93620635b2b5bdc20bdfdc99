@@ -1,0 +1,7 @@
+import React from 'react';
+export declare function Root(props: {
+    rootId?: string;
+} & React.DOMAttributes<HTMLDivElement>): React.JSX.Element;
+export declare function DefaultRoot(props: {
+    children?: any;
+}): React.JSX.Element;

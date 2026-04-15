@@ -1,0 +1,50 @@
+import { isResFinalized } from "./helper";
+const httpCallBack2HonoMid = (handler) => {
+  return async (context, next) => {
+    const { req, res } = context.env.node;
+    const onPipe = () => {
+      res._modernBodyPiped = true;
+    };
+    res.once("pipe", onPipe);
+    req.__honoRequest = context.req;
+    req.__templates = context.get("templates") || {};
+    req.__serverManifest = context.get("serverManifest") || {};
+    try {
+      await handler(req, res);
+    } finally {
+      delete req.__honoRequest;
+      delete req.__templates;
+      delete req.__serverManifest;
+      res.removeListener("pipe", onPipe);
+    }
+    if (isResFinalized(res)) {
+      context.finalized = true;
+    } else {
+      await next();
+    }
+  };
+};
+const noop = () => {
+};
+const connectMid2HonoMid = (handler) => {
+  return async (context, next) => {
+    return new Promise((resolve, reject) => {
+      const { req, res } = context.env.node;
+      if (handler.length < 3) {
+        resolve(handler(req, res, noop));
+      } else {
+        handler(req, res, (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(next());
+          }
+        });
+      }
+    });
+  };
+};
+export {
+  connectMid2HonoMid,
+  httpCallBack2HonoMid
+};

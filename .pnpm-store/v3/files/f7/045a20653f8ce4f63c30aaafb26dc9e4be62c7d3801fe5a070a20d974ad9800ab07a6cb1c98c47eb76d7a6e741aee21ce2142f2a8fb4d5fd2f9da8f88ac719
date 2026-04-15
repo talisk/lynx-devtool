@@ -1,0 +1,7 @@
+export declare function getAdbInstance(adbOption: any): Promise<import("@devicefarmer/adbkit").Client>;
+export declare function getAdbToolPath(): string | null;
+export declare class AdbValidator {
+    validate(): Promise<boolean>;
+    fix(): Promise<boolean>;
+    private tryInstallAdbTool;
+}

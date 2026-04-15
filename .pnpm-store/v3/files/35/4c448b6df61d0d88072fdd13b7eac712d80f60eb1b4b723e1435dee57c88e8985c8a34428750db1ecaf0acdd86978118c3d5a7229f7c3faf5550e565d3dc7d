@@ -1,0 +1,264 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { fs, createDebugger, findExists } from "@modern-js/utils";
+import { build } from "esbuild";
+import React from "react";
+import ReactDomServer from "react-dom/server";
+import { DocumentContext } from "../DocumentContext";
+import { BODY_PARTICALS_SEPARATOR, DOCUMENT_CHUNKSMAP_PLACEHOLDER, DOCUMENT_COMMENT_PLACEHOLDER_END, DOCUMENT_COMMENT_PLACEHOLDER_START, DOCUMENT_FILE_NAME, DOCUMENT_LINKS_PLACEHOLDER, DOCUMENT_META_PLACEHOLDER, DOCUMENT_SCRIPTS_PLACEHOLDER, DOCUMENT_SCRIPT_ATTRIBUTES_END, DOCUMENT_SCRIPT_ATTRIBUTES_START, DOCUMENT_SCRIPT_PLACEHOLDER_END, DOCUMENT_SCRIPT_PLACEHOLDER_START, DOCUMENT_SSRDATASCRIPT_PLACEHOLDER, DOCUMENT_SSR_PLACEHOLDER, DOCUMENT_STYLE_PLACEHOLDER_END, DOCUMENT_STYLE_PLACEHOLDER_START, DOCUMENT_TITLE_PLACEHOLDER, DOC_EXT, HEAD_PARTICALS_SEPARATOR, HTML_SEPARATOR, PLACEHOLDER_REPLACER_MAP, TOP_PARTICALS_SEPARATOR } from "../constants";
+var debug = createDebugger("html_genarate");
+var getDocumenByEntryName = function getDocumenByEntryName2(entrypoints, entryName, fallbackDir) {
+  var _entrypoints_find;
+  var entryDir = (_entrypoints_find = entrypoints.find(function(item) {
+    return item.entryName === entryName;
+  })) === null || _entrypoints_find === void 0 ? void 0 : _entrypoints_find.absoluteEntryDir;
+  var entryDirs = DOC_EXT.map(function(item) {
+    return "".concat(entryDir).concat(path.sep).concat(DOCUMENT_FILE_NAME, ".").concat(item);
+  });
+  var fallbackDirs = fallbackDir ? DOC_EXT.map(function(item) {
+    return [
+      fallbackDir,
+      "src",
+      "".concat(DOCUMENT_FILE_NAME, ".").concat(item)
+    ].join(path.sep);
+  }) : [];
+  var docFile = findExists(_to_consumable_array(entryDirs).concat(_to_consumable_array(fallbackDirs)));
+  return docFile || void 0;
+};
+var documentPlugin = function() {
+  return {
+    name: "@modern-js/plugin-document",
+    pre: [
+      "@modern-js/plugin-analyze"
+    ],
+    setup: function() {
+      var _ref = _async_to_generator(function(api) {
+        var documentEntry;
+        function getDocParams(params) {
+          var config = params.config, templateParameters = params.templateParameters, entryName = params.entryName;
+          return {
+            processEnv: process.env,
+            config: {
+              output: config.output
+            },
+            entryName,
+            templateParams: templateParameters
+          };
+        }
+        return _ts_generator(this, function(_state) {
+          documentEntry = function(entryName, templateParameters) {
+            var _api_useAppContext = api.useAppContext(), entrypoints = _api_useAppContext.entrypoints, internalDirectory = _api_useAppContext.internalDirectory, appDirectory = _api_useAppContext.appDirectory;
+            var documentFilePath = getDocumenByEntryName(entrypoints, entryName, appDirectory);
+            if (!documentFilePath) {
+              return null;
+            }
+            return function() {
+              var _ref2 = _async_to_generator(function(param) {
+                var htmlWebpackPlugin, config, documentParams, tempTsConfigFile, userTsConfigFilePath, tsConfig, err, htmlOutputFile, Document, HTMLElement, html, partialsByEntrypoint, scripts, partialsContent, links, metas, titles, nonce, nonceAttr, finalHtml;
+                return _ts_generator(this, function(_state2) {
+                  switch (_state2.label) {
+                    case 0:
+                      htmlWebpackPlugin = param.htmlWebpackPlugin;
+                      config = api.useResolvedConfigContext();
+                      documentParams = getDocParams({
+                        config,
+                        entryName,
+                        templateParameters
+                      });
+                      tempTsConfigFile = path.join(internalDirectory, "./document/_tempTsconfig.json");
+                      userTsConfigFilePath = path.join(appDirectory, "tsconfig.json");
+                      _state2.label = 1;
+                    case 1:
+                      _state2.trys.push([
+                        1,
+                        3,
+                        ,
+                        4
+                      ]);
+                      return [
+                        4,
+                        require(userTsConfigFilePath)
+                      ];
+                    case 2:
+                      tsConfig = _state2.sent();
+                      return [
+                        3,
+                        4
+                      ];
+                    case 3:
+                      err = _state2.sent();
+                      tsConfig = {};
+                      return [
+                        3,
+                        4
+                      ];
+                    case 4:
+                      if (tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.compilerOptions) {
+                        tsConfig.compilerOptions.jsx = "react-jsx";
+                      } else {
+                        tsConfig.compilerOptions = {
+                          jsx: "react-jsx"
+                        };
+                      }
+                      fs.outputFileSync(tempTsConfigFile, JSON.stringify(tsConfig));
+                      htmlOutputFile = path.join(internalDirectory, "./document/_".concat(entryName, ".html.js"));
+                      return [
+                        4,
+                        build({
+                          entryPoints: [
+                            documentFilePath
+                          ],
+                          outfile: htmlOutputFile,
+                          platform: "node",
+                          // change esbuild use the rootDir tsconfig.json as default to tempTsConfigFile
+                          tsconfig: tempTsConfigFile,
+                          target: "es6",
+                          loader: {
+                            ".ts": "ts",
+                            ".tsx": "tsx"
+                          },
+                          bundle: true,
+                          plugins: [
+                            {
+                              name: "make-all-packages-external",
+                              setup: function setup(build2) {
+                                build2.onResolve({
+                                  filter: /^[^./]|^\.[^./]|^\.\.[^/]/
+                                }, function(args) {
+                                  var external = true;
+                                  if (args.kind === "entry-point") {
+                                    external = false;
+                                  }
+                                  return {
+                                    path: args.path,
+                                    external
+                                  };
+                                });
+                              }
+                            }
+                          ]
+                        })
+                      ];
+                    case 5:
+                      _state2.sent();
+                      delete require.cache[require.resolve(htmlOutputFile)];
+                      return [
+                        4,
+                        require(htmlOutputFile)
+                      ];
+                    case 6:
+                      Document = _state2.sent().default;
+                      HTMLElement = React.createElement(DocumentContext.Provider, {
+                        value: documentParams
+                      }, React.createElement(Document, null));
+                      html = ReactDomServer.renderToStaticMarkup(HTMLElement);
+                      debug("entry %s's document jsx rendered html: %o", entryName, html);
+                      partialsByEntrypoint = api.useAppContext().partialsByEntrypoint;
+                      scripts = [
+                        htmlWebpackPlugin.tags.headTags.filter(function(item) {
+                          return item.tagName === "script";
+                        }).join(""),
+                        htmlWebpackPlugin.tags.bodyTags.toString()
+                      ].join("");
+                      partialsContent = {
+                        partialsTop: "",
+                        partialsHead: "",
+                        partialsBody: ""
+                      };
+                      if (partialsByEntrypoint === null || partialsByEntrypoint === void 0 ? void 0 : partialsByEntrypoint[entryName]) {
+                        partialsContent.partialsTop = partialsByEntrypoint[entryName].top.join("\n");
+                        partialsContent.partialsHead = partialsByEntrypoint[entryName].head.join("\n");
+                        partialsContent.partialsBody = partialsByEntrypoint[entryName].body.join("\n");
+                      }
+                      html = html.replace(TOP_PARTICALS_SEPARATOR, partialsContent.partialsTop).replace(HEAD_PARTICALS_SEPARATOR, partialsContent.partialsHead).replace(BODY_PARTICALS_SEPARATOR, partialsContent.partialsBody);
+                      links = [
+                        htmlWebpackPlugin.tags.headTags.filter(function(item) {
+                          return item.tagName === "link";
+                        }).join("")
+                      ].join("");
+                      metas = [
+                        templateParameters.meta,
+                        htmlWebpackPlugin.tags.headTags.filter(function(item) {
+                          return item.tagName !== "script" && item.tagName !== "link" && item.tagName !== "title";
+                        }).join("")
+                      ].join("");
+                      titles = htmlWebpackPlugin.tags.headTags.filter(function(item) {
+                        return item.tagName === "title";
+                      }).join("").replace("<title>", "").replace("</title>", "") || templateParameters.title;
+                      if (html.includes(DOCUMENT_SCRIPT_PLACEHOLDER_START) && html.includes(DOCUMENT_SCRIPT_PLACEHOLDER_END)) {
+                        nonce = (config.security || {}).nonce;
+                        nonceAttr = nonce ? "nonce=".concat(nonce) : "";
+                        html = html.replace(new RegExp("".concat(DOCUMENT_SCRIPT_PLACEHOLDER_START).concat(DOCUMENT_SCRIPT_ATTRIBUTES_START, "(.*)").concat(DOCUMENT_SCRIPT_ATTRIBUTES_END, "(.*?)").concat(DOCUMENT_SCRIPT_PLACEHOLDER_END), "g"), function(_scriptStr, $1, $2) {
+                          return "<script ".concat(decodeURIComponent($1), " ").concat(nonceAttr, ">").concat(decodeURIComponent($2), "</script>");
+                        });
+                      }
+                      if (html.includes(DOCUMENT_STYLE_PLACEHOLDER_START) && html.includes(DOCUMENT_STYLE_PLACEHOLDER_END)) {
+                        html = html.replace(new RegExp("".concat(DOCUMENT_STYLE_PLACEHOLDER_START, "(.*?)").concat(DOCUMENT_STYLE_PLACEHOLDER_END), "g"), function(_styleStr, $1) {
+                          return "<style>".concat(decodeURIComponent($1), "</style>");
+                        });
+                      }
+                      if (html.includes(DOCUMENT_COMMENT_PLACEHOLDER_START) && html.includes(DOCUMENT_COMMENT_PLACEHOLDER_END)) {
+                        html = html.replace(new RegExp("".concat(DOCUMENT_COMMENT_PLACEHOLDER_START, "(.*?)").concat(DOCUMENT_COMMENT_PLACEHOLDER_END), "g"), function(_scriptStr, $1) {
+                          return "".concat(decodeURIComponent($1));
+                        });
+                      }
+                      finalHtml = "<!DOCTYPE html>".concat(html).replace(DOCUMENT_META_PLACEHOLDER, metas).replace(DOCUMENT_SSR_PLACEHOLDER, HTML_SEPARATOR).replace(DOCUMENT_SCRIPTS_PLACEHOLDER, scripts).replace(DOCUMENT_LINKS_PLACEHOLDER, links).replace(DOCUMENT_CHUNKSMAP_PLACEHOLDER, PLACEHOLDER_REPLACER_MAP[DOCUMENT_CHUNKSMAP_PLACEHOLDER]).replace(DOCUMENT_SSRDATASCRIPT_PLACEHOLDER, PLACEHOLDER_REPLACER_MAP[DOCUMENT_SSRDATASCRIPT_PLACEHOLDER]).replace(DOCUMENT_TITLE_PLACEHOLDER, titles);
+                      return [
+                        2,
+                        finalHtml
+                      ];
+                  }
+                });
+              });
+              return function(_) {
+                return _ref2.apply(this, arguments);
+              };
+            }();
+          };
+          return [
+            2,
+            {
+              config: function() {
+                var _userConfig_tools;
+                var userConfig = api.useConfigContext();
+                if (((_userConfig_tools = userConfig.tools) === null || _userConfig_tools === void 0 ? void 0 : _userConfig_tools.htmlPlugin) === false) {
+                  return {};
+                }
+                return {
+                  tools: {
+                    htmlPlugin: function(options, entry) {
+                      var hackParameters = typeof (options === null || options === void 0 ? void 0 : options.templateParameters) === "function" ? options === null || options === void 0 ? void 0 : options.templateParameters({}, {}, {}, {}) : _object_spread({}, options === null || options === void 0 ? void 0 : options.templateParameters);
+                      var templateContent = documentEntry(
+                        entry.entryName,
+                        // options,
+                        hackParameters
+                      );
+                      var documentHtmlOptions = templateContent ? {
+                        templateContent,
+                        // Note: the behavior of inject/modify tags in afterTemplateExecution hook will not take effect
+                        inject: false
+                      } : {};
+                      return _object_spread({}, options, documentHtmlOptions);
+                    }
+                  }
+                };
+              }
+            }
+          ];
+        });
+      });
+      return function(api) {
+        return _ref.apply(this, arguments);
+      };
+    }()
+  };
+};
+var cli_default = documentPlugin;
+export {
+  cli_default as default,
+  documentPlugin,
+  getDocumenByEntryName
+};

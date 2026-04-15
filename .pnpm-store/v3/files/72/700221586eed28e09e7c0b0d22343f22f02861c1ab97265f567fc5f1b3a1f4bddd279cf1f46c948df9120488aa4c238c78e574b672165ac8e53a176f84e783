@@ -1,0 +1,206 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AndroidDeviceManager = void 0;
+const DeviceManager_1 = require("../DeviceManager");
+const AndroidDevice_1 = __importDefault(require("./AndroidDevice"));
+const logger_1 = require("../../utils/logger");
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+const WatchStatus_1 = require("../WatchStatus");
+const adb_validator_1 = require("../../utils/adb.validator");
+class AndroidDeviceManager extends DeviceManager_1.DeviceManager {
+    constructor(driver, options) {
+        super(driver);
+        this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+        this.retryCount = 0;
+        this.adbClient = null;
+        this.adbOptions = options;
+    }
+    createDevice(adbClient, device) {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            var _a, _b;
+            try {
+                const deviceClient = adbClient.getDevice(device.id);
+                const props = yield deviceClient.getProperties();
+                const name = props["ro.product.model"];
+                const androidLikeDevice = new AndroidDevice_1.default(this.driver, device.id, name, adbClient);
+                yield androidLikeDevice.forwards();
+                resolve(androidLikeDevice);
+            }
+            catch (e) {
+                const msg = "create device error:" + (e === null || e === void 0 ? void 0 : e.message);
+                logger_1.defaultLogger.warn(msg);
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("android_connect_warn", null, {
+                    msg: msg,
+                    stage: "device",
+                });
+                const message = `${(_b = e.message) !== null && _b !== void 0 ? _b : e}`;
+                const isAuthorizationError = message.includes("device unauthorized");
+                if (isAuthorizationError) {
+                    logger_1.defaultLogger.debug("device unauthorized");
+                }
+                resolve(undefined);
+            }
+        }));
+    }
+    reWatchAndroidDevices() {
+        this.retryCount++;
+        setTimeout(() => {
+            this.watchDevices(true);
+        }, 300);
+    }
+    unregisterAllAndroidDevice() {
+        const androidDevices = Array.from(this.driver.devices.values()).filter((d) => d instanceof AndroidDevice_1.default);
+        androidDevices.forEach((d) => {
+            this.driver.unregisterDevice(d.serial);
+        });
+    }
+    watchDevices(killAdb = false) {
+        var _a, _b, _c, _d;
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.adbClient) {
+                this.adbClient = yield (0, adb_validator_1.getAdbInstance)(this.adbOptions);
+                if (!this.adbClient) {
+                    logger_1.defaultLogger.debug("getAdbInstance error");
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("android_connect_error", null, {
+                        msg: "getAdbInstance error",
+                        stage: "device",
+                        detail: "getAdbInstance",
+                    });
+                    return;
+                }
+            }
+            if (this.currentWatchStatus !== WatchStatus_1.WatchStatus.StopWatching) {
+                return;
+            }
+            this.currentWatchStatus = WatchStatus_1.WatchStatus.PrepareToWatch;
+            if (killAdb && this.retryCount > 3) {
+                try {
+                    yield this.adbClient.kill();
+                }
+                catch (e) {
+                    logger_1.defaultLogger.debug((_b = e === null || e === void 0 ? void 0 : e.message) !== null && _b !== void 0 ? _b : "kill adb: unknown error");
+                    (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("android_watch_device_error", null, {
+                        msg: "adbClient kill error",
+                    });
+                }
+                this.retryCount = 0;
+            }
+            try {
+                this.adbClient
+                    .trackDevices()
+                    .then((tracker) => {
+                    tracker.on("error", (err) => __awaiter(this, void 0, void 0, function* () {
+                        var _a;
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                        const msg = "tracker error:" + (err === null || err === void 0 ? void 0 : err.message);
+                        (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("android_connect_error", null, {
+                            msg: msg,
+                            stage: "device",
+                            detail: "track_on_error",
+                        });
+                        logger_1.defaultLogger.debug(msg);
+                        this.unregisterAllAndroidDevice();
+                        this.reWatchAndroidDevices();
+                    }));
+                    tracker.on("add", (device) => __awaiter(this, void 0, void 0, function* () {
+                        var _b;
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                        this.retryCount = 0;
+                        logger_1.defaultLogger.debug("tracker add:" + JSON.stringify(device));
+                        (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("add_android_device", null, {
+                            device_type: device.type,
+                            serial: device.id,
+                        });
+                        if (device.type === "device") {
+                            this.registerDevice(this.adbClient, device);
+                        }
+                    }));
+                    tracker.on("change", (device) => __awaiter(this, void 0, void 0, function* () {
+                        var _c;
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                        this.retryCount = 0;
+                        logger_1.defaultLogger.debug("tracker change:" + JSON.stringify(device));
+                        (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("change_android_device", null, {
+                            device_type: device.type,
+                            serial: device.id,
+                        });
+                        if (device.type === "device") {
+                            this.registerDevice(this.adbClient, device);
+                        }
+                        else {
+                            if (this.driver.devices.has(device.id)) {
+                                this.driver.unregisterDevice(device.id);
+                            }
+                        }
+                    }));
+                    tracker.on("remove", (device) => {
+                        var _a;
+                        this.currentWatchStatus = WatchStatus_1.WatchStatus.Watching;
+                        this.retryCount = 0;
+                        logger_1.defaultLogger.debug("tracker remove:" + JSON.stringify(device));
+                        (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("rm_android_device", null, {
+                            device_type: device.type,
+                            serial: device.id,
+                        });
+                        if (this.driver.devices.has(device.id)) {
+                            this.driver.unregisterDevice(device.id);
+                        }
+                    });
+                })
+                    .catch((err) => __awaiter(this, void 0, void 0, function* () {
+                    var _e;
+                    this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                    const msg = "trackDevices catch:" + (err === null || err === void 0 ? void 0 : err.message);
+                    (_e = (0, DriverReportService_1.getDriverReportService)()) === null || _e === void 0 ? void 0 : _e.report("android_connect_error", null, {
+                        msg: msg,
+                        stage: "device",
+                        detail: "trackDevices_catch",
+                    });
+                    logger_1.defaultLogger.debug(msg);
+                    this.unregisterAllAndroidDevice();
+                    this.reWatchAndroidDevices();
+                }));
+            }
+            catch (e) {
+                this.currentWatchStatus = WatchStatus_1.WatchStatus.StopWatching;
+                const msg = "watchAndroidDevices error:" + (e === null || e === void 0 ? void 0 : e.message);
+                logger_1.defaultLogger.debug(msg);
+                (_d = (0, DriverReportService_1.getDriverReportService)()) === null || _d === void 0 ? void 0 : _d.report("android_connect_error", null, {
+                    msg: msg,
+                    stage: "device",
+                    detail: "watchAndroidDevices_catch",
+                });
+                this.unregisterAllAndroidDevice();
+                this.reWatchAndroidDevices();
+            }
+        });
+    }
+    registerDevice(adbClient, deviceData) {
+        var _a;
+        return __awaiter(this, void 0, void 0, function* () {
+            logger_1.defaultLogger.debug("start to create android device:" + JSON.stringify(deviceData));
+            const androidDevice = yield this.createDevice(adbClient, deviceData);
+            if (!androidDevice) {
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("android_register_device_error", null, {
+                    msg: "androidDevice does not exist",
+                });
+                return;
+            }
+            this.driver.registerDevice(androidDevice);
+        });
+    }
+}
+exports.AndroidDeviceManager = AndroidDeviceManager;
+//# sourceMappingURL=AndroidDeviceManager.js.map

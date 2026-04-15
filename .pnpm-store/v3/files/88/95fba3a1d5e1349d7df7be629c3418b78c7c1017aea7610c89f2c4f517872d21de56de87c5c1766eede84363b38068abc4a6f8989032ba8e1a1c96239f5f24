@@ -1,0 +1,35 @@
+import { type FSWatcher } from '@modern-js/utils';
+import { type BuildContext, type BuildOptions, type BuildResult, type ImportKind } from 'esbuild';
+import type { BaseBuildConfig, BuilderHooks, Chunk, Context, HookList, ICompiler, ModuleTools, PluginAPI } from '../../types';
+import { SourcemapContext } from './sourcemap';
+import { TransformContext } from './transform';
+export declare class EsbuildCompiler implements ICompiler {
+    instance?: BuildContext;
+    result?: BuildResult;
+    hookList?: HookList;
+    reBuildCount: number;
+    buildOptions: BuildOptions;
+    context: Context;
+    config: BaseBuildConfig;
+    hooks: BuilderHooks;
+    api: PluginAPI<ModuleTools>;
+    outputChunk: Map<string, Chunk>;
+    watchedFiles: Set<string>;
+    css_resolve: (id: string, dir: string) => string;
+    node_resolve: (id: string, dir: string, kind: ImportKind) => string | false;
+    watcher?: FSWatcher;
+    virtualModule: Map<string, string>;
+    private transformContextMap;
+    private sourcemapContextMap;
+    constructor(context: Context);
+    init(): Promise<void>;
+    addWatchFile(id: string): void;
+    convertConfigToEsbuild(config: BaseBuildConfig): BuildOptions;
+    getTransformContext(path: string): TransformContext;
+    getSourcemapContext(path: string): SourcemapContext;
+    emitAsset(name: string, chunk: string | Chunk): void;
+    close(): Promise<void>;
+    build(): Promise<void>;
+    reBuild(type: 'link' | 'change', config: BaseBuildConfig): Promise<void>;
+}
+export declare const createCompiler: (context: Context) => Promise<EsbuildCompiler>;

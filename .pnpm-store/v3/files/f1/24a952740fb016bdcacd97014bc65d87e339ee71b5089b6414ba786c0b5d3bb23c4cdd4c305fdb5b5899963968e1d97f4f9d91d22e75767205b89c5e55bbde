@@ -1,0 +1,251 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { _ as _ts_values } from "@swc/helpers/_/_ts_values";
+import path from "path";
+import { fs, findExists } from "@modern-js/utils";
+import { HTML_PARTIALS_EXTENSIONS, HTML_PARTIALS_FOLDER } from "./constants";
+import * as templates from "./templates";
+var PartialPosition;
+(function(PartialPosition2) {
+  PartialPosition2["TOP"] = "top";
+  PartialPosition2["HEAD"] = "head";
+  PartialPosition2["BODY"] = "body";
+  PartialPosition2["BOTTOM"] = "bottom";
+  PartialPosition2["INDEX"] = "index";
+})(PartialPosition || (PartialPosition = {}));
+var findPartials = function(dir, entryName, position) {
+  if (fs.existsSync(dir)) {
+    var base = findExists(HTML_PARTIALS_EXTENSIONS.map(function(ext) {
+      return path.resolve(dir, "".concat(position).concat(ext));
+    }));
+    var file = entryName ? findExists(HTML_PARTIALS_EXTENSIONS.map(function(ext) {
+      return path.resolve(dir, entryName, "".concat(position).concat(ext));
+    })) || base : base;
+    return file ? {
+      file,
+      content: fs.readFileSync(file, "utf8")
+    } : null;
+  }
+  return null;
+};
+var getModifyHtmlPartials = function(partials) {
+  var append = function(type) {
+    for (var _len = arguments.length, script = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      script[_key - 1] = arguments[_key];
+    }
+    script.forEach(function(item) {
+      partials[type].push(item);
+    });
+  };
+  var prepend = function(type) {
+    for (var _len = arguments.length, script = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+      script[_key - 1] = arguments[_key];
+    }
+    script.forEach(function(item) {
+      partials[type].unshift(item);
+    });
+  };
+  return {
+    top: {
+      append: function() {
+        for (var _len = arguments.length, script = new Array(_len), _key = 0; _key < _len; _key++) {
+          script[_key] = arguments[_key];
+        }
+        return append.apply(void 0, [
+          "top"
+        ].concat(_to_consumable_array(script)));
+      },
+      prepend: function() {
+        for (var _len = arguments.length, script = new Array(_len), _key = 0; _key < _len; _key++) {
+          script[_key] = arguments[_key];
+        }
+        return prepend.apply(void 0, [
+          "top"
+        ].concat(_to_consumable_array(script)));
+      },
+      current: partials.top
+    },
+    head: {
+      append: function() {
+        for (var _len = arguments.length, script = new Array(_len), _key = 0; _key < _len; _key++) {
+          script[_key] = arguments[_key];
+        }
+        return append.apply(void 0, [
+          "head"
+        ].concat(_to_consumable_array(script)));
+      },
+      prepend: function() {
+        for (var _len = arguments.length, script = new Array(_len), _key = 0; _key < _len; _key++) {
+          script[_key] = arguments[_key];
+        }
+        return prepend.apply(void 0, [
+          "head"
+        ].concat(_to_consumable_array(script)));
+      },
+      current: partials.head
+    },
+    body: {
+      append: function() {
+        for (var _len = arguments.length, script = new Array(_len), _key = 0; _key < _len; _key++) {
+          script[_key] = arguments[_key];
+        }
+        return append.apply(void 0, [
+          "body"
+        ].concat(_to_consumable_array(script)));
+      },
+      prepend: function() {
+        for (var _len = arguments.length, script = new Array(_len), _key = 0; _key < _len; _key++) {
+          script[_key] = arguments[_key];
+        }
+        return prepend.apply(void 0, [
+          "body"
+        ].concat(_to_consumable_array(script)));
+      },
+      current: partials.body
+    }
+  };
+};
+var getHtmlTemplate = function() {
+  var _ref = _async_to_generator(function(entrypoints, hooks, param) {
+    var appContext, config, appDirectory, internalDirectory, configDir, htmlDir, htmlTemplates, partialsByEntrypoint, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _loop, _iterator, _step, err;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          appContext = param.appContext, config = param.config;
+          appDirectory = appContext.appDirectory, internalDirectory = appContext.internalDirectory;
+          configDir = config.source.configDir;
+          htmlDir = path.resolve(appDirectory, configDir || "", HTML_PARTIALS_FOLDER);
+          htmlTemplates = {};
+          partialsByEntrypoint = {};
+          _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+          _state.label = 1;
+        case 1:
+          _state.trys.push([
+            1,
+            6,
+            7,
+            8
+          ]);
+          _loop = function() {
+            var entrypoint, entryName, isMainEntry, name, customIndexTemplate, getPartialInitValue, partials, templatePath, bottomTemplate;
+            return _ts_generator(this, function(_state2) {
+              switch (_state2.label) {
+                case 0:
+                  entrypoint = _step.value;
+                  entryName = entrypoint.entryName, isMainEntry = entrypoint.isMainEntry;
+                  name = entrypoints.length === 1 && isMainEntry ? "" : entryName;
+                  customIndexTemplate = findPartials(htmlDir, name, "index");
+                  if (!customIndexTemplate)
+                    return [
+                      3,
+                      1
+                    ];
+                  htmlTemplates[entryName] = customIndexTemplate.file;
+                  return [
+                    3,
+                    3
+                  ];
+                case 1:
+                  getPartialInitValue = function(position) {
+                    var partial = findPartials(htmlDir, name, position);
+                    return partial ? [
+                      partial.content
+                    ] : [];
+                  };
+                  partials = {
+                    top: getPartialInitValue("top"),
+                    head: getPartialInitValue("head"),
+                    body: getPartialInitValue("body")
+                  };
+                  return [
+                    4,
+                    hooks.modifyHtmlPartials.call({
+                      entrypoint,
+                      partials: getModifyHtmlPartials(partials)
+                    })
+                  ];
+                case 2:
+                  _state2.sent();
+                  templatePath = path.resolve(internalDirectory, entryName, "index.html");
+                  fs.outputFileSync(templatePath, templates.html(partials), "utf8");
+                  htmlTemplates[entryName] = templatePath;
+                  partialsByEntrypoint[entryName] = partials;
+                  bottomTemplate = findPartials(htmlDir, name, "bottom");
+                  if (bottomTemplate) {
+                    htmlTemplates["__".concat(entryName, "-bottom__")] = bottomTemplate.content;
+                  }
+                  _state2.label = 3;
+                case 3:
+                  return [
+                    2
+                  ];
+              }
+            });
+          };
+          _iterator = entrypoints[Symbol.iterator]();
+          _state.label = 2;
+        case 2:
+          if (!!(_iteratorNormalCompletion = (_step = _iterator.next()).done))
+            return [
+              3,
+              5
+            ];
+          return [
+            5,
+            _ts_values(_loop())
+          ];
+        case 3:
+          _state.sent();
+          _state.label = 4;
+        case 4:
+          _iteratorNormalCompletion = true;
+          return [
+            3,
+            2
+          ];
+        case 5:
+          return [
+            3,
+            8
+          ];
+        case 6:
+          err = _state.sent();
+          _didIteratorError = true;
+          _iteratorError = err;
+          return [
+            3,
+            8
+          ];
+        case 7:
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return != null) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+          return [
+            7
+          ];
+        case 8:
+          return [
+            2,
+            {
+              partialsByEntrypoint,
+              htmlTemplates
+            }
+          ];
+      }
+    });
+  });
+  return function getHtmlTemplate2(entrypoints, hooks, _) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  getHtmlTemplate,
+  getModifyHtmlPartials
+};

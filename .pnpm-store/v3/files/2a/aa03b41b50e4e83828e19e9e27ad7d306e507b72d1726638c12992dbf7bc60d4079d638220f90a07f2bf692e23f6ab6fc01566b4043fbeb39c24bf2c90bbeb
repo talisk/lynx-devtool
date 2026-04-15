@@ -1,0 +1,408 @@
+import * as __WEBPACK_EXTERNAL_MODULE__rsbuild_core__ from "@rsbuild/core";
+import * as __WEBPACK_EXTERNAL_MODULE_node_console__ from "node:console";
+import * as __WEBPACK_EXTERNAL_MODULE_picocolors__ from "picocolors";
+import * as __WEBPACK_EXTERNAL_MODULE_stream__ from "stream";
+import * as __WEBPACK_EXTERNAL_MODULE_webpack__ from "webpack";
+import * as __WEBPACK_EXTERNAL_MODULE_webpack_lib_MultiStats_js__ from "webpack/lib/MultiStats.js";
+import * as __WEBPACK_EXTERNAL_MODULE_node_path__ from "node:path";
+import * as __WEBPACK_EXTERNAL_MODULE_reduce_configs__ from "reduce-configs";
+import * as __WEBPACK_EXTERNAL_MODULE_node_fs__ from "node:fs";
+var installedChunks, installChunk, __webpack_modules__ = {
+    "@rsbuild/core": function(module) {
+        module.exports = __WEBPACK_EXTERNAL_MODULE__rsbuild_core__;
+    },
+    "node:console": function(module) {
+        module.exports = __WEBPACK_EXTERNAL_MODULE_node_console__;
+    },
+    picocolors: function(module) {
+        module.exports = __WEBPACK_EXTERNAL_MODULE_picocolors__;
+    },
+    stream: function(module) {
+        module.exports = __WEBPACK_EXTERNAL_MODULE_stream__;
+    },
+    webpack: function(module) {
+        module.exports = __WEBPACK_EXTERNAL_MODULE_webpack__;
+    }
+}, __webpack_module_cache__ = {};
+function __webpack_require__(moduleId) {
+    var cachedModule = __webpack_module_cache__[moduleId];
+    if (void 0 !== cachedModule) return cachedModule.exports;
+    var module = __webpack_module_cache__[moduleId] = {
+        id: moduleId,
+        loaded: !1,
+        exports: {}
+    };
+    return __webpack_modules__[moduleId](module, module.exports, __webpack_require__), module.loaded = !0, module.exports;
+}
+__webpack_require__.m = __webpack_modules__, __webpack_require__.n = function(module) {
+    var getter = module && module.__esModule ? function() {
+        return module.default;
+    } : function() {
+        return module;
+    };
+    return __webpack_require__.d(getter, {
+        a: getter
+    }), getter;
+}, __webpack_require__.d = function(exports, definition) {
+    for(var key in definition)__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key) && Object.defineProperty(exports, key, {
+        enumerable: !0,
+        get: definition[key]
+    });
+}, __webpack_require__.f = {}, __webpack_require__.e = function(chunkId) {
+    return Promise.all(Object.keys(__webpack_require__.f).reduce(function(promises, key) {
+        return __webpack_require__.f[key](chunkId, promises), promises;
+    }, []));
+}, __webpack_require__.u = function(chunkId) {
+    return "" + chunkId + ".js";
+}, __webpack_require__.o = function(obj, prop) {
+    return Object.prototype.hasOwnProperty.call(obj, prop);
+}, __webpack_require__.nmd = function(module) {
+    return module.paths = [], !module.children && (module.children = []), module;
+}, installedChunks = {
+    980: 0
+}, installChunk = function(data) {
+    var ids = data.ids, modules = data.modules, runtime = data.runtime, moduleId, chunkId, i = 0;
+    for(moduleId in modules)__webpack_require__.o(modules, moduleId) && (__webpack_require__.m[moduleId] = modules[moduleId]);
+    for(runtime && runtime(__webpack_require__); i < ids.length; i++)chunkId = ids[i], __webpack_require__.o(installedChunks, chunkId) && installedChunks[chunkId] && installedChunks[chunkId][0](), installedChunks[ids[i]] = 0;
+}, __webpack_require__.f.j = function(chunkId, promises) {
+    var installedChunkData = __webpack_require__.o(installedChunks, chunkId) ? installedChunks[chunkId] : void 0;
+    if (0 !== installedChunkData) {
+        if (installedChunkData) promises.push(installedChunkData[1]);
+        else {
+            var promise = import("./" + __webpack_require__.u(chunkId)).then(installChunk, function(e) {
+                throw 0 !== installedChunks[chunkId] && (installedChunks[chunkId] = void 0), e;
+            }), promise = Promise.race([
+                promise,
+                new Promise(function(resolve) {
+                    installedChunkData = installedChunks[chunkId] = [
+                        resolve
+                    ];
+                })
+            ]);
+            promises.push(installedChunkData[1] = promise);
+        }
+    }
+};
+var core_ = __webpack_require__("@rsbuild/core");
+let getInspectOutputPath = (context, inspectOptions)=>{
+    if (inspectOptions.outputPath) return (0, __WEBPACK_EXTERNAL_MODULE_node_path__.isAbsolute)(inspectOptions.outputPath) ? inspectOptions.outputPath : (0, __WEBPACK_EXTERNAL_MODULE_node_path__.join)(context.distPath, inspectOptions.outputPath);
+    return (0, __WEBPACK_EXTERNAL_MODULE_node_path__.join)(context.distPath, '.rsbuild');
+};
+async function inspectConfig({ helpers, context, pluginManager, rsbuildOptions, bundlerConfigs, inspectOptions = {} }) {
+    inspectOptions.mode ? process.env.NODE_ENV = inspectOptions.mode : !process.env.NODE_ENV && (process.env.NODE_ENV = 'development');
+    let webpackConfigs = bundlerConfigs || (await initConfigs({
+        context,
+        pluginManager,
+        rsbuildOptions,
+        helpers
+    })).webpackConfigs, rawBundlerConfigs = webpackConfigs.map((config, index)=>({
+            name: config.name || String(index),
+            content: helpers.stringifyConfig(config, inspectOptions.verbose)
+        })), { rsbuildConfig, rawRsbuildConfig, environmentConfigs, rawEnvironmentConfigs } = helpers.getRsbuildInspectConfig({
+        normalizedConfig: context.normalizedConfig,
+        inspectOptions,
+        pluginManager
+    }), outputPath = getInspectOutputPath(context, inspectOptions);
+    return inspectOptions.writeToDisk && await helpers.outputInspectConfigFiles({
+        rawBundlerConfigs,
+        rawEnvironmentConfigs,
+        inspectOptions: {
+            ...inspectOptions,
+            outputPath
+        },
+        configType: 'webpack'
+    }), {
+        rsbuildConfig: rawRsbuildConfig,
+        environmentConfigs: rawEnvironmentConfigs.map((r)=>r.content),
+        bundlerConfigs: rawBundlerConfigs.map((r)=>r.content),
+        origin: {
+            rsbuildConfig,
+            environmentConfigs,
+            bundlerConfigs: webpackConfigs
+        }
+    };
+}
+let castArray = (arr)=>void 0 === arr ? [] : Array.isArray(arr) ? arr : [
+        arr
+    ];
+async function modifyWebpackChain(context, utils, chain) {
+    var _utils_environment_config_tools;
+    core_.logger.debug('modify webpack chain');
+    let [modifiedChain] = await context.hooks.modifyWebpackChain.callInEnvironment({
+        environment: utils.environment.name,
+        args: [
+            chain,
+            utils
+        ]
+    });
+    if (null === (_utils_environment_config_tools = utils.environment.config.tools) || void 0 === _utils_environment_config_tools ? void 0 : _utils_environment_config_tools.webpackChain) for (let item of castArray(utils.environment.config.tools.webpackChain))item(modifiedChain, utils);
+    return core_.logger.debug('modify webpack chain done'), modifiedChain;
+}
+async function modifyWebpackConfig(context, webpackConfig, utils) {
+    var _utils_environment_config_tools;
+    core_.logger.debug('modify webpack config');
+    let [modifiedConfig] = await context.hooks.modifyWebpackConfig.callInEnvironment({
+        environment: utils.environment.name,
+        args: [
+            webpackConfig,
+            utils
+        ]
+    });
+    return (null === (_utils_environment_config_tools = utils.environment.config.tools) || void 0 === _utils_environment_config_tools ? void 0 : _utils_environment_config_tools.webpack) && (modifiedConfig = (0, __WEBPACK_EXTERNAL_MODULE_reduce_configs__.reduceConfigsWithContext)({
+        initial: modifiedConfig,
+        config: utils.environment.config.tools.webpack,
+        ctx: utils,
+        mergeFn: utils.mergeConfig
+    })), core_.logger.debug('modify webpack config done'), modifiedConfig;
+}
+async function getChainUtils(target, environment, helpers) {
+    let { default: webpack } = await import("webpack");
+    return {
+        ...helpers.getChainUtils(target, environment),
+        name: ({
+            web: 'client',
+            node: 'server',
+            'web-worker': 'web-worker'
+        })[target] || '',
+        webpack,
+        HtmlWebpackPlugin: helpers.getHTMLPlugin()
+    };
+}
+async function generateWebpackConfig({ target, context, environment, helpers }) {
+    let chainUtils = await getChainUtils(target, context.environments[environment], helpers), { default: webpack } = await import("webpack"), { BannerPlugin, DefinePlugin, IgnorePlugin, ProvidePlugin, HotModuleReplacementPlugin } = webpack, bundlerChain = await helpers.modifyBundlerChain(context, {
+        ...chainUtils,
+        bundler: {
+            BannerPlugin,
+            DefinePlugin,
+            IgnorePlugin,
+            ProvidePlugin,
+            HotModuleReplacementPlugin
+        }
+    }), chain = await modifyWebpackChain(context, chainUtils, bundlerChain), webpackConfig = helpers.chainToConfig(chain), configUtils = await helpers.getConfigUtils(webpackConfig, chainUtils);
+    return webpackConfig = await modifyWebpackConfig(context, webpackConfig, configUtils);
+}
+async function initConfigs({ context, pluginManager, rsbuildOptions, helpers }) {
+    let normalizedConfig = await helpers.initRsbuildConfig({
+        context,
+        pluginManager
+    }), webpackConfigs = await Promise.all(Object.entries(normalizedConfig.environments).map(([environment, config])=>generateWebpackConfig({
+            target: config.output.target,
+            context,
+            environment,
+            helpers
+        })));
+    if ('verbose' === core_.logger.level) {
+        let inspect = ()=>{
+            inspectConfig({
+                context,
+                pluginManager,
+                inspectOptions: {
+                    verbose: !0,
+                    writeToDisk: !0
+                },
+                rsbuildOptions,
+                bundlerConfigs: webpackConfigs,
+                helpers
+            });
+        };
+        context.hooks.onBeforeBuild.tap(({ isFirstCompile })=>{
+            isFirstCompile && inspect();
+        }), context.hooks.onAfterStartDevServer.tap(inspect);
+    }
+    return {
+        webpackConfigs
+    };
+}
+async function createCompiler_createCompiler(options) {
+    var _context_normalizedConfig;
+    core_.logger.debug('create compiler');
+    let { helpers, context } = options, { webpackConfigs } = await initConfigs(options);
+    await context.hooks.onBeforeCreateCompiler.call({
+        bundlerConfigs: webpackConfigs,
+        environments: context.environments
+    });
+    let { default: webpack } = await import("webpack"), compiler = webpack(1 === webpackConfigs.length ? webpackConfigs[0] : webpackConfigs), done = (stats)=>{
+        let statsOptions = helpers.getStatsOptions(compiler), statsJson = stats.toJson({
+            moduleTrace: !0,
+            children: !0,
+            preset: 'errors-warnings',
+            ...statsOptions
+        }), { message, level } = helpers.formatStats(statsJson, stats.hasErrors());
+        'error' === level && core_.logger.error(message), 'warning' === level && core_.logger.warn(message);
+    };
+    return compiler.hooks.done.tap('rsbuild:done', (stats)=>{
+        done(stats);
+    }), (null === (_context_normalizedConfig = context.normalizedConfig) || void 0 === _context_normalizedConfig ? void 0 : _context_normalizedConfig.mode) === 'development' && helpers.registerDevHook({
+        compiler,
+        context,
+        bundlerConfigs: webpackConfigs,
+        MultiStatsCtor: __WEBPACK_EXTERNAL_MODULE_webpack_lib_MultiStats_js__.default
+    }), await context.hooks.onAfterCreateCompiler.call({
+        compiler,
+        environments: context.environments
+    }), core_.logger.debug('create compiler done'), {
+        compiler,
+        webpackConfigs
+    };
+}
+let build = async (initOptions, { watch, compiler: customCompiler } = {})=>{
+    let compiler, bundlerConfigs;
+    let { helpers, context } = initOptions;
+    if (customCompiler) compiler = customCompiler;
+    else {
+        let result = await createCompiler_createCompiler(initOptions);
+        compiler = result.compiler, bundlerConfigs = result.webpackConfigs;
+    }
+    if (helpers.registerBuildHook({
+        context,
+        bundlerConfigs: bundlerConfigs,
+        compiler,
+        isWatch: !!watch,
+        MultiStatsCtor: __WEBPACK_EXTERNAL_MODULE_webpack_lib_MultiStats_js__.default
+    }), watch) return compiler.watch({}, (err)=>{
+        err && core_.logger.error(err);
+    }), {
+        close: ()=>new Promise((resolve)=>{
+                compiler.close(()=>{
+                    resolve();
+                });
+            })
+    };
+    let { stats } = await new Promise((resolve, reject)=>{
+        compiler.run((err, stats)=>{
+            err ? reject(err) : (null == stats ? void 0 : stats.hasErrors()) ? reject(Error('Webpack build failed!')) : compiler.close((closeErr)=>{
+                closeErr && core_.logger.error(closeErr), resolve({
+                    stats
+                });
+            });
+        });
+    });
+    return {
+        stats,
+        close: async ()=>{}
+    };
+};
+async function applyTsConfigPathsPlugin({ chain, CHAIN_ID, mainFields, extensions, configFile }) {
+    let { TsconfigPathsPlugin } = await import("tsconfig-paths-webpack-plugin");
+    chain.resolve.plugin(CHAIN_ID.RESOLVE_PLUGIN.TS_CONFIG_PATHS).use(TsconfigPathsPlugin, [
+        {
+            configFile,
+            extensions,
+            mainFields: mainFields
+        }
+    ]);
+}
+let getMainFields = (chain, target)=>{
+    var target1;
+    let mainFields = chain.resolve.mainFields.values();
+    if (mainFields.length) return mainFields;
+    return castArray(target1 = target).includes('web') || target1.includes('web-worker') ? [
+        'browser',
+        'module',
+        'main'
+    ] : [
+        'module',
+        'main'
+    ];
+}, pluginAdaptor = (helpers)=>({
+        name: 'rsbuild-webpack:adaptor',
+        setup (api) {
+            api.modifyBundlerChain(async (chain, { CHAIN_ID, environment, target })=>{
+                let { config, tsconfigPath } = environment, aliasStrategy = config.source.aliasStrategy ?? config.resolve.aliasStrategy;
+                tsconfigPath && 'prefer-tsconfig' === aliasStrategy && await applyTsConfigPathsPlugin({
+                    chain,
+                    CHAIN_ID,
+                    configFile: tsconfigPath,
+                    mainFields: getMainFields(chain, target),
+                    extensions: chain.resolve.extensions.values()
+                });
+                let progress = config.dev.progressBar ?? !0;
+                if (progress) {
+                    let { ProgressPlugin } = await Promise.all([
+                        __webpack_require__.e("997"),
+                        __webpack_require__.e("863")
+                    ]).then(__webpack_require__.bind(__webpack_require__, "./src/progress/ProgressPlugin.ts"));
+                    chain.plugin(CHAIN_ID.PLUGIN.PROGRESS).use(ProgressPlugin, [
+                        {
+                            id: environment.name,
+                            prettyTime: helpers.prettyTime,
+                            ...!0 === progress ? {} : progress
+                        }
+                    ]);
+                }
+                let { copy } = config.output;
+                if (copy) {
+                    let { default: CopyPlugin } = await import("copy-webpack-plugin"), options = Array.isArray(copy) ? {
+                        patterns: copy
+                    } : copy;
+                    chain.plugin(CHAIN_ID.PLUGIN.COPY).use(CopyPlugin, [
+                        options
+                    ]);
+                }
+            }), api.modifyWebpackConfig(async (config)=>{
+                var _config_plugins, _config_plugins1;
+                let copyPlugin = null === (_config_plugins = config.plugins) || void 0 === _config_plugins ? void 0 : _config_plugins.find((item)=>(null == item ? void 0 : item.constructor.name) === 'CopyPlugin');
+                copyPlugin && copyPlugin.patterns.every((pattern)=>'string' != typeof pattern && pattern.context && !__WEBPACK_EXTERNAL_MODULE_node_fs__.default.existsSync(pattern.context)) && (config.plugins = null === (_config_plugins1 = config.plugins) || void 0 === _config_plugins1 ? void 0 : _config_plugins1.filter((item)=>(null == item ? void 0 : item.constructor.name) !== 'CopyPlugin'));
+            });
+        }
+    }), webpackProvider = async ({ context, pluginManager, rsbuildOptions, helpers })=>{
+    let { default: cssExtractPlugin } = await import("mini-css-extract-plugin");
+    helpers.setCssExtractPlugin(cssExtractPlugin);
+    let createCompiler = async ()=>(await createCompiler_createCompiler({
+            context,
+            pluginManager,
+            rsbuildOptions,
+            helpers
+        })).compiler;
+    return pluginManager.addPlugins([
+        pluginAdaptor(helpers)
+    ]), {
+        bundler: 'webpack',
+        createCompiler,
+        async initConfigs () {
+            let { webpackConfigs } = await initConfigs({
+                context,
+                pluginManager,
+                rsbuildOptions,
+                helpers
+            });
+            return webpackConfigs;
+        },
+        async createDevServer (options) {
+            let config = await helpers.initRsbuildConfig({
+                context,
+                pluginManager
+            });
+            return helpers.createDevServer({
+                context,
+                pluginManager,
+                rsbuildOptions
+            }, createCompiler, config, options);
+        },
+        async startDevServer (options) {
+            let config = await helpers.initRsbuildConfig({
+                context,
+                pluginManager
+            });
+            return (await helpers.createDevServer({
+                context,
+                pluginManager,
+                rsbuildOptions
+            }, createCompiler, config, options)).listen();
+        },
+        build: async (options)=>build({
+                context,
+                pluginManager,
+                rsbuildOptions,
+                helpers
+            }, options),
+        inspectConfig: async (inspectOptions)=>await inspectConfig({
+                context,
+                pluginManager,
+                rsbuildOptions,
+                inspectOptions,
+                helpers
+            })
+    };
+};
+export { webpackProvider };

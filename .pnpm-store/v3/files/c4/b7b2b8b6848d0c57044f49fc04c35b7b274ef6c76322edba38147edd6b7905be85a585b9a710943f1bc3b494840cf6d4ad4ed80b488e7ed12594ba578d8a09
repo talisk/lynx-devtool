@@ -1,0 +1,3 @@
+import type { ServerRoute } from '@modern-js/types';
+export declare const sortRoutes: (route1: ServerRoute, route2: ServerRoute) => number;
+export declare const uniqueKeyByRoute: (route: ServerRoute) => string;

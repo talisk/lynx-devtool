@@ -1,0 +1,20 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+class Command {
+    constructor(connection) {
+        this.connection = connection;
+        this.parser = this.connection.parser;
+    }
+    send(data) {
+        const encoded = this.encodeData(data);
+        this.connection.write(encoded);
+        return this;
+    }
+    encodeData(data) {
+        const len = Buffer.alloc(4);
+        len.writeUInt32BE(data.length);
+        return Buffer.concat([len, data]);
+    }
+}
+exports.default = Command;
+//# sourceMappingURL=command.js.map

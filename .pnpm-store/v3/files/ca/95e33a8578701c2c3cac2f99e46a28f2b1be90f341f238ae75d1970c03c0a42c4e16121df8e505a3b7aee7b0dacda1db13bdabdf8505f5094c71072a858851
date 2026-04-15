@@ -1,0 +1,58 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __reExport = (target, mod, secondTarget) => (__copyProps(target, mod, "default"), secondTarget && __copyProps(secondTarget, mod, "default"));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var src_exports = {};
+__export(src_exports, {
+  changesetPlugin: () => changesetPlugin,
+  default: () => src_default
+});
+module.exports = __toCommonJS(src_exports);
+var import_language_detector = require("@modern-js/plugin-i18n/language-detector");
+var import_commands = require("./commands");
+var import_locale = require("./locale");
+__reExport(src_exports, require("./commands"), module.exports);
+const changesetPlugin = () => ({
+  name: "@modern-js/plugin-changeset",
+  setup: () => {
+    import_locale.i18n.changeLanguage({
+      locale: (0, import_language_detector.getLocaleLanguage)()
+    });
+    return {
+      commands({ program }) {
+        program.command("change").description(import_locale.i18n.t(import_locale.localeKeys.command.change.describe)).option("--empty", import_locale.i18n.t(import_locale.localeKeys.command.change.empty), false).option("--open", import_locale.i18n.t(import_locale.localeKeys.command.change.open), false).action((options) => (0, import_commands.change)(options));
+        program.command("bump").description(import_locale.i18n.t(import_locale.localeKeys.command.bump.describe)).option("--canary", import_locale.i18n.t(import_locale.localeKeys.command.bump.canary), false).option("--ignore <package>", import_locale.i18n.t(import_locale.localeKeys.command.bump.ignore), (val, memo) => {
+          memo.push(val);
+          return memo;
+        }, []).option("--preid <tag>", import_locale.i18n.t(import_locale.localeKeys.command.bump.preid), "next").option("--snapshot [snapshot]", import_locale.i18n.t(import_locale.localeKeys.command.bump.snapshot), false).action((options) => (0, import_commands.bump)(options));
+        program.command("pre <enter|exit> [tag]").description(import_locale.i18n.t(import_locale.localeKeys.command.pre.describe)).action((type, tag) => (0, import_commands.pre)(type, tag));
+        program.command("release").description(import_locale.i18n.t(import_locale.localeKeys.command.release.describe)).option("--tag <tag>", import_locale.i18n.t(import_locale.localeKeys.command.release.tag), "").option("--otp <token>", import_locale.i18n.t(import_locale.localeKeys.command.release.otp), "").option("--ignore-scripts", import_locale.i18n.t(import_locale.localeKeys.command.release.ignore_scripts), "").option("--no-git-checks", import_locale.i18n.t(import_locale.localeKeys.command.release.no_git_checks), "").option("--provenance", import_locale.i18n.t(import_locale.localeKeys.command.release.provenance)).action((options) => (0, import_commands.release)(options));
+        program.command("change-status").description(import_locale.i18n.t(import_locale.localeKeys.command.status.describe)).option("--verbose", import_locale.i18n.t(import_locale.localeKeys.command.status.verbose)).option("--output <file>", import_locale.i18n.t(import_locale.localeKeys.command.status.output)).option("--since <ref>", import_locale.i18n.t(import_locale.localeKeys.command.status.since)).action((options) => (0, import_commands.status)(options));
+        program.command("gen-release-note").description(import_locale.i18n.t(import_locale.localeKeys.command.gen_release_note.describe)).option("--repo <repo>", import_locale.i18n.t(import_locale.localeKeys.command.gen_release_note.repo)).option("--custom <custom>", import_locale.i18n.t(import_locale.localeKeys.command.gen_release_note.custom)).action(async (options) => {
+          await (0, import_commands.genReleaseNote)(options);
+        });
+      }
+    };
+  }
+});
+var src_default = changesetPlugin;
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  changesetPlugin,
+  ...require("./commands")
+});

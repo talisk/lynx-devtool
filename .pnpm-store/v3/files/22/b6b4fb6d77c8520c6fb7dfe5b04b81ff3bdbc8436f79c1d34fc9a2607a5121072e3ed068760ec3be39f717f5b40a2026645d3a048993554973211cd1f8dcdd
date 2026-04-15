@@ -1,0 +1,4 @@
+import type { RGB } from '../types/color';
+export declare const green: RGB;
+export declare const blue: RGB;
+export declare const gray: RGB;

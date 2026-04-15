@@ -1,0 +1,30 @@
+export var SocketEvents;
+(function (SocketEvents) {
+    SocketEvents["Initialize"] = "Initialize";
+    SocketEvents["Register"] = "Register";
+    SocketEvents["Registered"] = "Registered";
+    SocketEvents["CreateRoom"] = "CreateRoom";
+    SocketEvents["RoomCreated"] = "RoomCreated";
+    SocketEvents["JoinRoom"] = "JoinRoom";
+    SocketEvents["ListClients"] = "ListClients";
+    SocketEvents["ClientList"] = "ClientList";
+    SocketEvents["RoomJoined"] = "RoomJoined";
+    SocketEvents["LeaveRoom"] = "LeaveRoom";
+    SocketEvents["RoomLeaved"] = "RoomLeaved";
+    SocketEvents["CloseRoom"] = "CloseRoom";
+    SocketEvents["RoomClosed"] = "RoomClosed";
+    SocketEvents["Exception"] = "Exception";
+    SocketEvents["Customized"] = "Customized";
+    SocketEvents["Ping"] = "Ping";
+    SocketEvents["Pong"] = "Pong";
+})(SocketEvents || (SocketEvents = {}));
+export var SocketExceptions;
+(function (SocketExceptions) {
+    SocketExceptions["PermissionDenied"] = "PermissionDenied";
+    SocketExceptions["NotFound"] = "NotFound";
+    SocketExceptions["UselessAction"] = "UselessAction";
+    SocketExceptions["UnknownCommand"] = "UnknownCommand";
+    SocketExceptions["RoomIdAlreadyExists"] = "RoomIdAlreadyExists";
+    SocketExceptions["CannotSendToSelf"] = "CannotSendToSelf";
+})(SocketExceptions || (SocketExceptions = {}));
+//# sourceMappingURL=message.model.js.map

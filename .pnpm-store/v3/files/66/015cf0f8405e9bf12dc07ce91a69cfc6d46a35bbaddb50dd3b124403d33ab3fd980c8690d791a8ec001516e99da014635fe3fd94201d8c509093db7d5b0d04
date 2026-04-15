@@ -1,0 +1,9 @@
+import type { ICompiler, ITsconfig } from '../../types';
+export declare const swcTransform: (userTsconfig: ITsconfig) => {
+    name: string;
+    apply(compiler: ICompiler): void;
+};
+export declare const swcRenderChunk: {
+    name: string;
+    apply(compiler: ICompiler): void;
+};

@@ -1,0 +1,243 @@
+"use strict";
+
+var _ref, _RUNTIME_GLOBALS_GET;
+// rsbuild/runtime/async-chunk-retry
+
+// e.g: src_AsyncCompTest_tsx
+// e.g: static/js/async/src_AsyncCompTest_tsx.js
+// publicPath + ChunkFilename e.g: http://localhost:3000/static/js/async/src_AsyncCompTest_tsx.js
+
+// init retryCollector and nextRetry function
+var config = __RETRY_OPTIONS__;
+var maxRetries = config.max || 3;
+var retryCollector = {};
+function findCurrentDomain(url) {
+  var _config$domain;
+  var domainList = (_config$domain = config.domain) !== null && _config$domain !== void 0 ? _config$domain : [];
+  var domain = '';
+  for (var i = 0; i < domainList.length; i++) {
+    if (url.indexOf(domainList[i]) !== -1) {
+      domain = domainList[i];
+      break;
+    }
+  }
+  return domain || window.origin;
+}
+function findNextDomain(url) {
+  var _config$domain2;
+  var domainList = (_config$domain2 = config.domain) !== null && _config$domain2 !== void 0 ? _config$domain2 : [];
+  var currentDomain = findCurrentDomain(url);
+  var index = domainList.indexOf(currentDomain);
+  return domainList[(index + 1) % domainList.length] || url;
+}
+var postfixRE = /[?#].*$/;
+function cleanUrl(url) {
+  return url.replace(postfixRE, '');
+}
+function getQueryFromUrl(url) {
+  var parts = url.split('?')[1];
+  return parts ? "?".concat(parts.split('#')[0]) : '';
+}
+function getUrlRetryQuery(existRetryTimes, originalQuery) {
+  if (config.addQuery === true) {
+    return originalQuery !== '' ? "".concat(originalQuery, "&retry=").concat(existRetryTimes) : "?retry=".concat(existRetryTimes);
+  }
+  if (typeof config.addQuery === 'function') {
+    return config.addQuery({
+      times: existRetryTimes,
+      originalQuery: originalQuery
+    });
+  }
+  return '';
+}
+function getNextRetryUrl(currRetryUrl, domain, nextDomain, existRetryTimes, originalQuery) {
+  return cleanUrl(currRetryUrl.replace(domain, nextDomain)) + getUrlRetryQuery(existRetryTimes + 1, originalQuery);
+}
+
+// shared between ensureChunk and loadScript
+var globalCurrRetrying = {};
+function getCurrentRetry(chunkId, existRetryTimes) {
+  var _retryCollector$chunk;
+  return (_retryCollector$chunk = retryCollector[chunkId]) === null || _retryCollector$chunk === void 0 ? void 0 : _retryCollector$chunk[existRetryTimes];
+}
+function initRetry(chunkId) {
+  var _config$domain$, _config$domain3;
+  var originalScriptFilename = originalGetChunkScriptFilename(chunkId);
+  var originalPublicPath = __RUNTIME_GLOBALS_PUBLIC_PATH__;
+  var originalSrcUrl = originalPublicPath.startsWith('/') ? window.origin + originalPublicPath + originalScriptFilename : originalPublicPath + originalScriptFilename;
+  var originalQuery = getQueryFromUrl(originalSrcUrl);
+  var existRetryTimes = 0;
+  var nextDomain = (_config$domain$ = (_config$domain3 = config.domain) === null || _config$domain3 === void 0 ? void 0 : _config$domain3[0]) !== null && _config$domain$ !== void 0 ? _config$domain$ : window.origin;
+  return {
+    nextDomain: nextDomain,
+    nextRetryUrl: getNextRetryUrl(originalSrcUrl, nextDomain, nextDomain, existRetryTimes, originalQuery),
+    originalScriptFilename: originalScriptFilename,
+    originalSrcUrl: originalSrcUrl,
+    originalQuery: originalQuery
+  };
+}
+function nextRetry(chunkId, existRetryTimes) {
+  var currRetry = getCurrentRetry(chunkId, existRetryTimes);
+  var nextRetry;
+  var nextExistRetryTimes = existRetryTimes + 1;
+  if (existRetryTimes === 0 || currRetry === undefined) {
+    nextRetry = initRetry(chunkId);
+    retryCollector[chunkId] = [];
+  } else {
+    var originalScriptFilename = currRetry.originalScriptFilename,
+      originalSrcUrl = currRetry.originalSrcUrl,
+      originalQuery = currRetry.originalQuery;
+    var nextDomain = findNextDomain(currRetry.nextDomain);
+    nextRetry = {
+      nextDomain: nextDomain,
+      nextRetryUrl: getNextRetryUrl(currRetry.nextRetryUrl, currRetry.nextDomain, nextDomain, existRetryTimes, originalQuery),
+      originalScriptFilename: originalScriptFilename,
+      originalSrcUrl: originalSrcUrl,
+      originalQuery: originalQuery
+    };
+  }
+  retryCollector[chunkId][nextExistRetryTimes] = nextRetry;
+  globalCurrRetrying[chunkId] = nextRetry;
+  return nextRetry;
+}
+
+// rewrite webpack runtime with nextRetry()
+var originalEnsureChunk = __RUNTIME_GLOBALS_ENSURE_CHUNK__;
+var originalGetChunkScriptFilename = __RUNTIME_GLOBALS_GET_CHUNK_SCRIPT_FILENAME__;
+var originalGetCssFilename = (_ref = (_RUNTIME_GLOBALS_GET = __RUNTIME_GLOBALS_GET_MINI_CSS_EXTRACT_FILENAME__) !== null && _RUNTIME_GLOBALS_GET !== void 0 ? _RUNTIME_GLOBALS_GET : __RUNTIME_GLOBALS_GET_CSS_FILENAME__) !== null && _ref !== void 0 ? _ref : function () {
+  return null;
+};
+var originalLoadScript = __RUNTIME_GLOBALS_LOAD_SCRIPT__;
+var ERROR_PREFIX = '[@rsbuild/plugin-assets-retry] ';
+
+// if users want to support es5, add Promise polyfill first https://github.com/webpack/webpack/issues/12877
+function ensureChunk(chunkId,
+// args placeholder, to avoid that other webpack runtime would add arg for __webpack_require__.e
+arg0, arg1, arg2, arg3, arg4, arg5, arg6) {
+  var callingCounter = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : {
+    count: 0
+  };
+  for (var _len = arguments.length, args = new Array(_len > 9 ? _len - 9 : 0), _key = 9; _key < _len; _key++) {
+    args[_key - 9] = arguments[_key];
+  }
+  var result = originalEnsureChunk.apply(void 0, [chunkId, arg0, arg1, arg2, arg3, arg4, arg5, arg6, callingCounter].concat(args));
+  try {
+    var originalScriptFilename = originalGetChunkScriptFilename(chunkId);
+    var originalCssFilename = originalGetCssFilename(chunkId);
+
+    // mark the async chunk name in the global variables and share it with initial chunk retry to avoid duplicate retrying
+    if (typeof window !== 'undefined') {
+      if (originalScriptFilename) {
+        window.__RB_ASYNC_CHUNKS__[originalScriptFilename] = true;
+      }
+      if (originalCssFilename) {
+        window.__RB_ASYNC_CHUNKS__[originalCssFilename] = true;
+      }
+    }
+  } catch (e) {
+    console.error(ERROR_PREFIX, 'get original script or css filename error', e);
+  }
+
+  // if __webpack_require__.e is polluted by other runtime codes, fallback to originalEnsureChunk
+  if (typeof (callingCounter === null || callingCounter === void 0 ? void 0 : callingCounter.count) !== 'number') {
+    return result;
+  }
+  callingCounter.count += 1;
+  return result.catch(function (error) {
+    var _error$message;
+    // the first calling is not retry
+    // if the failed request is 4 in network panel, callingCounter.count === 4, the first one is the normal request, and existRetryTimes is 3, retried 3 times
+    var existRetryTimes = callingCounter.count - 1;
+    var originalScriptFilename;
+    var nextRetryUrl;
+    var nextDomain;
+    try {
+      var retryResult = nextRetry(chunkId, existRetryTimes);
+      originalScriptFilename = retryResult.originalScriptFilename;
+      nextRetryUrl = retryResult.nextRetryUrl;
+      nextDomain = retryResult.nextDomain;
+    } catch (e) {
+      console.error(ERROR_PREFIX, 'failed to get nextRetryUrl', e);
+      throw error;
+    }
+
+    // At present, we don't consider the switching domain and addQuery of async CSS chunk
+    // 1. Async js chunk will be requested first. It is rare for async CSS chunk to fail alone.
+    // 2. the code of loading CSS in webpack runtime is complex and it may be modified by cssExtractPlugin, increase the complexity of this plugin.
+    var isCssAsyncChunkLoadFailed = Boolean(error === null || error === void 0 || (_error$message = error.message) === null || _error$message === void 0 ? void 0 : _error$message.includes('CSS chunk'));
+    var createContext = function createContext(times) {
+      return {
+        times: times,
+        domain: nextDomain,
+        url: nextRetryUrl,
+        tagName: isCssAsyncChunkLoadFailed ? 'link' : 'script',
+        isAsyncChunk: true
+      };
+    };
+    var context = createContext(existRetryTimes);
+    if (existRetryTimes >= maxRetries) {
+      var _error$message2;
+      error.message = (_error$message2 = error.message) !== null && _error$message2 !== void 0 && _error$message2.includes('retries:') ? error.message : "Loading chunk ".concat(chunkId, " from \"").concat(originalScriptFilename, "\" failed after ").concat(maxRetries, " retries: \"").concat(error.message, "\"");
+      if (typeof config.onFail === 'function') {
+        config.onFail(context);
+      }
+      throw error;
+    }
+
+    // Filter by config.test and config.domain
+    var tester = config.test;
+    if (tester) {
+      if (typeof tester === 'string') {
+        var regexp = new RegExp(tester);
+        tester = function tester(str) {
+          return regexp.test(str);
+        };
+      }
+      if (typeof tester !== 'function' || !tester(nextRetryUrl)) {
+        throw error;
+      }
+    }
+    if (config.domain && config.domain.length > 0 && config.domain.indexOf(nextDomain) === -1) {
+      throw error;
+    }
+
+    // Start retry
+    if (typeof config.onRetry === 'function') {
+      config.onRetry(context);
+    }
+    var nextPromise = ensureChunk.apply(void 0, [chunkId, arg0, arg1, arg2, arg3, arg4, arg5, arg6, callingCounter].concat(args));
+    return nextPromise.then(function (result) {
+      // when after retrying the third time
+      // ensureChunk(chunkId, { count: 3 }), at that time, existRetryTimes === 2
+      // after all, callingCounter.count is 4
+      var isLastSuccessRetry = (callingCounter === null || callingCounter === void 0 ? void 0 : callingCounter.count) === existRetryTimes + 2;
+      if (typeof config.onSuccess === 'function' && isLastSuccessRetry) {
+        var _context = createContext(existRetryTimes + 1);
+        config.onSuccess(_context);
+      }
+      return result;
+    });
+  });
+}
+function loadScript(originalUrl, done, key, chunkId) {
+  var retry = globalCurrRetrying[chunkId];
+  for (var _len2 = arguments.length, args = new Array(_len2 > 4 ? _len2 - 4 : 0), _key2 = 4; _key2 < _len2; _key2++) {
+    args[_key2 - 4] = arguments[_key2];
+  }
+  return originalLoadScript.apply(void 0, [retry ? retry.nextRetryUrl : originalUrl, done, key, chunkId].concat(args));
+}
+function registerAsyncChunkRetry() {
+  // init global variables shared between initial-chunk-retry and async-chunk-retry
+  if (typeof window !== 'undefined' && !window.__RB_ASYNC_CHUNKS__) {
+    window.__RB_ASYNC_CHUNKS__ = {};
+  }
+  if (typeof __RUNTIME_GLOBALS_REQUIRE__ !== 'undefined') {
+    try {
+      __RUNTIME_GLOBALS_ENSURE_CHUNK__ = ensureChunk;
+      __RUNTIME_GLOBALS_LOAD_SCRIPT__ = loadScript;
+    } catch (e) {
+      console.error(ERROR_PREFIX, 'Register async chunk retry runtime failed', e);
+    }
+  }
+}
+registerAsyncChunkRetry();

@@ -1,0 +1,130 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const logger_1 = require("../../utils/logger");
+const BaseDevice_1 = require("../BaseDevice");
+const detect_port_1 = __importDefault(require("detect-port"));
+const type_1 = require("../../utils/type");
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+class HarmonyDevice extends BaseDevice_1.BaseDevice {
+    constructor(driver, serial, title, hdc) {
+        super(driver, {
+            serial: serial,
+            os: type_1.DeviceOS.Harmony,
+            title,
+        });
+        this.hdc = hdc;
+    }
+    getHost() {
+        var _a, _b;
+        return (_b = (_a = this.driver.hdcOption) === null || _a === void 0 ? void 0 : _a.host) !== null && _b !== void 0 ? _b : "127.0.0.1";
+    }
+    forwards() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.forward(this.remotePorts);
+        });
+    }
+    forward(remotePorts) {
+        var _a, _b, _c;
+        return __awaiter(this, void 0, void 0, function* () {
+            const device = this.hdc.getDevice(this.serial);
+            if (!device) {
+                (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("harmony_device_forward_error", null, {
+                    msg: "device not found",
+                });
+                return;
+            }
+            try {
+                yield this.removeForward(device);
+            }
+            catch (e) {
+                logger_1.defaultLogger.debug(JSON.stringify(e));
+                (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("harmony_device_forward_error", null, {
+                    msg: "remove forward failed",
+                    error: e === null || e === void 0 ? void 0 : e.message,
+                });
+            }
+            this.port = [];
+            const randomBase = Math.floor(Math.random() * 20);
+            for (let i = 0; i < remotePorts.length; i++) {
+                const remotePort = remotePorts[i];
+                let tryCount = 0;
+                while (tryCount < 5) {
+                    let hostport = HarmonyDevice.localBasePort +
+                        randomBase * 500 +
+                        i * 100 +
+                        tryCount * 10;
+                    do {
+                        hostport++;
+                        hostport = yield (0, detect_port_1.default)(hostport);
+                        logger_1.defaultLogger.debug("hdc try hostport:" + hostport);
+                    } while (this.port.indexOf(hostport) != -1);
+                    try {
+                        const result = yield device.forward(`tcp:${hostport}`, `tcp:${remotePort}`);
+                        if (result) {
+                            logger_1.defaultLogger.debug("hdc forward success:" + remotePort + " hostport:" + hostport);
+                            this.port.push(hostport);
+                            break;
+                        }
+                        else {
+                            tryCount++;
+                        }
+                    }
+                    catch (e) {
+                        logger_1.defaultLogger.debug("forward failed:" +
+                            remotePort +
+                            " e:" +
+                            (e === null || e === void 0 ? void 0 : e.message) +
+                            " tryCount:" +
+                            tryCount +
+                            " hostport:" +
+                            hostport);
+                        (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("harmony_device_forward_error", null, {
+                            msg: "forward remotePort failed",
+                            error: e === null || e === void 0 ? void 0 : e.message,
+                        });
+                        tryCount++;
+                    }
+                }
+                if (tryCount >= 5) {
+                    logger_1.defaultLogger.debug("forward failed:" + remotePort);
+                }
+            }
+            logger_1.defaultLogger.debug("hdc forward result:" + JSON.stringify(this.port));
+        });
+    }
+    removeForward(device) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                const forwards = yield device.listForwards();
+                for (let i = 0; i < forwards.length; i++) {
+                    const local = forwards[i].local;
+                    const remote = forwards[i].remote;
+                    const remotePort = parseInt(remote.replace(/^tcp:/, ""), 10);
+                    if (this.remotePorts.includes(remotePort)) {
+                        const result = yield device.removeForward(local, remote);
+                        logger_1.defaultLogger.debug("removeForward result:" + result);
+                    }
+                    else {
+                        logger_1.defaultLogger.debug("not remove forward:" + local + ". for not used by connector");
+                    }
+                }
+                resolve();
+            }));
+        });
+    }
+}
+exports.default = HarmonyDevice;
+HarmonyDevice.localBasePort = 15000;
+//# sourceMappingURL=HarmonyDevice.js.map

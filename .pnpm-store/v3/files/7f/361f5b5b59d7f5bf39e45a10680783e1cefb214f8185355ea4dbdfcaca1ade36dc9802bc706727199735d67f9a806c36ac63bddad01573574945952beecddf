@@ -1,0 +1,227 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var default_exports = {};
+__export(default_exports, {
+  createDefaultConfig: () => createDefaultConfig,
+  createLegacyDefaultConfig: () => createLegacyDefaultConfig
+});
+module.exports = __toCommonJS(default_exports);
+var import_utils = require("@modern-js/utils");
+var import_env = require("../utils/env");
+function createDefaultConfig(appContext) {
+  const dev = {
+    // `dev.port` should not have a default value
+    // because we will use `server.port` by default
+    port: void 0,
+    cliShortcuts: {
+      help: false,
+      // does not support restart server and print urls yet
+      custom: (shortcuts = []) => shortcuts.filter(({ key }) => key !== "r" && key !== "u")
+    }
+  };
+  const output = {
+    distPath: {
+      root: "dist",
+      html: "html",
+      js: "static/js",
+      css: "static/css",
+      server: "bundles",
+      worker: "worker"
+    },
+    cleanDistPath: true,
+    disableNodePolyfill: true,
+    enableInlineRouteManifests: true,
+    disableInlineRouteManifests: false
+  };
+  const source = {
+    entries: void 0,
+    mainEntryName: import_utils.MAIN_ENTRY_NAME,
+    enableAsyncEntry: false,
+    enableCustomEntry: false,
+    disableDefaultEntries: false,
+    entriesDir: "./src",
+    configDir: "./config",
+    globalVars: (0, import_env.getAutoInjectEnv)(appContext),
+    alias: {
+      [appContext.internalDirAlias]: appContext.internalDirectory,
+      [appContext.internalSrcAlias]: appContext.srcDirectory,
+      "@": appContext.srcDirectory,
+      "@shared": appContext.sharedDirectory
+    }
+  };
+  const html = {
+    title: "",
+    mountId: "root",
+    meta: {
+      charset: {
+        charset: "utf-8"
+      },
+      viewport: "width=device-width, initial-scale=1.0, shrink-to-fit=no, viewport-fit=cover, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+      "http-equiv": {
+        "http-equiv": "x-ua-compatible",
+        content: "ie=edge"
+      },
+      renderer: "webkit",
+      layoutmode: "standard",
+      imagemode: "force",
+      "wap-font-scale": "no",
+      "format-detection": "telephone=no"
+    }
+  };
+  const server = {
+    routes: void 0,
+    publicRoutes: void 0,
+    ssr: void 0,
+    ssrByEntries: void 0,
+    baseUrl: "/",
+    port: 8080
+  };
+  return {
+    source,
+    output,
+    server,
+    dev,
+    html,
+    tools: {
+      tsChecker: {
+        issue: {
+          exclude: [
+            {
+              file: "**/api/lambda/**/*"
+            }
+          ]
+        }
+      }
+    },
+    plugins: [],
+    builderPlugins: [],
+    runtime: {},
+    runtimeByEntries: {}
+  };
+}
+function createLegacyDefaultConfig(appContext) {
+  const defaultAlias = appContext ? {
+    [appContext.internalDirAlias]: appContext.internalDirectory,
+    [appContext.internalSrcAlias]: appContext.srcDirectory,
+    "@": appContext.srcDirectory,
+    "@shared": appContext.sharedDirectory
+  } : {};
+  const sourceDefaults = {
+    entries: void 0,
+    mainEntryName: import_utils.MAIN_ENTRY_NAME,
+    enableAsyncEntry: false,
+    enableCustomEntry: false,
+    disableDefaultEntries: false,
+    entriesDir: "./src",
+    configDir: "./config",
+    apiDir: "./api",
+    envVars: [],
+    globalVars: (0, import_env.getAutoInjectEnv)(appContext),
+    alias: defaultAlias,
+    moduleScopes: void 0,
+    include: []
+  };
+  const outputDefaults = {
+    assetPrefix: "/",
+    htmlPath: "html",
+    jsPath: "static/js",
+    cssPath: "static/css",
+    mediaPath: "static/media",
+    path: "dist",
+    title: "",
+    titleByEntries: void 0,
+    meta: {
+      charset: {
+        charset: "utf-8"
+      },
+      viewport: "width=device-width, initial-scale=1.0, shrink-to-fit=no, viewport-fit=cover, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no",
+      "http-equiv": {
+        "http-equiv": "x-ua-compatible",
+        content: "ie=edge"
+      },
+      renderer: "webkit",
+      layoutmode: "standard",
+      imagemode: "force",
+      "wap-font-scale": "no",
+      "format-detection": "telephone=no"
+    },
+    metaByEntries: void 0,
+    inject: "head",
+    injectByEntries: void 0,
+    mountId: "root",
+    favicon: "",
+    faviconByEntries: void 0,
+    copy: void 0,
+    disableHtmlFolder: false,
+    disableCssModuleExtension: false,
+    disableCssExtract: false,
+    enableCssModuleTSDeclaration: false,
+    disableMinimize: false,
+    enableInlineStyles: false,
+    enableInlineScripts: false,
+    disableSourceMap: false,
+    disableInlineRuntimeChunk: false,
+    disableAssetsCache: false,
+    enableLatestDecorators: false,
+    polyfill: "entry",
+    dataUriLimit: 1e4,
+    templateParameters: {},
+    templateParametersByEntries: void 0,
+    cssModuleLocalIdentName: void 0,
+    disableNodePolyfill: false,
+    enableTsLoader: false
+  };
+  const serverDefaults = {
+    routes: void 0,
+    publicRoutes: void 0,
+    ssr: void 0,
+    ssrByEntries: void 0,
+    baseUrl: "/",
+    port: 8080
+  };
+  const devDefaults = {
+    assetPrefix: false,
+    https: false
+  };
+  const toolsDefaults = {
+    webpack: void 0,
+    babel: void 0,
+    postcss: void 0,
+    autoprefixer: void 0,
+    lodash: void 0,
+    devServer: void 0,
+    tsLoader: void 0,
+    terser: void 0,
+    minifyCss: void 0
+  };
+  return {
+    source: sourceDefaults,
+    output: outputDefaults,
+    server: serverDefaults,
+    dev: devDefaults,
+    tools: toolsDefaults,
+    runtime: {},
+    runtimeByEntries: {}
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createDefaultConfig,
+  createLegacyDefaultConfig
+});

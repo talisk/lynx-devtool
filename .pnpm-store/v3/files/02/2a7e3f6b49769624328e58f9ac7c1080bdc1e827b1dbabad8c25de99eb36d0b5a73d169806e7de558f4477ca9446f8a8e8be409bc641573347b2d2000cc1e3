@@ -1,0 +1,4 @@
+import type { Project } from '../project.js';
+export type Filter = FilterFunction;
+export type FilterFunction = (projects: Project[]) => Project[] | Promise<Project[]>;
+export declare const filterByField: (fieldName: string, checkExports?: boolean) => FilterFunction;

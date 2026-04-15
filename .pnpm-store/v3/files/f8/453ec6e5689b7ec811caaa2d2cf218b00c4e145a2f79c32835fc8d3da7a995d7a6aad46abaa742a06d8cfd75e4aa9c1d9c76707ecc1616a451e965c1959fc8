@@ -1,0 +1,131 @@
+import * as __WEBPACK_EXTERNAL_MODULE_node_fs_5ea92f0c__ from "node:fs";
+import * as __WEBPACK_EXTERNAL_MODULE_node_module_ab9f2194__ from "node:module";
+import * as __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__ from "node:path";
+import * as __WEBPACK_EXTERNAL_MODULE_node_url_e96de089__ from "node:url";
+import * as __WEBPACK_EXTERNAL_MODULE_deepmerge__ from "deepmerge";
+import * as __WEBPACK_EXTERNAL_MODULE_reduce_configs_02786df6__ from "reduce-configs";
+import * as __WEBPACK_EXTERNAL_MODULE_upath__ from "upath";
+let BABEL_JS_RULE = 'babel-js', castArray = (arr)=>void 0 === arr ? [] : Array.isArray(arr) ? arr : [
+        arr
+    ], normalizeToPosixPath = (p)=>__WEBPACK_EXTERNAL_MODULE_upath__.default.normalizeSafe((0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.normalize)(p || '')).replace(/^([a-zA-Z]+):/, (_, m)=>`/${m.toLowerCase()}`), formatPath = (originPath)=>(0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.isAbsolute)(originPath) ? originPath.split(__WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.sep).join('/') : originPath, getPluginItemName = (item)=>'string' == typeof item ? formatPath(item) : Array.isArray(item) && 'string' == typeof item[0] ? formatPath(item[0]) : null, addPlugins = (plugins, config)=>{
+    config.plugins ? config.plugins.push(...plugins) : config.plugins = plugins;
+}, addPresets = (presets, config)=>{
+    config.presets ? config.presets.push(...presets) : config.presets = presets;
+}, removePlugins = (plugins, config)=>{
+    if (!config.plugins) return;
+    let removeList = castArray(plugins);
+    config.plugins = config.plugins.filter((item)=>{
+        let name = getPluginItemName(item);
+        return !name || !removeList.find((removeItem)=>name.includes(removeItem));
+    });
+}, removePresets = (presets, config)=>{
+    if (!config.presets) return;
+    let removeList = castArray(presets);
+    config.presets = config.presets.filter((item)=>{
+        let name = getPluginItemName(item);
+        return !name || !removeList.find((removeItem)=>name.includes(removeItem));
+    });
+}, modifyPresetOptions = (presetName, options, presets = [])=>{
+    presets.forEach((preset, index)=>{
+        Array.isArray(preset) ? 'string' == typeof preset[0] && normalizeToPosixPath(preset[0]).includes(presetName) && (preset[1] = {
+            ...preset[1] || {},
+            ...options
+        }) : 'string' == typeof preset && normalizeToPosixPath(preset).includes(presetName) && (presets[index] = [
+            preset,
+            options
+        ]);
+    });
+}, getBabelUtils = (config)=>{
+    let noop = ()=>{};
+    return {
+        addPlugins: (plugins)=>addPlugins(plugins, config),
+        addPresets: (presets)=>addPresets(presets, config),
+        removePlugins: (plugins)=>removePlugins(plugins, config),
+        removePresets: (presets)=>removePresets(presets, config),
+        addIncludes: noop,
+        addExcludes: noop,
+        modifyPresetEnvOptions: (options)=>modifyPresetOptions('@babel/preset-env', options, config.presets || []),
+        modifyPresetReactOptions: (options)=>modifyPresetOptions('@babel/preset-react', options, config.presets || [])
+    };
+}, applyUserBabelConfig = (defaultOptions, userBabelConfig, extraBabelUtils)=>{
+    if (userBabelConfig) {
+        let babelUtils = {
+            ...getBabelUtils(defaultOptions),
+            ...extraBabelUtils
+        };
+        return (0, __WEBPACK_EXTERNAL_MODULE_reduce_configs_02786df6__.reduceConfigsWithContext)({
+            initial: defaultOptions,
+            config: userBabelConfig,
+            ctx: babelUtils
+        });
+    }
+    return defaultOptions;
+}, modifyBabelLoaderOptions = ({ chain, CHAIN_ID, modifier })=>{
+    for (let ruleId of [
+        CHAIN_ID.RULE.JS,
+        CHAIN_ID.RULE.JS_DATA_URI,
+        BABEL_JS_RULE
+    ])if (chain.module.rules.has(ruleId)) {
+        let rule = chain.module.rule(ruleId);
+        rule.uses.has(CHAIN_ID.USE.BABEL) && rule.use(CHAIN_ID.USE.BABEL).tap(modifier);
+    }
+}, plugin_dirname = __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.default.dirname((0, __WEBPACK_EXTERNAL_MODULE_node_url_e96de089__.fileURLToPath)(import.meta.url)), plugin_require = (0, __WEBPACK_EXTERNAL_MODULE_node_module_ab9f2194__.createRequire)(import.meta.url), PLUGIN_BABEL_NAME = 'rsbuild:babel', SCRIPT_REGEX = /\.(?:js|jsx|mjs|cjs|ts|tsx|mts|cts)$/, DEFAULT_BABEL_PRESET_TYPESCRIPT_OPTIONS = {
+    allowNamespaces: !0,
+    allExtensions: !0,
+    allowDeclareFields: !0,
+    optimizeConstEnums: !0,
+    isTSX: !0
+};
+async function getCacheIdentifier(options) {
+    let identifier = `${process.env.NODE_ENV}${JSON.stringify(options)}`, { version: coreVersion } = await import("@babel/core"), loaderVersion = JSON.parse(await __WEBPACK_EXTERNAL_MODULE_node_fs_5ea92f0c__.default.promises.readFile((0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.join)(plugin_dirname, '../compiled/babel-loader/package.json'), 'utf-8')).version ?? '';
+    return identifier + `@babel/core@${coreVersion}babel-loader@${loaderVersion}`;
+}
+let getDefaultBabelOptions = (config, context)=>{
+    let isLegacyDecorators = 'legacy' === config.source.decorators.version, options = {
+        babelrc: !1,
+        configFile: !1,
+        compact: 'production' === config.mode,
+        plugins: [
+            [
+                plugin_require.resolve('@babel/plugin-proposal-decorators'),
+                config.source.decorators
+            ],
+            ...isLegacyDecorators ? [
+                plugin_require.resolve('@babel/plugin-transform-class-properties')
+            ] : []
+        ],
+        presets: [
+            [
+                plugin_require.resolve("@babel/preset-typescript"),
+                DEFAULT_BABEL_PRESET_TYPESCRIPT_OPTIONS
+            ]
+        ]
+    }, { buildCache = !0 } = config.performance;
+    if (buildCache && 'rspack' === context.bundlerType) {
+        var cacheDirectory;
+        let cacheDirectory1 = (cacheDirectory = 'boolean' == typeof buildCache ? void 0 : buildCache.cacheDirectory) ? (0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.isAbsolute)(cacheDirectory) ? cacheDirectory : (0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.join)(context.rootPath, cacheDirectory) : (0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.join)(context.cachePath);
+        options.cacheCompression = !1, options.cacheDirectory = (0, __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.join)(cacheDirectory1, 'babel-loader');
+    }
+    return options;
+}, pluginBabel = (options = {})=>({
+        name: PLUGIN_BABEL_NAME,
+        setup (api) {
+            let getBabelOptions = async (environment)=>{
+                let { config } = environment, baseOptions = getDefaultBabelOptions(config, api.context), mergedOptions = applyUserBabelConfig((0, __WEBPACK_EXTERNAL_MODULE_deepmerge__.default)({}, baseOptions), options.babelLoaderOptions);
+                return mergedOptions.cacheDirectory && !mergedOptions.cacheIdentifier && (mergedOptions.cacheIdentifier = await getCacheIdentifier(mergedOptions)), mergedOptions;
+            };
+            api.modifyBundlerChain({
+                order: 'pre',
+                handler: async (chain, { CHAIN_ID, environment })=>{
+                    let babelOptions = await getBabelOptions(environment), babelLoader = __WEBPACK_EXTERNAL_MODULE_node_path_c5b9b54f__.default.resolve(plugin_dirname, '../compiled/babel-loader/index.js'), { include, exclude } = options;
+                    if (include || exclude) {
+                        let rule = chain.module.rule(BABEL_JS_RULE).after(CHAIN_ID.RULE.JS);
+                        if (include) for (let condition of castArray(include))rule.include.add(condition);
+                        if (exclude) for (let condition of castArray(exclude))rule.exclude.add(condition);
+                        rule.test(SCRIPT_REGEX).use(CHAIN_ID.USE.BABEL).loader(babelLoader).options(babelOptions);
+                    } else chain.module.rule(CHAIN_ID.RULE.JS).test(SCRIPT_REGEX).use(CHAIN_ID.USE.BABEL).after(CHAIN_ID.USE.SWC).loader(babelLoader).options(babelOptions);
+                }
+            });
+        }
+    });
+export { PLUGIN_BABEL_NAME, getBabelUtils, getDefaultBabelOptions, modifyBabelLoaderOptions, pluginBabel };

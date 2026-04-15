@@ -1,0 +1,13 @@
+import type { BaseBuildConfig, BuildCommandOptions, DTSOptions, ModuleContext, ModuleTools, PluginAPI } from '../types';
+export declare const runBuildTask: (options: {
+    buildConfig: BaseBuildConfig;
+    buildCmdOptions: BuildCommandOptions;
+    context: ModuleContext;
+}, api: PluginAPI<ModuleTools>) => Promise<void>;
+export declare const generatorDts: (config: BaseBuildConfig, api: PluginAPI<ModuleTools>, options: {
+    watch: boolean;
+    dts: DTSOptions;
+}) => Promise<void>;
+export declare const buildLib: (config: BaseBuildConfig, api: PluginAPI<ModuleTools>, options: {
+    watch: boolean;
+}) => Promise<void>;

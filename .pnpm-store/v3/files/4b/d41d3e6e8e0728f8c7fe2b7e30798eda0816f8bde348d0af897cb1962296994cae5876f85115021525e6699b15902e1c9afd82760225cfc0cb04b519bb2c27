@@ -1,0 +1,56 @@
+import { _ as _define_property } from "@swc/helpers/_/_define_property";
+import { HTML_CHUNKSMAP_SEPARATOR } from "@modern-js/utils/universal/constants";
+var DOC_EXT = [
+  "jsx",
+  "tsx",
+  "ts",
+  "js"
+];
+var DOCUMENT_META_PLACEHOLDER = encodeURIComponent("<%= meta %>");
+var DOCUMENT_TITLE_PLACEHOLDER = encodeURIComponent("<%= title %>");
+var HTML_SEPARATOR = "<!--<?- html ?>-->";
+var HEAD_PARTICALS_SEPARATOR = encodeURIComponent("<!--<?- partials.head ?>-->");
+var BODY_PARTICALS_SEPARATOR = encodeURIComponent("<!--<?- partials.body ?>-->");
+var TOP_PARTICALS_SEPARATOR = encodeURIComponent("<!--<?- partials.top ?>-->");
+var HTML_SSRDATASCRIPT_SEPARATOR = "<!--<?- SSRDataScript ?>-->";
+var DOCUMENT_SSR_PLACEHOLDER = encodeURIComponent(HTML_SEPARATOR);
+var DOCUMENT_CHUNKSMAP_PLACEHOLDER = encodeURIComponent(HTML_CHUNKSMAP_SEPARATOR);
+var DOCUMENT_SSRDATASCRIPT_PLACEHOLDER = encodeURIComponent(HTML_SSRDATASCRIPT_SEPARATOR);
+var DOCUMENT_FILE_NAME = "Document";
+var DOCUMENT_SCRIPTS_PLACEHOLDER = encodeURIComponent("<!-- chunk scripts placeholder -->");
+var DOCUMENT_LINKS_PLACEHOLDER = encodeURIComponent("<!-- chunk links placeholder -->");
+var DOCUMENT_SCRIPT_PLACEHOLDER_START = encodeURIComponent("<!-- script-start -->");
+var DOCUMENT_SCRIPT_PLACEHOLDER_END = encodeURIComponent("<!-- script-end -->");
+var DOCUMENT_SCRIPT_ATTRIBUTES_START = encodeURIComponent("<!-- script-scriptpProperties-start -->");
+var DOCUMENT_SCRIPT_ATTRIBUTES_END = encodeURIComponent("<!-- script-scriptpProperties-end -->");
+var DOCUMENT_STYLE_PLACEHOLDER_START = encodeURIComponent("<!-- style-start -->");
+var DOCUMENT_STYLE_PLACEHOLDER_END = encodeURIComponent("<!-- style-end -->");
+var DOCUMENT_COMMENT_PLACEHOLDER_START = encodeURIComponent("<!-- comment-start -->");
+var DOCUMENT_COMMENT_PLACEHOLDER_END = encodeURIComponent("<!-- comment-end -->");
+var _obj;
+var PLACEHOLDER_REPLACER_MAP = (_obj = {}, _define_property(_obj, DOCUMENT_SSR_PLACEHOLDER, HTML_SEPARATOR), _define_property(_obj, DOCUMENT_CHUNKSMAP_PLACEHOLDER, HTML_CHUNKSMAP_SEPARATOR), _define_property(_obj, DOCUMENT_SSRDATASCRIPT_PLACEHOLDER, HTML_SSRDATASCRIPT_SEPARATOR), _obj);
+export {
+  BODY_PARTICALS_SEPARATOR,
+  DOCUMENT_CHUNKSMAP_PLACEHOLDER,
+  DOCUMENT_COMMENT_PLACEHOLDER_END,
+  DOCUMENT_COMMENT_PLACEHOLDER_START,
+  DOCUMENT_FILE_NAME,
+  DOCUMENT_LINKS_PLACEHOLDER,
+  DOCUMENT_META_PLACEHOLDER,
+  DOCUMENT_SCRIPTS_PLACEHOLDER,
+  DOCUMENT_SCRIPT_ATTRIBUTES_END,
+  DOCUMENT_SCRIPT_ATTRIBUTES_START,
+  DOCUMENT_SCRIPT_PLACEHOLDER_END,
+  DOCUMENT_SCRIPT_PLACEHOLDER_START,
+  DOCUMENT_SSRDATASCRIPT_PLACEHOLDER,
+  DOCUMENT_SSR_PLACEHOLDER,
+  DOCUMENT_STYLE_PLACEHOLDER_END,
+  DOCUMENT_STYLE_PLACEHOLDER_START,
+  DOCUMENT_TITLE_PLACEHOLDER,
+  DOC_EXT,
+  HEAD_PARTICALS_SEPARATOR,
+  HTML_SEPARATOR,
+  HTML_SSRDATASCRIPT_SEPARATOR,
+  PLACEHOLDER_REPLACER_MAP,
+  TOP_PARTICALS_SEPARATOR
+};

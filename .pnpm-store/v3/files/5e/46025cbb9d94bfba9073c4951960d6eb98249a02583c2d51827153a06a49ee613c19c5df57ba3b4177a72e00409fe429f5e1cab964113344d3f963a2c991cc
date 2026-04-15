@@ -1,0 +1,5 @@
+import Command from "../../command";
+export default class RemoveForwardCommand extends Command<boolean> {
+    execute(local: string, remote: string): Promise<boolean>;
+    private _parseResult;
+}

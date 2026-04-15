@@ -1,0 +1,19 @@
+import type { RsbuildPlugin } from '@rsbuild/core';
+import { type ConfigChain } from 'reduce-configs';
+/**
+ * The options of [@swc/plugin-styled-components](https://www.npmjs.com/package/@swc/plugin-styled-components).
+ */
+export type PluginStyledComponentsOptions = {
+    displayName?: boolean;
+    ssr?: boolean;
+    fileName?: boolean;
+    meaninglessFileNames?: string[];
+    namespace?: string;
+    topLevelImportPaths?: string[];
+    transpileTemplateLiterals?: boolean;
+    minify?: boolean;
+    pure?: boolean;
+    cssProps?: boolean;
+};
+export declare const PLUGIN_STYLED_COMPONENTS_NAME = "rsbuild:styled-components";
+export declare const pluginStyledComponents: (pluginOptions?: ConfigChain<PluginStyledComponentsOptions>) => RsbuildPlugin;

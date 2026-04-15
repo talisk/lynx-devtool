@@ -1,0 +1,83 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import fs from "fs";
+import path from "path";
+import { compile } from "@modern-js/server-utils";
+import { SERVER_DIR, SHARED_DIR, getMeta } from "@modern-js/utils";
+var TS_CONFIG_FILENAME = "tsconfig.json";
+function checkHasCache(appDir) {
+  var tsFilepath = path.resolve(appDir, SERVER_DIR, "cache.ts");
+  var jsfilepath = path.resolve(appDir, SERVER_DIR, "cache.js");
+  return fs.existsSync(tsFilepath) || fs.existsSync(jsfilepath);
+}
+function checkHasConfig(appDir) {
+  var metaName = arguments.length > 1 && arguments[1] !== void 0 ? arguments[1] : "modern-js";
+  var meta = getMeta(metaName);
+  var tsFilepath = path.resolve(appDir, SERVER_DIR, "".concat(meta, ".server.ts"));
+  var jsfilepath = path.resolve(appDir, SERVER_DIR, "".concat(meta, ".server.js"));
+  return fs.existsSync(tsFilepath) || fs.existsSync(jsfilepath);
+}
+function serverBuild_default() {
+  return {
+    name: "@modern-js/server-build",
+    setup: function setup(api) {
+      api.onAfterBuild(/* @__PURE__ */ _async_to_generator(function() {
+        var _api_getAppContext, appDirectory, distDirectory, metaName, modernConfig, distDir, serverDir, sharedDir, tsconfigPath, sourceDirs, server, alias, babel;
+        return _ts_generator(this, function(_state) {
+          switch (_state.label) {
+            case 0:
+              _api_getAppContext = api.getAppContext(), appDirectory = _api_getAppContext.appDirectory, distDirectory = _api_getAppContext.distDirectory, metaName = _api_getAppContext.metaName;
+              if (!checkHasCache(appDirectory) && !checkHasConfig(appDirectory, metaName)) {
+                return [
+                  2
+                ];
+              }
+              modernConfig = api.getNormalizedConfig();
+              distDir = path.resolve(distDirectory);
+              serverDir = path.resolve(appDirectory, SERVER_DIR);
+              sharedDir = path.resolve(appDirectory, SHARED_DIR);
+              tsconfigPath = path.resolve(appDirectory, TS_CONFIG_FILENAME);
+              sourceDirs = [];
+              if (fs.existsSync(serverDir)) {
+                sourceDirs.push(serverDir);
+                if (fs.existsSync(sharedDir)) {
+                  sourceDirs.push(sharedDir);
+                }
+              }
+              server = modernConfig.server;
+              alias = modernConfig.source.alias;
+              babel = modernConfig.tools.babel;
+              if (!(sourceDirs.length > 0))
+                return [
+                  3,
+                  2
+                ];
+              return [
+                4,
+                compile(appDirectory, {
+                  server,
+                  alias,
+                  babelConfig: babel
+                }, {
+                  sourceDirs,
+                  distDir,
+                  tsconfigPath
+                })
+              ];
+            case 1:
+              _state.sent();
+              _state.label = 2;
+            case 2:
+              return [
+                2
+              ];
+          }
+        });
+      }));
+    }
+  };
+}
+;
+export {
+  serverBuild_default as default
+};

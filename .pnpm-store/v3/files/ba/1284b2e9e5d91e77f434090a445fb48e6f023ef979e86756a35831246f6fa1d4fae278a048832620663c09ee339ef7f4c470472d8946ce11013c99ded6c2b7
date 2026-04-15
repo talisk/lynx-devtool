@@ -1,0 +1,115 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var watch_exports = {};
+__export(watch_exports, {
+  initWatcher: () => initWatcher
+});
+module.exports = __toCommonJS(watch_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+const initWatcher = (compiler) => {
+  const { config, api } = compiler;
+  const watch = import_utils.chokidar.watch([
+    compiler.context.root
+  ], {
+    useFsEvents: false,
+    ignored: [
+      "**/node_modules",
+      "**/.gitignore",
+      "**/.git",
+      compiler.config.outDir
+    ],
+    cwd: compiler.context.root
+  });
+  compiler.watcher = watch;
+  let running = false;
+  let needReRun = false;
+  const handleLink = async (filePath, type) => {
+    const { config: config2, context: { root } } = compiler;
+    const { buildType, input, sourceDir } = config2;
+    const absFilePath = import_path.default.resolve(root, filePath);
+    let shouldRebuild = false;
+    if (buildType === "bundleless" && Array.isArray(input)) {
+      if (type === "add") {
+        shouldRebuild = absFilePath.startsWith(sourceDir);
+      } else {
+        shouldRebuild = input.some((item) => item === filePath);
+      }
+    }
+    if (shouldRebuild) {
+      const text = type === "add" ? "added" : "unlinked";
+      import_utils.logger.info(`${import_utils.chalk.underline(filePath)} ${text}`);
+      if (type === "unlink") {
+        input.splice(input.indexOf(filePath), 1);
+      } else {
+        input.push(filePath);
+      }
+      if (running) {
+        needReRun = true;
+      } else {
+        running = true;
+        await compiler.reBuild("link", config2);
+        running = false;
+        if (needReRun) {
+          needReRun = false;
+          await compiler.reBuild("link", config2);
+        }
+      }
+    }
+  };
+  const handleAdd = async (filePath) => {
+    return handleLink(filePath, "add");
+  };
+  const handleUnlink = async (filePath) => {
+    return handleLink(filePath, "unlink");
+  };
+  const handleChange = async (filePath, _events) => {
+    const { context: { root }, watchedFiles } = compiler;
+    if (watchedFiles.has(import_path.default.resolve(root, filePath))) {
+      import_utils.logger.info(`File changed: ${import_utils.chalk.dim(filePath)}`);
+      const runner = api.useHookRunners();
+      runner.buildWatchJs({
+        buildConfig: config
+      });
+      await compiler.reBuild("change", config);
+    }
+  };
+  watch.on("ready", () => {
+    watch.on("change", handleChange);
+    watch.on("add", handleAdd);
+    watch.on("unlink", handleUnlink);
+  });
+  watch.once("restart", () => {
+    watch.removeListener("change", handleChange);
+  });
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  initWatcher
+});

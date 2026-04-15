@@ -1,0 +1,54 @@
+import path from "path";
+import { JS_EXTENSIONS, findExists, formatImportPath } from "@modern-js/utils";
+import { ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME, ENTRY_POINT_RUNTIME_REGISTER_FILE_NAME } from "./constants";
+var genRenderCode = function(param) {
+  var srcDirectory = param.srcDirectory, internalSrcAlias = param.internalSrcAlias, metaName = param.metaName, entry = param.entry, customEntry = param.customEntry, customBootstrap = param.customBootstrap, mountId = param.mountId;
+  if (customEntry) {
+    return "import '".concat(formatImportPath(entry.replace(srcDirectory, internalSrcAlias)), "'");
+  }
+  return "import { createRoot } from '@".concat(metaName, "/runtime/react';\nimport { render } from '@").concat(metaName, "/runtime/browser';\n").concat(customBootstrap ? "import customBootstrap from '".concat(formatImportPath(customBootstrap.replace(srcDirectory, internalSrcAlias)), "';") : "", "\n\nconst ModernRoot = createRoot();\n\n").concat(customBootstrap ? "customBootstrap(ModernRoot, () => render(<ModernRoot />, '".concat(mountId || "root", "'));") : "render(<ModernRoot />, '".concat(mountId || "root", "');"));
+};
+var index = function(param) {
+  var srcDirectory = param.srcDirectory, internalSrcAlias = param.internalSrcAlias, metaName = param.metaName, entry = param.entry, entryName = param.entryName, customEntry = param.customEntry, customBootstrap = param.customBootstrap, mountId = param.mountId;
+  return "import '@".concat(metaName, "/runtime/registry/").concat(entryName, "';\n").concat(genRenderCode({
+    srcDirectory,
+    internalSrcAlias,
+    metaName,
+    entry,
+    customEntry,
+    customBootstrap,
+    mountId
+  }), "\n");
+};
+var register = function() {
+  return "import './".concat(ENTRY_POINT_RUNTIME_GLOBAL_CONTEXT_FILE_NAME, "';\nimport './").concat(ENTRY_POINT_RUNTIME_REGISTER_FILE_NAME, "';\n");
+};
+var getImportRuntimeConfigCode = function(srcDirectory, internalSrcAlias, runtimeConfigFile) {
+  if (runtimeConfigFile && findExists(JS_EXTENSIONS.map(function(ext) {
+    return path.resolve(srcDirectory, "".concat(runtimeConfigFile).concat(ext));
+  }))) {
+    return "import runtimeConfig from '".concat(internalSrcAlias, "/").concat(runtimeConfigFile, "';");
+  }
+  return "let runtimeConfig;";
+};
+var getRegisterRuntimePluginCode = function(entryName, name, config) {
+  var configName = name === "garfish" ? "masterApp" : name;
+  return "plugins.push(".concat(name, "Plugin(mergeConfig(").concat(JSON.stringify(config), ", (runtimeConfig || {})['").concat(configName, "'], ((runtimeConfig || {})['").concat(configName, "ByEntries'] || {})['").concat(entryName, "'], (getGlobalAppConfig() || {})['").concat(configName, "'])));");
+};
+var runtimeRegister = function(param) {
+  var entryName = param.entryName, srcDirectory = param.srcDirectory, internalSrcAlias = param.internalSrcAlias, metaName = param.metaName, runtimeConfigFile = param.runtimeConfigFile, runtimePlugins = param.runtimePlugins;
+  return "import { registerPlugin, mergeConfig } from '@".concat(metaName, "/runtime/plugin';\nimport { getGlobalAppConfig, getGlobalLayoutApp } from '@").concat(metaName, "/runtime/context';\n").concat(getImportRuntimeConfigCode(srcDirectory, internalSrcAlias, runtimeConfigFile), "\n\nconst plugins = [];\n\n").concat(runtimePlugins.map(function(param2) {
+    var name = param2.name, path2 = param2.path, config = param2.config;
+    return "import { ".concat(name, "Plugin } from '").concat(path2, "';\n\n").concat(getRegisterRuntimePluginCode(entryName, name, config), "\n");
+  }).join("\n"), "\nregisterPlugin(plugins, runtimeConfig);\n");
+};
+var runtimeGlobalContext = function(param) {
+  var srcDirectory = param.srcDirectory, internalSrcAlias = param.internalSrcAlias, metaName = param.metaName, entry = param.entry, customEntry = param.customEntry;
+  return "import { setGlobalContext } from '@".concat(metaName, "/runtime/context'\n\nimport App from '").concat(formatImportPath(customEntry ? entry.replace(/entry\.[tj]sx/, "App").replace(srcDirectory, internalSrcAlias) : entry.replace(srcDirectory, internalSrcAlias).replace(/\.[tj]sx/, "")), "';\n\nsetGlobalContext({\n  App,\n});");
+};
+export {
+  index,
+  register,
+  runtimeGlobalContext,
+  runtimeRegister
+};

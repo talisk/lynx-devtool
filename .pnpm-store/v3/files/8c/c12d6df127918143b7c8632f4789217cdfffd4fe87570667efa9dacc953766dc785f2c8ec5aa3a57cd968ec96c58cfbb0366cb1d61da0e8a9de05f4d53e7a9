@@ -1,0 +1,3 @@
+import type { AppToolsContext } from '../types/new';
+export declare const addServerConfigToDeps: (dependencies: string[], appDirectory: string, serverConfigFile: string) => Promise<void>;
+export declare function generateWatchFiles(appContext: AppToolsContext<'shared'>, configDir?: string): Promise<string[]>;

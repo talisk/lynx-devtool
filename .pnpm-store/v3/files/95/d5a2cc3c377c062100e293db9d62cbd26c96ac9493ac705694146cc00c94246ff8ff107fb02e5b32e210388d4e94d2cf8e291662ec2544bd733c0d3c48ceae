@@ -1,0 +1,3 @@
+import type { InternalContext } from '../../../types';
+import type { CLIPluginExtends } from '../../../types/cli/plugin';
+export declare const createFileWatcher: <Extends extends CLIPluginExtends>(appContext: InternalContext<Extends>) => Promise<import("@modern-js/utils").FSWatcher | undefined>;

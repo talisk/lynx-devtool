@@ -1,0 +1,3 @@
+import type { DeepPartial } from '../../../types/utils';
+import type { LoadedConfig } from '../types';
+export declare const createResolveConfig: <Config, NormalizedConfig>(loaded: LoadedConfig<Config>, configs: DeepPartial<Config>[]) => Promise<NormalizedConfig>;

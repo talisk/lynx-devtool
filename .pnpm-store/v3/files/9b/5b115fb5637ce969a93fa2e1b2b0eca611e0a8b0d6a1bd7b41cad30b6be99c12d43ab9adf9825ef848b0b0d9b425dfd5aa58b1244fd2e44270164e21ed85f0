@@ -1,0 +1,24 @@
+import { MAIN_ENTRY_NAME } from "@modern-js/utils/universal/constants";
+const dataHandler = async (request, { routeInfo, serverRoutes, reporter, onError, onTiming, serverManifest, loaderContext }) => {
+  var _serverManifest_loaderBundles;
+  const serverLoaderModule = serverManifest === null || serverManifest === void 0 ? void 0 : (_serverManifest_loaderBundles = serverManifest.loaderBundles) === null || _serverManifest_loaderBundles === void 0 ? void 0 : _serverManifest_loaderBundles[routeInfo.entryName || MAIN_ENTRY_NAME];
+  if (!serverLoaderModule) {
+    return;
+  }
+  const { routes, handleRequest } = serverLoaderModule;
+  const response = await handleRequest({
+    request,
+    serverRoutes,
+    context: {
+      reporter,
+      loaderContext
+    },
+    onTiming,
+    onError,
+    routes
+  });
+  return response;
+};
+export {
+  dataHandler
+};

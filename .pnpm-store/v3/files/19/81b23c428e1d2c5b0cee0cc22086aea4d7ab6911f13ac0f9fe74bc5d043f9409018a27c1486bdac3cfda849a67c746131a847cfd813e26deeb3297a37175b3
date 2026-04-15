@@ -1,0 +1,17 @@
+/// <reference types="node" />
+import type { Rspack, RspackChain } from '@rsbuild/core';
+import type { AppNormalizedConfig, Bundler } from '../../types';
+import type { AppToolsContext } from '../../types/new';
+export declare function createPublicPattern<B extends Bundler>(appContext: AppToolsContext<B>, config: AppNormalizedConfig, chain: RspackChain): {
+    info: (file: {
+        sourceFilename: string;
+    }) => {
+        minimized: boolean;
+    };
+    from: string;
+    to: string;
+    context: string;
+    noErrorOnMissing: boolean;
+    transform: (content: Buffer, absoluteFrom: string) => string | Buffer;
+};
+export declare function createUploadPattern<B extends Bundler>(appContext: AppToolsContext<B>, config: AppNormalizedConfig<B>): Rspack.CopyRspackPluginOptions['patterns']['0'];

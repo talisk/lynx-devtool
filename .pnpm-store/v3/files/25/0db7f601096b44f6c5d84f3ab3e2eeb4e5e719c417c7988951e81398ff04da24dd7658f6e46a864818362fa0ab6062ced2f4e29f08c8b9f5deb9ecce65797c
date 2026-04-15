@@ -1,0 +1,13 @@
+import React from "react";
+import { useEffect, useState } from "react";
+const NoSSR = (props) => {
+  const [isMounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  const { children, fallback = null } = props || {};
+  return React.createElement(React.Fragment, null, isMounted ? children : fallback);
+};
+export {
+  NoSSR
+};

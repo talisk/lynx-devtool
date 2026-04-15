@@ -1,0 +1,53 @@
+export declare enum CommitType {
+    Performance = "performance",
+    Features = "features",
+    BugFix = "bugFix",
+    Doc = "doc",
+    Other = "other"
+}
+export interface Commit {
+    id: string;
+    type: CommitType;
+    repository?: string;
+    pullRequestId?: string;
+    author?: string;
+    message: string;
+    summary: string;
+    summary_zh: string;
+    [key: string]: string | undefined;
+}
+export interface Changes {
+    en: Commit[];
+    zh: Commit[];
+}
+export type ReleaseNote = Record<CommitType, Changes>;
+interface ReleaseNoteOptions {
+    repo?: string;
+    custom?: string;
+    authToken?: string;
+}
+export type CustomReleaseNoteFunction = {
+    getReleaseInfo?: (commit: string, commitObj: Commit) => Commit | Promise<Commit>;
+    getReleaseNoteLine?: (commit: Commit, lang?: 'en' | 'zh') => string | Promise<string>;
+} | undefined;
+export declare const ChangesTitle = "What's Changed";
+export declare const ChangesZhTitle = "\u66F4\u65B0\u5185\u5BB9";
+export declare const CommitTypeTitle: {
+    performance: string;
+    features: string;
+    bugFix: string;
+    doc: string;
+    other: string;
+};
+export declare const CommitTypeZhTitle: {
+    performance: string;
+    features: string;
+    bugFix: string;
+    doc: string;
+    other: string;
+};
+export declare function getCommitType(message: string): CommitType;
+export declare function getReleaseInfo(commit: string, commitObj: Commit, repo?: string, authToken?: string): Promise<Commit>;
+export declare function getReleaseNoteLine(commit: Commit, customReleaseNoteFunction?: CustomReleaseNoteFunction, lang?: 'en' | 'zh'): string | Promise<string>;
+export declare function genReleaseNote(options: ReleaseNoteOptions): Promise<string>;
+export {};

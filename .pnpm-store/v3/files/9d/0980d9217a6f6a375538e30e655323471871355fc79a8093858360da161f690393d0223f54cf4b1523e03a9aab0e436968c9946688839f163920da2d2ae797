@@ -1,0 +1,146 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var rollup_exports = {};
+__export(rollup_exports, {
+  runRollup: () => runRollup
+});
+module.exports = __toCommonJS(rollup_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_typescript = __toESM(require("typescript"));
+var import_plugin_json = __toESM(require("../../../compiled/@rollup/plugin-json"));
+var import_rollup_plugin_dts = __toESM(require("../../../compiled/rollup-plugin-dts"));
+var import_utils2 = require("../../utils");
+const runRollup = async (api, { distPath, tsconfigPath, externals, input, watch, abortOnError, respectExternal, appDirectory, footer, banner, dtsExtension }) => {
+  const ignoreFiles = {
+    name: "ignore-files",
+    load(id) {
+      if (!/\.(js|jsx|ts|tsx|json|cts|mts)$/.test(id)) {
+        return "";
+      }
+      return null;
+    }
+  };
+  const configFile = import_typescript.default.readConfigFile(tsconfigPath, import_typescript.default.sys.readFile);
+  const { options } = import_typescript.default.parseJsonConfigFileContent(configFile.config, import_typescript.default.sys, "./");
+  const baseUrl = import_path.default.isAbsolute(options.baseUrl || ".") ? options.baseUrl : import_path.default.join(import_path.default.dirname(tsconfigPath), options.baseUrl || ".");
+  const ignoreCompileOptions = [
+    "incremental",
+    "tsBuildInfoFile",
+    "sourceMap",
+    "inlineSources"
+  ];
+  const resolveRelative = (p) => import_path.default.resolve(appDirectory, p);
+  const dtsInput = Array.isArray(input) ? input.map(resolveRelative) : (0, import_utils2.mapValue)(input, resolveRelative);
+  const inputConfig = {
+    input: dtsInput,
+    external: externals,
+    plugins: [
+      (0, import_plugin_json.default)(),
+      ignoreFiles,
+      (0, import_rollup_plugin_dts.default)({
+        respectExternal,
+        compilerOptions: {
+          skipLibCheck: true,
+          // https://github.com/Swatinem/rollup-plugin-dts/issues/143,
+          // but it will cause error when bundle ts which import another ts file.
+          preserveSymlinks: false,
+          ...options,
+          // https://github.com/Swatinem/rollup-plugin-dts/issues/127
+          composite: false,
+          // https://github.com/Swatinem/rollup-plugin-dts/issues/113
+          declarationMap: false,
+          // isAbsolute
+          baseUrl,
+          // Ensure ".d.ts" modules are generated
+          declaration: true,
+          // Skip ".js" generation
+          noEmit: false,
+          emitDeclarationOnly: true,
+          // Skip code generation when error occurs
+          noEmitOnError: true,
+          // Avoid extra work
+          checkJs: false,
+          // Ensure we can parse the latest code
+          target: import_typescript.default.ScriptTarget.ESNext,
+          ...(0, import_utils2.transformUndefineObject)(ignoreCompileOptions)
+        },
+        tsconfig: tsconfigPath
+      })
+    ].filter(Boolean)
+  };
+  const outputConfig = {
+    dir: distPath,
+    format: "esm",
+    exports: "named",
+    footer,
+    banner,
+    entryFileNames: `[name]${dtsExtension}`
+  };
+  if (watch) {
+    const { watch: watch2 } = await Promise.resolve().then(() => __toESM(require("../../../compiled/rollup")));
+    const runner = api.useHookRunners();
+    const watcher = watch2({
+      ...inputConfig,
+      plugins: inputConfig.plugins,
+      output: outputConfig
+    }).on("event", async (event) => {
+      if (event.code === "START") {
+        import_utils.logger.info((0, import_utils2.withLogTitle)("bundle", "Start build types..."));
+      } else if (event.code === "BUNDLE_END") {
+        import_utils.logger.success((0, import_utils2.withLogTitle)("bundle", "Build types"));
+        runner.buildWatchDts({
+          buildType: "bundle"
+        });
+      } else if (event.code === "ERROR") {
+      }
+    });
+    return watcher;
+  } else {
+    try {
+      const { rollup } = await Promise.resolve().then(() => __toESM(require("../../../compiled/rollup")));
+      const { addRollupChunk } = await Promise.resolve().then(() => __toESM(require("../../utils")));
+      const bundle = await rollup(inputConfig);
+      const rollupOutput = await bundle.write(outputConfig);
+      addRollupChunk(rollupOutput, appDirectory, outputConfig.dir);
+      return bundle;
+    } catch (e) {
+      const { printOrThrowDtsErrors } = await Promise.resolve().then(() => __toESM(require("../../utils")));
+      await printOrThrowDtsErrors(e, {
+        abortOnError,
+        buildType: "bundle"
+      });
+      return null;
+    }
+  }
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  runRollup
+});

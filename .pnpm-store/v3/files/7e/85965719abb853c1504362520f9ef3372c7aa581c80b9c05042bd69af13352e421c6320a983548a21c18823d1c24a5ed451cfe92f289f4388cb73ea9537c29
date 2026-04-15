@@ -1,0 +1,7 @@
+import { createAsyncInterruptWorkflow, createWaterfall } from "@modern-js/plugin";
+const modifyRoutes = createWaterfall();
+const beforeCreateRoutes = createAsyncInterruptWorkflow();
+export {
+  beforeCreateRoutes,
+  modifyRoutes
+};

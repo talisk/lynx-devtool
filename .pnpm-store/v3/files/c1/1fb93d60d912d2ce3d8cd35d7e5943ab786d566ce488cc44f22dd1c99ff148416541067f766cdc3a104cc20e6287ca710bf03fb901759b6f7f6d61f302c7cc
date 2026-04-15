@@ -1,0 +1,282 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var esbuild_exports = {};
+__export(esbuild_exports, {
+  EsbuildCompiler: () => EsbuildCompiler,
+  createCompiler: () => createCompiler
+});
+module.exports = __toCommonJS(esbuild_exports);
+var import_path = __toESM(require("path"));
+var import_utils = require("@modern-js/utils");
+var import_esbuild = require("esbuild");
+var tapable = __toESM(require("tapable"));
+var import_build = require("../../constants/build");
+var import_utils2 = require("../../utils");
+var import_feature = require("../feature");
+var import_adapter = require("./adapter");
+var import_hook = require("./hook");
+var import_resolve = require("./resolve");
+var import_sourcemap = require("./sourcemap");
+var import_transform = require("./transform");
+var import_watch = require("./watch");
+class EsbuildCompiler {
+  async init() {
+    if (this.context.watch) {
+      (0, import_watch.initWatcher)(this);
+    }
+    const internal = await (0, import_feature.getInternalList)(this.context);
+    const before = this.config.hooks.filter((hook) => !hook.applyAfterBuiltIn);
+    const after = this.config.hooks.filter((hook) => hook.applyAfterBuiltIn);
+    this.hookList = [
+      ...before,
+      ...internal,
+      ...after
+    ];
+    await Promise.all(this.hookList.map((item) => item.apply(this)));
+  }
+  addWatchFile(id) {
+    if (!this.watchedFiles.has(id)) {
+      var _this_watcher_add, _this_watcher;
+      (_this_watcher = this.watcher) === null || _this_watcher === void 0 ? void 0 : (_this_watcher_add = _this_watcher.add) === null || _this_watcher_add === void 0 ? void 0 : _this_watcher_add.call(_this_watcher, id);
+      this.watchedFiles.add(id);
+    }
+  }
+  convertConfigToEsbuild(config) {
+    const { input, buildType, define, target, sourceMap, platform, splitting, outDir, sourceDir, minify, jsx, esbuildOptions, format, asset, tsconfig, banner, footer, shims, autoExtension } = config;
+    const bundle = buildType === "bundle";
+    const entryNames = bundle ? "[name]" : "[dir]/[name]";
+    let esbuildFormat = format === "umd" ? "esm" : format;
+    if (bundle && format === "cjs" && splitting) {
+      esbuildFormat = "esm";
+    }
+    const esbuildTarget = target === "es5" ? void 0 : target;
+    const jsExtensions = [
+      ".jsx",
+      ".tsx",
+      ".js",
+      ".ts",
+      ".json"
+    ];
+    const { jsExtension } = (0, import_utils2.getDefaultOutExtension)({
+      format,
+      root: this.context.root,
+      autoExtension
+    });
+    const buildOptions = {
+      inject: [
+        format === "cjs" && shims ? import_path.default.join(__dirname, "../../../shims/cjs.js") : "",
+        format === "esm" && shims && platform === "node" ? import_path.default.join(__dirname, "../../../shims/esm.js") : ""
+      ].filter(Boolean),
+      outExtension: autoExtension ? {
+        ".js": jsExtension
+      } : void 0,
+      banner: import_utils.lodash.pick(banner, [
+        "js",
+        "css"
+      ]),
+      footer: import_utils.lodash.pick(footer, [
+        "js",
+        "css"
+      ]),
+      entryPoints: input,
+      metafile: true,
+      define: {
+        ...format === "cjs" && shims ? {
+          "import.meta.url": "importMetaUrl"
+        } : {},
+        ...define
+      },
+      bundle: buildType === "bundle",
+      format: esbuildFormat,
+      target: esbuildTarget,
+      sourcemap: sourceMap ? "external" : false,
+      resolveExtensions: jsExtensions,
+      splitting,
+      charset: "utf8",
+      logLimit: 5,
+      absWorkingDir: this.context.root,
+      platform,
+      tsconfig: import_utils.fs.existsSync(tsconfig) ? tsconfig : void 0,
+      write: false,
+      logLevel: "silent",
+      outdir: outDir,
+      outbase: sourceDir,
+      entryNames,
+      plugins: [
+        (0, import_adapter.adapterPlugin)(this)
+      ],
+      minify: minify === "esbuild",
+      jsx,
+      supported: {
+        "dynamic-import": buildType === "bundle" || format !== "cjs"
+      },
+      assetNames: `${asset.path}/[name].[hash]`
+    };
+    return esbuildOptions(buildOptions);
+  }
+  getTransformContext(path2) {
+    if (this.transformContextMap.has(path2)) {
+      return this.transformContextMap.get(path2);
+    }
+    const context2 = new import_transform.TransformContext(Boolean(this.context.config.sourceMap));
+    this.transformContextMap.set(path2, context2);
+    return context2;
+  }
+  getSourcemapContext(path2) {
+    if (this.sourcemapContextMap.has(path2)) {
+      return this.sourcemapContextMap.get(path2);
+    }
+    const context2 = new import_sourcemap.SourcemapContext(Boolean(this.context.config.sourceMap));
+    this.sourcemapContextMap.set(path2, context2);
+    return context2;
+  }
+  emitAsset(name, chunk) {
+    if (typeof chunk === "string") {
+      this.outputChunk.set(name, {
+        type: "asset",
+        contents: chunk,
+        fileName: name
+      });
+    } else {
+      this.outputChunk.set(name, chunk);
+    }
+  }
+  async close() {
+    try {
+      var _this_instance, _this_instance1;
+      await ((_this_instance = this.instance) === null || _this_instance === void 0 ? void 0 : _this_instance.cancel());
+      await ((_this_instance1 = this.instance) === null || _this_instance1 === void 0 ? void 0 : _this_instance1.dispose());
+    } catch (err) {
+    }
+  }
+  async build() {
+    const { buildOptions, context: { watch } } = this;
+    try {
+      if (watch) {
+        this.instance = await (0, import_esbuild.context)(buildOptions);
+        this.result = await this.instance.rebuild();
+      } else {
+        this.result = await (0, import_esbuild.build)(buildOptions);
+      }
+      if (this.result.warnings.length) {
+        const warnings = this.result.warnings.filter((warning) => {
+          if (warning.text.includes(`This call to "require" will not be bundled because`) || warning.text.includes(`Indirect calls to "require" will not be bundled`) || warning.text.includes(`Converting "require" to "esm" is currently not supported`)) {
+            return false;
+          }
+          return true;
+        });
+        const messages = await (0, import_esbuild.formatMessages)(warnings, {
+          kind: "warning"
+        });
+        messages.forEach((m) => {
+          import_utils.logger.warn(m);
+        });
+      }
+    } catch (error) {
+      if ("errors" in error) {
+        var _error_errors;
+        error === null || error === void 0 ? void 0 : (_error_errors = error.errors) === null || _error_errors === void 0 ? void 0 : _error_errors.forEach((err) => {
+          if (err === null || err === void 0 ? void 0 : err.detail) {
+            import_utils.logger.error(err.detail.toString());
+          }
+        });
+      }
+      if (watch) {
+        var _this_instance;
+        (_this_instance = this.instance) === null || _this_instance === void 0 ? void 0 : _this_instance.cancel();
+        import_utils.logger.error(error);
+      } else {
+        throw error;
+      }
+    }
+  }
+  async reBuild(type, config) {
+    const { instance } = this;
+    try {
+      const start = Date.now();
+      if (type === "link") {
+        await this.build();
+      } else {
+        this.result = await (instance === null || instance === void 0 ? void 0 : instance.rebuild());
+      }
+      const time = import_utils.chalk.gray(`(${Date.now() - start}ms)`);
+      import_utils.logger.success((0, import_utils2.withLogTitle)(config.buildType, `Build ${config.format},${config.target} files ${time}`));
+    } catch (error) {
+      import_utils.logger.error(error);
+    }
+  }
+  constructor(context2) {
+    this.outputChunk = /* @__PURE__ */ new Map();
+    this.watchedFiles = /* @__PURE__ */ new Set();
+    this.virtualModule = /* @__PURE__ */ new Map();
+    this.transformContextMap = /* @__PURE__ */ new Map();
+    this.sourcemapContextMap = /* @__PURE__ */ new Map();
+    const { api, config, root } = context2;
+    this.reBuildCount = 0;
+    this.context = context2;
+    this.api = api;
+    this.config = config;
+    this.buildOptions = this.convertConfigToEsbuild(config);
+    this.hooks = Object.freeze({
+      load: new tapable.AsyncSeriesBailHook([
+        "loadArgs"
+      ]),
+      transform: (0, import_hook.createTransformHook)(this),
+      renderChunk: (0, import_hook.createRenderChunkHook)(this)
+    });
+    const resolveOptions = {
+      root,
+      platform: config.platform,
+      alias: config.alias,
+      tsConfig: config.resolve.tsConfig,
+      mainFields: config.resolve.mainFields
+    };
+    this.css_resolve = (0, import_resolve.createCssResolver)({
+      ...resolveOptions,
+      resolveType: "css",
+      extensions: import_build.cssExtensions,
+      preferRelative: true
+    });
+    this.node_resolve = (0, import_resolve.createJsResolver)({
+      ...resolveOptions,
+      resolveType: "js",
+      extensions: config.resolve.jsExtensions
+    });
+  }
+}
+const createCompiler = async (context2) => {
+  const compiler = new EsbuildCompiler(context2);
+  await compiler.init();
+  return compiler;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  EsbuildCompiler,
+  createCompiler
+});

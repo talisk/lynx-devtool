@@ -1,0 +1,4 @@
+import * as tapable from 'tapable';
+import type { Chunk, ICompiler, Source } from '../../types';
+export declare function createTransformHook(compiler: ICompiler): tapable.AsyncSeriesWaterfallHook<Source, tapable.UnsetAdditionalOptions>;
+export declare function createRenderChunkHook(compiler: ICompiler): tapable.AsyncSeriesWaterfallHook<Chunk, tapable.UnsetAdditionalOptions>;

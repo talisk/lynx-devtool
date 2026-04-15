@@ -1,0 +1,4 @@
+import type { RollupWatcher } from '../../../compiled/rollup';
+import type { GeneratorDtsConfig, ModuleTools, PluginAPI } from '../../types';
+export type { RollupWatcher };
+export declare const runRollup: (api: PluginAPI<ModuleTools>, { distPath, tsconfigPath, externals, input, watch, abortOnError, respectExternal, appDirectory, footer, banner, dtsExtension, }: GeneratorDtsConfig) => Promise<RollupWatcher | import("../../../compiled/rollup").RollupBuild | null>;

@@ -1,0 +1,5 @@
+import type { Props } from './types.js';
+export declare const FULL_WIDTH = 70;
+export declare const MIDDLE_WIDTH = 40;
+export declare const SMALL_WIDTH = 15;
+export declare const renderBar: (option: Partial<Props>) => string;

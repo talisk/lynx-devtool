@@ -1,0 +1,4 @@
+import type { INodePackageJson, IRushConfig } from './types/index.js';
+export declare const readPackageJson: (pkgJsonFilePath: string) => Promise<INodePackageJson>;
+export declare const readRushJson: (rushJsonFilePath: string) => Promise<IRushConfig>;
+export declare const readJson: <T>(jsonFileAbsPath: string) => Promise<T>;

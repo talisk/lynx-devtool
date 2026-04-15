@@ -1,0 +1,216 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var babel_exports = {};
+__export(babel_exports, {
+  getPresetReact: () => getPresetReact,
+  pluginBabel: () => pluginBabel
+});
+module.exports = __toCommonJS(babel_exports);
+var import_cloneDeep = __toESM(require("lodash/cloneDeep"));
+var import_node = require("@modern-js/babel-preset/node");
+var import_web = require("@modern-js/babel-preset/web");
+var import_utils = require("@modern-js/utils");
+var import_core = require("@rsbuild/core");
+var import_plugin_babel = require("@rsbuild/plugin-babel");
+var import_utils2 = require("../../shared/utils");
+const getPresetReact = (rootPath, isProd) => {
+  const isNewJsx = (0, import_utils.isSupportAutomaticJsx)(rootPath);
+  const presetReactOptions = {
+    development: !isProd,
+    // Will use the native built-in instead of trying to polyfill
+    useBuiltIns: true,
+    useSpread: false,
+    runtime: isNewJsx ? "automatic" : "classic"
+  };
+  return [
+    require.resolve("@babel/preset-react"),
+    presetReactOptions
+  ];
+};
+const pluginBabel = (options, extraOptions) => ({
+  name: "uni-builder:babel",
+  post: [
+    // will replace the babel rule
+    "rsbuild-webpack:swc",
+    // will replace the babel rule
+    "rsbuild-webpack:esbuild"
+  ],
+  setup(api) {
+    api.modifyBundlerChain({
+      order: "pre",
+      handler: async (chain, { CHAIN_ID, target, isProd, isServer, environment }) => {
+        const { config, name } = environment;
+        const browserslist = await (0, import_utils2.getBrowserslistWithDefault)(api.context.rootPath, config, target);
+        const getBabelOptions = (config2) => {
+          var _baseBabelConfig_presets;
+          const includes2 = [];
+          const excludes2 = [];
+          const babelUtils = {
+            addIncludes(items) {
+              if (Array.isArray(items)) {
+                includes2.push(...items);
+              } else {
+                includes2.push(items);
+              }
+            },
+            addExcludes(items) {
+              if (Array.isArray(items)) {
+                excludes2.push(...items);
+              } else {
+                excludes2.push(items);
+              }
+            }
+          };
+          const decoratorConfig = config2.source.decorators;
+          const baseBabelConfig = isServer || name === import_utils2.SERVICE_WORKER_ENVIRONMENT_NAME ? (0, import_node.getBabelConfigForNode)({
+            presetEnv: {
+              targets: [
+                "node >= 14"
+              ]
+            },
+            pluginDecorators: decoratorConfig
+          }) : (0, import_web.getBabelConfigForWeb)({
+            presetEnv: {
+              targets: browserslist,
+              useBuiltIns: (0, import_utils2.getUseBuiltIns)(config2)
+            },
+            pluginDecorators: decoratorConfig
+          });
+          applyPluginLodash(baseBabelConfig, extraOptions.transformLodash, config2.source.transformImport);
+          applyPluginImport(baseBabelConfig, config2.source.transformImport);
+          (_baseBabelConfig_presets = baseBabelConfig.presets) === null || _baseBabelConfig_presets === void 0 ? void 0 : _baseBabelConfig_presets.push(getPresetReact(api.context.rootPath, isProd));
+          if (isProd) {
+            var _baseBabelConfig_plugins;
+            (_baseBabelConfig_plugins = baseBabelConfig.plugins) === null || _baseBabelConfig_plugins === void 0 ? void 0 : _baseBabelConfig_plugins.push([
+              require.resolve("babel-plugin-transform-react-remove-prop-types"),
+              {
+                removeImport: true
+              }
+            ]);
+          }
+          const babelConfig = (0, import_utils.applyOptionsChain)(baseBabelConfig, options === null || options === void 0 ? void 0 : options.babelLoaderOptions, {
+            ...(0, import_plugin_babel.getBabelUtils)(baseBabelConfig),
+            ...babelUtils
+          });
+          const finalOptions = {
+            babelrc: false,
+            configFile: false,
+            compact: isProd,
+            ...babelConfig
+          };
+          if (config2.output.charset === "utf8") {
+            finalOptions.generatorOpts = {
+              jsescOption: {
+                minimal: true
+              }
+            };
+          }
+          return {
+            babelOptions: finalOptions,
+            includes: includes2,
+            excludes: excludes2
+          };
+        };
+        const { babelOptions, includes, excludes } = getBabelOptions(config);
+        const rule = chain.module.rule(CHAIN_ID.RULE.JS);
+        for (const condition of includes) {
+          rule.include.add(condition);
+        }
+        for (const condition of excludes) {
+          rule.exclude.add(condition);
+        }
+        rule.test(import_utils2.SCRIPT_REGEX).use(CHAIN_ID.USE.BABEL).loader(require.resolve("babel-loader")).options(babelOptions);
+        chain.module.rule(CHAIN_ID.RULE.JS_DATA_URI).mimetype({
+          or: [
+            "text/javascript",
+            "application/javascript"
+          ]
+        }).resolve.set("fullySpecified", false).end().use(CHAIN_ID.USE.BABEL).loader(require.resolve("babel-loader")).options((0, import_cloneDeep.default)(babelOptions));
+      }
+    });
+  }
+});
+function applyPluginLodash(config, transformLodash, transformImport = []) {
+  const finalTransformImport = reduceTransformImportConfig(transformImport);
+  const hasImportPluginForLodash = finalTransformImport.some((transformImport2) => {
+    return transformImport2.libraryName === "lodash";
+  });
+  if (hasImportPluginForLodash && transformLodash) {
+    import_core.logger.warn("Detected a potential conflict between `source.transformImport` and `performance.transformLodash` for lodash. Please ensure only one of these configurations is used to handle lodash imports. If you want to use `source.transformImport`, set `performance.transformLodash` to `false` in your configuration.");
+  }
+  if (transformLodash) {
+    var _config_plugins;
+    (_config_plugins = config.plugins) === null || _config_plugins === void 0 ? void 0 : _config_plugins.push([
+      require.resolve("../../../compiled/babel-plugin-lodash"),
+      {}
+    ]);
+  }
+}
+const reduceTransformImportConfig = (options) => {
+  if (!options) {
+    return [];
+  }
+  let imports = [];
+  for (const item of (0, import_utils2.castArray)(options)) {
+    if (typeof item === "function") {
+      var _item;
+      imports = (_item = item(imports)) !== null && _item !== void 0 ? _item : imports;
+    } else {
+      imports.push(item);
+    }
+  }
+  return imports;
+};
+function applyPluginImport(config, pluginImport) {
+  const finalPluginImport = reduceTransformImportConfig(pluginImport);
+  if (finalPluginImport === null || finalPluginImport === void 0 ? void 0 : finalPluginImport.length) {
+    for (const item of finalPluginImport) {
+      var _config_plugins;
+      const name = item.libraryName;
+      const option = {
+        ...item
+      };
+      if (option.camelToDashComponentName !== void 0 || option.camel2DashComponentName !== void 0) {
+        var _option_camel2DashComponentName;
+        option.camel2DashComponentName = (_option_camel2DashComponentName = option.camel2DashComponentName) !== null && _option_camel2DashComponentName !== void 0 ? _option_camel2DashComponentName : option.camelToDashComponentName;
+        delete option.camelToDashComponentName;
+      }
+      (_config_plugins = config.plugins) === null || _config_plugins === void 0 ? void 0 : _config_plugins.push([
+        require.resolve("babel-plugin-import"),
+        option,
+        name
+      ]);
+    }
+  }
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  getPresetReact,
+  pluginBabel
+});

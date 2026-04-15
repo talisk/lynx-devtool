@@ -1,0 +1,60 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const logger_1 = require("../../utils/logger");
+const forward_1 = __importDefault(require("./command/host-serial/forward"));
+const listforward_1 = __importDefault(require("./command/host/listforward"));
+const removeforward_1 = __importDefault(require("./command/host/removeforward"));
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+class TargetClient {
+    constructor(client, connKey) {
+        this.client = client;
+        this.connKey = connKey;
+    }
+    forward(local, remote) {
+        return this.connection(this.connKey)
+            .then((conn) => new forward_1.default(conn).execute(local, remote))
+            .catch((e) => {
+            var _a;
+            logger_1.defaultLogger.debug(`Forward fail: ${e.message}`);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("hdc_forward_error", null, {
+                msg: "target client forward failed",
+                error: e === null || e === void 0 ? void 0 : e.message,
+            });
+            return false;
+        });
+    }
+    listForwards() {
+        return this.connection()
+            .then((conn) => new listforward_1.default(conn).execute())
+            .catch((e) => {
+            var _a;
+            logger_1.defaultLogger.debug(`ListForwards fail: ${e.message}`);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("hdc_listforwards_error", null, {
+                msg: "target client listForwards failed",
+                error: e === null || e === void 0 ? void 0 : e.message,
+            });
+            return [];
+        });
+    }
+    removeForward(local, remote) {
+        return this.connection()
+            .then((conn) => new removeforward_1.default(conn).execute(local, remote))
+            .catch((e) => {
+            var _a;
+            logger_1.defaultLogger.debug(`RemoveForward fail: ${e.message}`);
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("hdc_removeforward_error", null, {
+                msg: "target client removeForward failed",
+                error: e === null || e === void 0 ? void 0 : e.message,
+            });
+            return false;
+        });
+    }
+    connection(connKey = "") {
+        return this.client.connection(connKey);
+    }
+}
+exports.default = TargetClient;
+//# sourceMappingURL=TargetClient.js.map

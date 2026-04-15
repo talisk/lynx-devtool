@@ -1,0 +1,68 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { ErrorDigest, createDefaultPlugins, createErrorHtml, faviconPlugin, onError, renderPlugin } from "@modern-js/server-core";
+import { injectNodeSeverPlugin, injectResourcePlugin, loadCacheConfig, serverStaticPlugin } from "@modern-js/server-core/node";
+import { createLogger, isProd } from "@modern-js/utils";
+function getLogger() {
+  if (process.env.DEBUG || process.env.NODE_ENV === "production") {
+    return createLogger({
+      level: process.env.MODERN_SERVER_LOG_LEVEL || "verbose"
+    });
+  } else {
+    return createLogger();
+  }
+}
+function applyPlugins(serverBase, options, nodeServer) {
+  return _applyPlugins.apply(this, arguments);
+}
+function _applyPlugins() {
+  _applyPlugins = _async_to_generator(function(serverBase, options, nodeServer) {
+    var pwd, appContext, loadCachePwd, cacheConfig, plugins;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          pwd = options.pwd, appContext = options.appContext;
+          loadCachePwd = isProd() ? pwd : appContext.appDirectory || pwd;
+          return [
+            4,
+            loadCacheConfig(loadCachePwd)
+          ];
+        case 1:
+          cacheConfig = _state.sent();
+          serverBase.notFound(function(c) {
+            var logger = c.get("logger");
+            onError(ErrorDigest.ENOTF, "404 not found", logger, c.req.raw);
+            return c.html(createErrorHtml(404), 404);
+          });
+          serverBase.onError(function(err, c) {
+            var logger = c.get("logger");
+            onError(ErrorDigest.EINTER, err, logger, c.req.raw);
+            return c.html(createErrorHtml(500), 500);
+          });
+          plugins = _to_consumable_array(nodeServer ? [
+            injectNodeSeverPlugin({
+              nodeServer
+            })
+          ] : []).concat(_to_consumable_array(createDefaultPlugins({
+            cacheConfig,
+            staticGenerate: options.staticGenerate,
+            logger: getLogger()
+          })), _to_consumable_array(options.plugins || []), [
+            injectResourcePlugin(),
+            serverStaticPlugin(),
+            faviconPlugin(),
+            renderPlugin()
+          ]);
+          serverBase.addPlugins(plugins);
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return _applyPlugins.apply(this, arguments);
+}
+export {
+  applyPlugins
+};

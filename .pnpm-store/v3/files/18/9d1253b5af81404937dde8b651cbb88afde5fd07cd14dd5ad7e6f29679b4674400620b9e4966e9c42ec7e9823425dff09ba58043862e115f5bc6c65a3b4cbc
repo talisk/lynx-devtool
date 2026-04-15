@@ -1,0 +1,43 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const MacDevice_1 = __importDefault(require("./MacDevice"));
+const WindowsDevice_1 = __importDefault(require("./WindowsDevice"));
+const LinuxDevice_1 = __importDefault(require("./LinuxDevice"));
+const DeviceManager_1 = require("../DeviceManager");
+class DesktopDeviceManager extends DeviceManager_1.DeviceManager {
+    constructor(driver) {
+        super(driver);
+    }
+    watchDevices() {
+        return __awaiter(this, void 0, void 0, function* () {
+            let device;
+            if (process.platform === "darwin") {
+                device = new MacDevice_1.default(this.driver);
+            }
+            else if (process.platform === "win32") {
+                device = new WindowsDevice_1.default(this.driver);
+            }
+            else if (process.platform === "linux") {
+                device = new LinuxDevice_1.default(this.driver);
+            }
+            else {
+                return;
+            }
+            this.driver.registerDevice(device);
+        });
+    }
+}
+exports.default = DesktopDeviceManager;
+//# sourceMappingURL=DesktopDeviceManager.js.map

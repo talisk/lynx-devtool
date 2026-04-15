@@ -1,0 +1,12 @@
+/// <reference types="react" />
+import type { StaticHandlerContext } from '@modern-js/runtime-utils/remix-router';
+/**
+ * DeferredDataScripts only renders in server side,
+ * it doesn't need to be hydrated in client side.
+ */
+declare const DeferredDataScripts: (props?: {
+    nonce?: string;
+    useJsonScript?: boolean;
+    context: StaticHandlerContext;
+}) => import("react").JSX.Element | null;
+export default DeferredDataScripts;

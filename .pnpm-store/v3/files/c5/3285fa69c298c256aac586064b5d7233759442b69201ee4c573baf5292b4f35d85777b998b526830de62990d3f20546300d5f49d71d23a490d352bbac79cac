@@ -1,0 +1,84 @@
+{
+  "name": "@modern-js/swc-plugins",
+  "description": "SWC support for modern-js and rspack",
+  "homepage": "https://modernjs.dev",
+  "bugs": "https://github.com/modern-js-dev/swc-plugins/issues",
+  "repository": "modern-js-dev/swc-plugins",
+  "license": "MIT",
+  "main": "./binding.js",
+  "types": "./types/index.d.ts",
+  "version": "0.6.11",
+  "devDependencies": {
+    "@changesets/cli": "^2.26.0",
+    "@napi-rs/cli": "^2.15.2",
+    "@storybook/addon-links": "^6.5.12",
+    "@types/node": "^18.7.1",
+    "dotenv-cli": "^6.0.0",
+    "lodash": "^4.17.21",
+    "lodash-es": "^4.17.21",
+    "react-bootstrap": "^2.5.0",
+    "tsno": "^2.0.0",
+    "vite": "^3.2.2",
+    "vitest": "^0.24.4"
+  },
+  "peerDependencies": {
+    "@swc/helpers": ">=0.5.3"
+  },
+  "peerDependenciesMeta": {
+    "@swc/helpers": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=14.17.6"
+  },
+  "packageManager": "pnpm@8.6.1",
+  "napi": {
+    "name": "swc-plugins",
+    "triples": {
+      "defaults": false,
+      "additional": [
+        "aarch64-unknown-linux-musl",
+        "x86_64-unknown-linux-musl",
+        "aarch64-unknown-linux-gnu",
+        "x86_64-unknown-linux-gnu",
+        "x86_64-pc-windows-msvc",
+        "aarch64-pc-windows-msvc",
+        "aarch64-apple-darwin",
+        "x86_64-apple-darwin"
+      ]
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "types/",
+    "binding.js",
+    "index.js"
+  ],
+  "optionalDependencies": {
+    "@modern-js/swc-plugins-linux-arm64-musl": "0.6.11",
+    "@modern-js/swc-plugins-linux-x64-musl": "0.6.11",
+    "@modern-js/swc-plugins-linux-arm64-gnu": "0.6.11",
+    "@modern-js/swc-plugins-linux-x64-gnu": "0.6.11",
+    "@modern-js/swc-plugins-win32-x64-msvc": "0.6.11",
+    "@modern-js/swc-plugins-win32-arm64-msvc": "0.6.11",
+    "@modern-js/swc-plugins-darwin-arm64": "0.6.11",
+    "@modern-js/swc-plugins-darwin-x64": "0.6.11"
+  },
+  "scripts": {
+    "artifacts": "napi artifacts",
+    "build": "napi build --cargo-cwd crates/binding --platform --js index.js --dts unused.d.ts --release --features plugin",
+    "build:no-plugin": "napi build --cargo-cwd crates/binding --platform --js index.js --dts unused.d.ts --release",
+    "build:dev": "napi build --cargo-cwd crates/binding --platform --js index.js --dts unused.d.ts",
+    "test": "echo Enable test when fix CI, GLIB3.22 not found",
+    "vitest": "vitest run",
+    "version": "napi version",
+    "release": "changeset publish --no-git-checks",
+    "changeset": "changeset",
+    "build:wasm:import": "cd packages/plugin-import && npm run wasm",
+    "build:wasm:react-const-elements": "cd packages/react-const-elements && npm run wasm",
+    "build:wasm": "rustup target add wasm32-wasi && npm run build:wasm:import && npm run build:wasm:react-const-elements"
+  }
+}

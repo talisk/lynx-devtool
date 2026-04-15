@@ -1,0 +1,47 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { MAIN_ENTRY_NAME } from "@modern-js/utils/universal/constants";
+var dataHandler = function() {
+  var _ref = _async_to_generator(function(request, param) {
+    var routeInfo, serverRoutes, reporter, onError, onTiming, serverManifest, loaderContext, _serverManifest_loaderBundles, serverLoaderModule, routes, handleRequest, response;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          routeInfo = param.routeInfo, serverRoutes = param.serverRoutes, reporter = param.reporter, onError = param.onError, onTiming = param.onTiming, serverManifest = param.serverManifest, loaderContext = param.loaderContext;
+          serverLoaderModule = serverManifest === null || serverManifest === void 0 ? void 0 : (_serverManifest_loaderBundles = serverManifest.loaderBundles) === null || _serverManifest_loaderBundles === void 0 ? void 0 : _serverManifest_loaderBundles[routeInfo.entryName || MAIN_ENTRY_NAME];
+          if (!serverLoaderModule) {
+            return [
+              2
+            ];
+          }
+          routes = serverLoaderModule.routes, handleRequest = serverLoaderModule.handleRequest;
+          return [
+            4,
+            handleRequest({
+              request,
+              serverRoutes,
+              context: {
+                reporter,
+                loaderContext
+              },
+              onTiming,
+              onError,
+              routes
+            })
+          ];
+        case 1:
+          response = _state.sent();
+          return [
+            2,
+            response
+          ];
+      }
+    });
+  });
+  return function dataHandler2(request, _) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  dataHandler
+};

@@ -1,0 +1,2 @@
+import type { DeepPartial } from '../../../types/utils';
+export declare const mergeConfig: <Config, NormalizedConfig>(configs: Array<DeepPartial<Config>>) => NormalizedConfig;

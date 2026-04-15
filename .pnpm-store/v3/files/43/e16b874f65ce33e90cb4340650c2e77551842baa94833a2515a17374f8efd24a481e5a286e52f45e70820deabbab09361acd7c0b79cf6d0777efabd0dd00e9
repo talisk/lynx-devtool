@@ -1,0 +1,266 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import fs from "fs";
+import path from "path";
+import { JS_EXTENSIONS, ensureAbsolutePath, findExists } from "@modern-js/utils";
+import { ENTRY_FILE_NAME, INDEX_FILE_NAME } from "./constants";
+import { isDefaultExportFunction } from "./isDefaultExportFunction";
+var hasIndex = function(dir) {
+  return findExists(JS_EXTENSIONS.map(function(ext) {
+    return path.resolve(dir, "".concat(INDEX_FILE_NAME).concat(ext));
+  }));
+};
+var hasEntry = function(dir) {
+  return findExists(JS_EXTENSIONS.map(function(ext) {
+    return path.resolve(dir, "".concat(ENTRY_FILE_NAME).concat(ext));
+  }));
+};
+var hasServerEntry = function(dir) {
+  return findExists(JS_EXTENSIONS.map(function(ext) {
+    return path.resolve(dir, "".concat(ENTRY_FILE_NAME, ".server").concat(ext));
+  }));
+};
+var isBundleEntry = function() {
+  var _ref = _async_to_generator(function(hooks, dir, enableCustomEntry) {
+    var entry, customEntry;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            hooks.checkEntryPoint.call({
+              path: dir,
+              entry: false
+            })
+          ];
+        case 1:
+          entry = _state.sent().entry;
+          if (entry) {
+            return [
+              2,
+              entry
+            ];
+          }
+          customEntry = hasEntry(dir);
+          if (enableCustomEntry && customEntry) {
+            return [
+              2,
+              customEntry
+            ];
+          }
+          return [
+            2,
+            hasIndex(dir)
+          ];
+      }
+    });
+  });
+  return function isBundleEntry2(hooks, dir, enableCustomEntry) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var scanDir = function() {
+  var _ref = _async_to_generator(function(hooks, dirs, enableCustomEntry) {
+    var entries;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            Promise.all(dirs.map(function() {
+              var _ref2 = _async_to_generator(function(dir) {
+                var indexFile, customBootstrap, entryName, customEntryFile, customServerEntry, entryFile;
+                return _ts_generator(this, function(_state2) {
+                  switch (_state2.label) {
+                    case 0:
+                      indexFile = hasIndex(dir);
+                      customBootstrap = isDefaultExportFunction(indexFile) ? indexFile : false;
+                      entryName = path.basename(dir);
+                      customEntryFile = hasEntry(dir);
+                      customServerEntry = hasServerEntry(dir);
+                      if (!enableCustomEntry && indexFile && !customBootstrap) {
+                        return [
+                          2,
+                          {
+                            entryName,
+                            isMainEntry: false,
+                            entry: indexFile,
+                            absoluteEntryDir: path.resolve(dir),
+                            isAutoMount: false,
+                            customBootstrap
+                          }
+                        ];
+                      }
+                      return [
+                        4,
+                        hooks.checkEntryPoint.call({
+                          path: dir,
+                          entry: false
+                        })
+                      ];
+                    case 1:
+                      entryFile = _state2.sent().entry;
+                      if (entryFile) {
+                        return [
+                          2,
+                          {
+                            entryName,
+                            isMainEntry: false,
+                            entry: enableCustomEntry ? customEntryFile || entryFile : entryFile,
+                            customServerEntry,
+                            absoluteEntryDir: path.resolve(dir),
+                            isAutoMount: true,
+                            customBootstrap,
+                            customEntry: enableCustomEntry ? Boolean(customEntryFile) : false
+                          }
+                        ];
+                      }
+                      if (enableCustomEntry && customEntryFile) {
+                        return [
+                          2,
+                          {
+                            entryName,
+                            isMainEntry: false,
+                            entry: customEntryFile,
+                            customServerEntry,
+                            absoluteEntryDir: path.resolve(dir),
+                            isAutoMount: false,
+                            customEntry: Boolean(customEntryFile)
+                          }
+                        ];
+                      }
+                      return [
+                        2,
+                        false
+                      ];
+                  }
+                });
+              });
+              return function(dir) {
+                return _ref2.apply(this, arguments);
+              };
+            }())).then(function(entries2) {
+              return entries2.filter(Boolean);
+            })
+          ];
+        case 1:
+          entries = _state.sent();
+          if (entries.length === 0) {
+            throw Error("There is no valid entry point in the current project!");
+          }
+          return [
+            2,
+            entries
+          ];
+      }
+    });
+  });
+  return function scanDir2(hooks, dirs, enableCustomEntry) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var getFileSystemEntry = function() {
+  var _ref = _async_to_generator(function(hooks, appContext, config) {
+    var appDirectory, _config_source, entriesDir, disableEntryDirs, enableCustomEntry, disabledDirs, src, dirs;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          appDirectory = appContext.appDirectory;
+          _config_source = config.source, entriesDir = _config_source.entriesDir, disableEntryDirs = _config_source.disableEntryDirs, enableCustomEntry = _config_source.enableCustomEntry;
+          disabledDirs = [];
+          if (disableEntryDirs && Array.isArray(disableEntryDirs)) {
+            disabledDirs = disableEntryDirs === null || disableEntryDirs === void 0 ? void 0 : disableEntryDirs.map(function(dir) {
+              return ensureAbsolutePath(appDirectory, dir);
+            });
+          }
+          src = ensureAbsolutePath(appDirectory, entriesDir || "");
+          if (!fs.existsSync(src))
+            return [
+              3,
+              5
+            ];
+          if (!fs.statSync(src).isDirectory())
+            return [
+              3,
+              3
+            ];
+          return [
+            4,
+            isBundleEntry(hooks, src, enableCustomEntry)
+          ];
+        case 1:
+          if (_state.sent()) {
+            return [
+              2,
+              scanDir(hooks, [
+                src
+              ], enableCustomEntry)
+            ];
+          }
+          dirs = [];
+          return [
+            4,
+            Promise.all(fs.readdirSync(src).map(function() {
+              var _ref2 = _async_to_generator(function(filename) {
+                var file, _tmp;
+                return _ts_generator(this, function(_state2) {
+                  switch (_state2.label) {
+                    case 0:
+                      file = path.join(src, filename);
+                      _tmp = fs.statSync(file).isDirectory();
+                      if (!_tmp)
+                        return [
+                          3,
+                          2
+                        ];
+                      return [
+                        4,
+                        isBundleEntry(hooks, file, enableCustomEntry)
+                      ];
+                    case 1:
+                      _tmp = _state2.sent();
+                      _state2.label = 2;
+                    case 2:
+                      if (_tmp && !disabledDirs.includes(file)) {
+                        dirs.push(file);
+                      }
+                      return [
+                        2
+                      ];
+                  }
+                });
+              });
+              return function(filename) {
+                return _ref2.apply(this, arguments);
+              };
+            }()))
+          ];
+        case 2:
+          _state.sent();
+          return [
+            2,
+            scanDir(hooks, dirs, enableCustomEntry)
+          ];
+        case 3:
+          throw Error("source.entriesDir accept a directory.");
+        case 4:
+          return [
+            3,
+            6
+          ];
+        case 5:
+          throw Error("src dir ".concat(entriesDir, " not found."));
+        case 6:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function getFileSystemEntry2(hooks, appContext, config) {
+    return _ref.apply(this, arguments);
+  };
+}();
+export {
+  getFileSystemEntry
+};

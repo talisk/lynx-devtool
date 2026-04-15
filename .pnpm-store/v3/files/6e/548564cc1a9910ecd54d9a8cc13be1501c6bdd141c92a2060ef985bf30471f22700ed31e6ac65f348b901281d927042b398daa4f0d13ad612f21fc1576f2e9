@@ -1,0 +1,130 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var print_exports = {};
+__export(print_exports, {
+  addDtsFiles: () => addDtsFiles,
+  addOutputChunk: () => addOutputChunk,
+  addRollupChunk: () => addRollupChunk,
+  bundleFiles: () => bundleFiles,
+  bundlelessFiles: () => bundlelessFiles,
+  printFileSize: () => printFileSize,
+  printSucceed: () => printSucceed
+});
+module.exports = __toCommonJS(print_exports);
+var import_path = require("path");
+var import_utils = require("@modern-js/utils");
+var import_log = require("../constants/log");
+const bundleFiles = [];
+const bundlelessFiles = [];
+const addOutputChunk = (outputChunk, appDirectory, isBundle) => {
+  const files = Array.from(outputChunk).map((val) => {
+    const [path, chunk] = val;
+    return {
+      name: (0, import_path.relative)(appDirectory, path),
+      size: chunk.contents.length
+    };
+  });
+  if (isBundle) {
+    bundleFiles.push(...files);
+  } else {
+    bundlelessFiles.push(...files);
+  }
+};
+const addRollupChunk = (rollupOutput, appDirectory, distDir) => {
+  const { output } = rollupOutput;
+  bundleFiles.push(...output.map((o) => {
+    return {
+      name: (0, import_path.relative)(appDirectory, (0, import_path.resolve)(distDir, o.fileName)),
+      // only d.ts, is outputChunk not outputAsset
+      size: o.code.length
+    };
+  }));
+};
+const addDtsFiles = async (distDir, appDirectory) => {
+  const files = await (0, import_utils.fastGlob)(`${(0, import_utils.slash)(distDir)}/**/*.d.ts`, {
+    stats: true
+  });
+  bundlelessFiles.push(...files.map((file) => {
+    return {
+      name: (0, import_path.relative)(appDirectory, file.path),
+      size: file.stats.size
+    };
+  }));
+};
+const printFileSize = () => {
+  printBundlelessInfo();
+  printBundleFiles();
+};
+const printSucceed = (totalDuration) => {
+  const time = import_utils.chalk.cyan(`${(totalDuration / 1e3).toFixed(1)}s`);
+  import_utils.logger.info(`${import_log.buildSuccessText} in ${time}`);
+};
+const prettyBytes = (bytes) => {
+  if (bytes === 0) {
+    return "0 B";
+  }
+  const unit = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+    "TB",
+    "PB",
+    "EB",
+    "ZB",
+    "YB"
+  ];
+  const exp = Math.floor(Math.log(bytes) / Math.log(1024));
+  return `${(bytes / 1024 ** exp).toFixed(1)} ${unit[exp]}`;
+};
+const printBundleFiles = () => {
+  if (bundleFiles.length === 0) {
+    return;
+  }
+  const longestFileLength = bundleFiles.reduce((max, str) => Math.max(max, str.name.length), import_log.reportFile1LineText.length);
+  import_utils.logger.info(`Bundle generated ${bundleFiles.length} files
+`);
+  const headerRow = import_log.reportFile1LineText + " ".repeat(longestFileLength - 10) + import_log.reportFile2LineText;
+  import_utils.logger.log(import_utils.chalk.bold(import_utils.chalk.green(headerRow)));
+  bundleFiles.forEach(({ name, size }) => {
+    const infoRow = `${name}${" ".repeat(longestFileLength - name.length + 2)}${prettyBytes(size)}`;
+    import_utils.logger.log(infoRow);
+  });
+};
+const printBundlelessInfo = () => {
+  if (bundlelessFiles.length === 0) {
+    return;
+  }
+  const count = bundlelessFiles.length;
+  const totalSize = bundlelessFiles.reduce((total, file) => {
+    return total + file.size;
+  }, 0);
+  const info = `Bundleless generated ${count} files, the total size is ${import_utils.chalk.cyan(prettyBytes(totalSize))}`;
+  import_utils.logger.info(info);
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  addDtsFiles,
+  addOutputChunk,
+  addRollupChunk,
+  bundleFiles,
+  bundlelessFiles,
+  printFileSize,
+  printSucceed
+});

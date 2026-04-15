@@ -1,0 +1,8 @@
+import { Plugin, PluginContext, PluginLifeCycle } from "../types/plugin.d";
+type Stage = keyof PluginLifeCycle;
+export declare const createPluginCore: (pluginContext: PluginContext) => {
+  usePlugin: (plugin: Plugin) => void;
+  invokePipeline: <S extends Stage>(stage: S, bypassParams: Parameters<PluginLifeCycle[S]>[0], ...args: Parameters<PluginLifeCycle[S]> extends [any, ...infer T] ? T : []) => Parameters<PluginLifeCycle[S]>[0];
+  invokeWaterFall: <S extends Stage>(stage: S, ...args: Parameters<PluginLifeCycle[S]>) => void;
+};
+export {};

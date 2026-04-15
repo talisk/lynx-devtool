@@ -1,0 +1,24 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const type_1 = require("../../utils/type");
+const BaseDevice_1 = require("../BaseDevice");
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+class NetworkDevice extends BaseDevice_1.BaseDevice {
+    constructor(driver, ip, ports) {
+        super(driver, {
+            serial: ip,
+            title: "NetworkDevice_" + ip,
+            os: type_1.DeviceOS.Network,
+        });
+        this.port = ports;
+    }
+    getHost() {
+        var _a;
+        if (this.serial == "" || !this.serial) {
+            (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("network_connect_error", {}, { msg: "Network connect error: no serial", stage: "device" });
+        }
+        return this.serial;
+    }
+}
+exports.default = NetworkDevice;
+//# sourceMappingURL=NetworkDevice.js.map

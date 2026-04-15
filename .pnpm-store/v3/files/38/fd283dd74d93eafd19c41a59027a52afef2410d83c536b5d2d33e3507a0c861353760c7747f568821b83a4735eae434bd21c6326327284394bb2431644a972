@@ -1,0 +1,9 @@
+/// <reference types="node" />
+import Target from "../../Target";
+import Command from "../../command";
+import Connection from "../../connection";
+export default class TargetsCommand extends Command<Target[]> {
+    constructor(connection: Connection);
+    execute(...args: any[]): Promise<Target[]>;
+    _parseDevices(value: Buffer): Target[];
+}

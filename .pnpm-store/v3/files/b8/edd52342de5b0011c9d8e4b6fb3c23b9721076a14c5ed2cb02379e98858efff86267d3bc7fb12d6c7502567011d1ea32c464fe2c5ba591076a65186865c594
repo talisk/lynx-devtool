@@ -1,0 +1,244 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var dts_exports = {};
+__export(dts_exports, {
+  detectTSVersion: () => detectTSVersion,
+  getProjectTsconfig: () => getProjectTsconfig,
+  getTscBinPath: () => getTscBinPath,
+  printOrThrowDtsErrors: () => printOrThrowDtsErrors,
+  processDtsFilesAfterTsc: () => processDtsFilesAfterTsc,
+  tsTargetAtOrAboveES2022: () => tsTargetAtOrAboveES2022
+});
+module.exports = __toCommonJS(dts_exports);
+var import_path = require("path");
+var import_napi = require("@ast-grep/napi");
+var import_utils = require("@modern-js/utils");
+var import_lodash = require("@modern-js/utils/lodash");
+var import_tsconfig_paths = require("@modern-js/utils/tsconfig-paths");
+var import_magic_string = __toESM(require("magic-string"));
+var import_builder = require("./builder");
+const getProjectTsconfig = async (tsconfigPath, resolutionContext = {}) => {
+  if (!import_utils.fs.existsSync(tsconfigPath)) {
+    return {};
+  }
+  const absolutePath = (0, import_path.resolve)(tsconfigPath);
+  if (resolutionContext[absolutePath]) {
+    return {};
+  }
+  resolutionContext[absolutePath] = true;
+  const tsConfig = await import_utils.json5.parse(import_utils.fs.readFileSync(tsconfigPath, "utf-8"));
+  if (!tsConfig.extends) {
+    return tsConfig;
+  }
+  const extendsResolutionTarget = Array.isArray(tsConfig.extends) ? tsConfig.extends : [
+    tsConfig.extends
+  ];
+  const resolveParentTsConfigPromises = extendsResolutionTarget.map(async (target) => {
+    let parentTsconfigPath;
+    try {
+      parentTsconfigPath = require.resolve(target);
+      if (!parentTsconfigPath.endsWith(".json")) {
+        parentTsconfigPath = require.resolve(`${target}/tsconfig.json`);
+      }
+    } catch {
+      parentTsconfigPath = (0, import_path.resolve)((0, import_path.dirname)(tsconfigPath), target);
+    }
+    return await getProjectTsconfig(parentTsconfigPath, resolutionContext);
+  });
+  const parentTsConfigs = await Promise.all(resolveParentTsConfigPromises);
+  return (0, import_lodash.mergeWith)({}, ...parentTsConfigs, tsConfig);
+};
+async function detectTSVersion(appDirectory) {
+  const cwd = appDirectory !== null && appDirectory !== void 0 ? appDirectory : process.cwd();
+  const typescriptPath = (0, import_path.join)(cwd, "node_modules", "typescript");
+  if (await import_utils.fs.pathExists(typescriptPath)) {
+    const typescriptPkg = await import_utils.fs.readJson((0, import_path.join)(typescriptPath, "package.json"));
+    const version = Number(typescriptPkg.version.split(".")[0]);
+    return version;
+  }
+}
+const getTscBinPath = async (appDirectory) => {
+  const { default: findUp, exists: pathExists } = await Promise.resolve().then(() => __toESM(require("../../compiled/find-up")));
+  const tscBinFile = await findUp(async (directory) => {
+    const targetFilePath = (0, import_path.join)(directory, "./node_modules/.bin/tsc");
+    const hasTscBinFile = await pathExists(targetFilePath);
+    if (hasTscBinFile) {
+      return targetFilePath;
+    }
+    return void 0;
+  }, {
+    cwd: appDirectory
+  });
+  if (!tscBinFile || !import_utils.fs.existsSync(tscBinFile)) {
+    throw new Error("Failed to excute the `tsc` command, please check if `typescript` is installed correctly in the current directory.");
+  }
+  return tscBinFile;
+};
+const processDtsFilesAfterTsc = async (config) => {
+  const { distPath, tsconfigPath, userTsconfig, dtsExtension, banner, footer } = config;
+  const dtsFilesPath = await (0, import_utils.globby)("**/*.d.ts", {
+    absolute: true,
+    cwd: distPath
+  });
+  const result = (0, import_tsconfig_paths.loadConfig)(tsconfigPath);
+  if (result.resultType === "failed") {
+    import_utils.logger.error(result.message);
+    return;
+  }
+  const { absoluteBaseUrl, paths, mainFields, addMatchAll } = result;
+  const matchPath = (0, import_tsconfig_paths.createMatchPath)(absoluteBaseUrl, paths, mainFields, addMatchAll);
+  await Promise.all(dtsFilesPath.map((filePath) => {
+    var _userTsconfig_compilerOptions;
+    const code = import_utils.fs.readFileSync(filePath, "utf8");
+    const str = new import_magic_string.default(code);
+    const originalFilePath = (0, import_path.resolve)(absoluteBaseUrl, (userTsconfig === null || userTsconfig === void 0 ? void 0 : (_userTsconfig_compilerOptions = userTsconfig.compilerOptions) === null || _userTsconfig_compilerOptions === void 0 ? void 0 : _userTsconfig_compilerOptions.rootDir) || "src", (0, import_path.relative)(distPath, filePath));
+    try {
+      const sgNode = import_napi.js.parse(code).root();
+      const matcher = {
+        rule: {
+          kind: "string_fragment",
+          any: [
+            {
+              inside: {
+                stopBy: "end",
+                kind: "import_statement",
+                field: "source"
+              }
+            },
+            {
+              inside: {
+                stopBy: "end",
+                kind: "export_statement",
+                field: "source"
+              }
+            },
+            {
+              inside: {
+                kind: "string",
+                inside: {
+                  kind: "arguments",
+                  inside: {
+                    kind: "call_expression",
+                    has: {
+                      field: "function",
+                      regex: "^(import|require)$"
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      };
+      const matchModule = sgNode.findAll(matcher).map((matchNode) => {
+        return {
+          name: matchNode.text(),
+          start: matchNode.range().start.index,
+          end: matchNode.range().end.index
+        };
+      });
+      matchModule.forEach((module2) => {
+        if (!module2.name) {
+          return;
+        }
+        const { start, end, name } = module2;
+        const absoluteImportPath = matchPath(name, void 0, void 0, [
+          ".jsx",
+          ".tsx",
+          ".js",
+          ".ts"
+        ]);
+        if (absoluteImportPath) {
+          const relativePath = (0, import_path.relative)((0, import_path.dirname)(originalFilePath), absoluteImportPath);
+          const relativeImportPath = (0, import_builder.normalizeSlashes)(relativePath.startsWith("..") ? relativePath : `./${relativePath}`);
+          str.overwrite(start, end, relativeImportPath);
+        }
+      });
+    } catch (e) {
+      import_utils.logger.error("[parse error]", e);
+    }
+    banner && str.prepend(`${banner}
+`);
+    footer && str.append(`
+${footer}
+`);
+    const content = str.toString();
+    const finalPath = (
+      // We confirm that users will not mix ts and c(m)ts files in their projects.
+      // If a mix is required, please configure separate buildConfig to handle different inputs.
+      // So we don't replace .d.(c|m)ts that generated by tsc directly, this can confirm that
+      // users can use c(m)ts directly rather than enable autoExtension, in this condition,
+      // users need to set esbuild out-extensions like { '.js': '.mjs' }
+      filePath.replace(/\.d\.ts/, dtsExtension)
+    );
+    const writeTask = () => {
+      return import_utils.fs.writeFile(
+        // only replace .d.ts, if tsc generate .d.m(c)ts, keep.
+        finalPath,
+        content
+      );
+    };
+    const removeTask = () => {
+      return import_utils.fs.remove(filePath);
+    };
+    return dtsExtension === ".d.ts" ? [
+      writeTask()
+    ] : [
+      writeTask(),
+      removeTask()
+    ];
+  }).flat());
+};
+const printOrThrowDtsErrors = async (error, options) => {
+  const { InternalDTSError } = await Promise.resolve().then(() => __toESM(require("../error")));
+  const local = await Promise.resolve().then(() => __toESM(require("../locale")));
+  const { abortOnError, buildType } = options !== null && options !== void 0 ? options : {};
+  if (error instanceof Error) {
+    if (abortOnError) {
+      throw new InternalDTSError(error, {
+        buildType
+      });
+    } else {
+      import_utils.logger.warn(import_utils.chalk.bgYellowBright(local.i18n.t(local.localeKeys.warns.dts.abortOnError)));
+      import_utils.logger.error(new InternalDTSError(error, {
+        buildType
+      }));
+    }
+  }
+};
+const tsTargetAtOrAboveES2022 = (target) => target === "es2022" || target === "esnext";
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  detectTSVersion,
+  getProjectTsconfig,
+  getTscBinPath,
+  printOrThrowDtsErrors,
+  processDtsFilesAfterTsc,
+  tsTargetAtOrAboveES2022
+});

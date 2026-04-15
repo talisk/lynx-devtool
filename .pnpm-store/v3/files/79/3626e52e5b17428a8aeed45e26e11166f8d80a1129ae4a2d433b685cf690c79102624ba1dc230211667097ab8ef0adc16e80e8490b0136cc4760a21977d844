@@ -1,0 +1,122 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __reExport = (target, mod, secondTarget) => (__copyProps(target, mod, "default"), secondTarget && __copyProps(secondTarget, mod, "default"));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var render_exports = {};
+__export(render_exports, {
+  renderPlugin: () => renderPlugin
+});
+module.exports = __toCommonJS(render_exports);
+var import_constants = require("@modern-js/utils/universal/constants");
+var import_helper = require("../../helper");
+var import_utils = require("../../utils");
+var import_customServer = require("../customServer");
+var import_monitors = require("../monitors");
+__reExport(render_exports, require("./inject"), module.exports);
+const renderPlugin = () => ({
+  name: "@modern-js/plugin-render",
+  setup(api) {
+    return {
+      async prepare() {
+        var _config_render;
+        const { middlewares, routes, render, distDirectory: pwd, serverBase } = api.useAppContext();
+        const runner = api.useHookRunners();
+        const config = api.useConfigContext();
+        if (!routes) {
+          return;
+        }
+        const customServer = new import_customServer.CustomServer(runner, serverBase, pwd);
+        const serverMiddleware = ((_config_render = config.render) === null || _config_render === void 0 ? void 0 : _config_render.middleware) && (0, import_customServer.getServerMidFromUnstableMid)(config.render.middleware);
+        const pageRoutes = getPageRoutes(routes);
+        for (const route of pageRoutes) {
+          const { urlPath: originUrlPath, entryName = import_constants.MAIN_ENTRY_NAME } = route;
+          const urlPath = originUrlPath.endsWith("/") ? `${originUrlPath}*` : `${originUrlPath}/*`;
+          middlewares.push({
+            name: "init-reporter",
+            handler: (0, import_monitors.initReporter)(entryName)
+          });
+          const customServerHookMiddleware = customServer.getHookMiddleware(entryName, routes);
+          middlewares.push({
+            name: "inject-route-info",
+            handler: (0, import_customServer.injectRoute)({
+              entryName
+            })
+          });
+          middlewares.push({
+            name: "custom-server-hook",
+            path: urlPath,
+            handler: customServerHookMiddleware
+          });
+          const customServerMiddleware = await customServer.getServerMiddleware(serverMiddleware);
+          customServerMiddleware && middlewares.push({
+            name: "custom-server-middleware",
+            path: urlPath,
+            handler: customServerMiddleware
+          });
+          render && middlewares.push({
+            name: `render`,
+            path: urlPath,
+            handler: createRenderHandler(render)
+          });
+        }
+      }
+    };
+  }
+});
+function getPageRoutes(routes) {
+  return routes.filter((route) => !route.isApi).sort(import_utils.sortRoutes);
+}
+function createRenderHandler(render) {
+  return async (c, _) => {
+    var _c_env_node;
+    const logger = c.get("logger");
+    const reporter = c.get("reporter");
+    const monitors = c.get("monitors");
+    const templates = c.get("templates") || {};
+    const serverManifest = c.get("serverManifest") || {};
+    const locals = c.get("locals");
+    const metrics = c.get("metrics");
+    const matchPathname = c.get("matchPathname");
+    const loaderContext = (0, import_helper.getLoaderCtx)(c);
+    const request = c.req.raw;
+    const nodeReq = (_c_env_node = c.env.node) === null || _c_env_node === void 0 ? void 0 : _c_env_node.req;
+    const res = await render(request, {
+      nodeReq,
+      monitors,
+      logger,
+      reporter,
+      templates,
+      metrics,
+      serverManifest,
+      loaderContext,
+      locals,
+      matchPathname
+    });
+    const { body, status, headers } = res;
+    const headersData = {};
+    headers.forEach((v, k) => {
+      headersData[k] = v;
+    });
+    return c.body(body, status, headersData);
+  };
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  renderPlugin,
+  ...require("./inject")
+});

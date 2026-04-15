@@ -1,0 +1,198 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _to_consumable_array } from "@swc/helpers/_/_to_consumable_array";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import path from "path";
+import { fs, getAliasConfig, logger } from "@modern-js/utils";
+import { tsconfigPathsBeforeHookFactory } from "./tsconfigPathsPlugin";
+import { TypescriptLoader } from "./typescriptLoader";
+var readTsConfigByFile = function(tsConfigFile, tsInstance) {
+  var parsedCmd = tsInstance.getParsedCommandLineOfConfigFile(tsConfigFile, void 0, tsInstance.sys);
+  var options = parsedCmd.options, fileNames = parsedCmd.fileNames, projectReferences = parsedCmd.projectReferences;
+  return {
+    options,
+    fileNames,
+    projectReferences
+  };
+};
+var copyFiles = function() {
+  var _ref = _async_to_generator(function(from, to, appDirectory) {
+    var relativePath, targetDir;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          return [
+            4,
+            fs.pathExists(from)
+          ];
+        case 1:
+          if (!_state.sent())
+            return [
+              3,
+              3
+            ];
+          relativePath = path.relative(appDirectory, from);
+          targetDir = path.join(to, relativePath);
+          return [
+            4,
+            fs.copy(from, targetDir, {
+              filter: function(src) {
+                return ![
+                  ".ts",
+                  ".js"
+                ].includes(path.extname(src)) && !src.endsWith("tsconfig.json");
+              }
+            })
+          ];
+        case 2:
+          _state.sent();
+          _state.label = 3;
+        case 3:
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function copyFiles2(from, to, appDirectory) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var compileByTs = function() {
+  var _ref = _async_to_generator(function(appDirectory, config, compileOptions) {
+    var sourceDirs, distDir, tsconfigPath, ts, createProgram, formatHost, alias, aliasOption, _aliasOption_paths, paths, _aliasOption_absoluteBaseUrl, absoluteBaseUrl, _readTsConfigByFile, options, fileNames, projectReferences, sourcePosixPaths, rootNames, program, tsconfigPathsPlugin, emitResult, allDiagnostics, noEmitOnError, _iteratorNormalCompletion, _didIteratorError, _iteratorError, _iterator, _step, source, err;
+    return _ts_generator(this, function(_state) {
+      switch (_state.label) {
+        case 0:
+          logger.info("Running ts compile...");
+          sourceDirs = compileOptions.sourceDirs, distDir = compileOptions.distDir, tsconfigPath = compileOptions.tsconfigPath;
+          if (!tsconfigPath) {
+            return [
+              2
+            ];
+          }
+          ts = new TypescriptLoader({
+            appDirectory
+          }).load();
+          createProgram = ts.createIncrementalProgram || ts.createProgram;
+          formatHost = getFormatHost(ts);
+          alias = config.alias;
+          aliasOption = getAliasConfig(alias, {
+            appDirectory,
+            tsconfigPath
+          });
+          _aliasOption_paths = aliasOption.paths, paths = _aliasOption_paths === void 0 ? {} : _aliasOption_paths, _aliasOption_absoluteBaseUrl = aliasOption.absoluteBaseUrl, absoluteBaseUrl = _aliasOption_absoluteBaseUrl === void 0 ? "./" : _aliasOption_absoluteBaseUrl;
+          _readTsConfigByFile = readTsConfigByFile(tsconfigPath, ts), options = _readTsConfigByFile.options, fileNames = _readTsConfigByFile.fileNames, projectReferences = _readTsConfigByFile.projectReferences;
+          sourcePosixPaths = sourceDirs.map(function(sourceDir) {
+            return sourceDir.split(path.sep).join(path.posix.sep);
+          });
+          rootNames = fileNames.filter(function(fileName) {
+            return fileName.endsWith(".d.ts") || sourcePosixPaths.some(function(sourceDir) {
+              return fileName.includes(sourceDir);
+            });
+          });
+          program = createProgram.call(ts, {
+            rootNames,
+            projectReferences,
+            options: _object_spread({
+              rootDir: appDirectory,
+              outDir: distDir
+            }, options)
+          });
+          tsconfigPathsPlugin = tsconfigPathsBeforeHookFactory(ts, absoluteBaseUrl, paths);
+          emitResult = program.emit(void 0, void 0, void 0, void 0, {
+            before: [
+              tsconfigPathsPlugin
+            ]
+          });
+          allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+          noEmitOnError = options.noEmitOnError;
+          if (allDiagnostics.length > 0) {
+            logger.error(ts.formatDiagnosticsWithColorAndContext(_to_consumable_array(new Set(allDiagnostics)), formatHost));
+            if (typeof noEmitOnError === "undefined" || noEmitOnError === true) {
+              process.exit(1);
+            }
+          }
+          _iteratorNormalCompletion = true, _didIteratorError = false, _iteratorError = void 0;
+          _state.label = 1;
+        case 1:
+          _state.trys.push([
+            1,
+            6,
+            7,
+            8
+          ]);
+          _iterator = sourceDirs[Symbol.iterator]();
+          _state.label = 2;
+        case 2:
+          if (!!(_iteratorNormalCompletion = (_step = _iterator.next()).done))
+            return [
+              3,
+              5
+            ];
+          source = _step.value;
+          return [
+            4,
+            copyFiles(source, distDir, appDirectory)
+          ];
+        case 3:
+          _state.sent();
+          _state.label = 4;
+        case 4:
+          _iteratorNormalCompletion = true;
+          return [
+            3,
+            2
+          ];
+        case 5:
+          return [
+            3,
+            8
+          ];
+        case 6:
+          err = _state.sent();
+          _didIteratorError = true;
+          _iteratorError = err;
+          return [
+            3,
+            8
+          ];
+        case 7:
+          try {
+            if (!_iteratorNormalCompletion && _iterator.return != null) {
+              _iterator.return();
+            }
+          } finally {
+            if (_didIteratorError) {
+              throw _iteratorError;
+            }
+          }
+          return [
+            7
+          ];
+        case 8:
+          logger.info("Ts compile succeed");
+          return [
+            2
+          ];
+      }
+    });
+  });
+  return function compileByTs2(appDirectory, config, compileOptions) {
+    return _ref.apply(this, arguments);
+  };
+}();
+var getFormatHost = function(ts) {
+  return {
+    getCanonicalFileName: function(path2) {
+      return path2;
+    },
+    getCurrentDirectory: ts.sys.getCurrentDirectory,
+    getNewLine: function() {
+      return ts.sys.newLine;
+    }
+  };
+};
+export {
+  compileByTs
+};

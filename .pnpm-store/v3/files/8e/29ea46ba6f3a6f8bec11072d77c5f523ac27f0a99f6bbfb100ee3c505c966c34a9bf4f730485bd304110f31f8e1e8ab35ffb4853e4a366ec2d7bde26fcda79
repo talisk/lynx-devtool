@@ -1,0 +1,20 @@
+import { Client } from "../connector/Client";
+import { ClientDescription, CDPEventHandler, EventHandler, RequireMessageType, ResponseMessageType } from "../utils/type";
+import { Connection } from "./Connection";
+export declare class UsbClient extends Client {
+    readonly info: ClientDescription;
+    readonly connection: Connection;
+    constructor(info: ClientDescription, connection: Connection);
+    clientId(): number;
+    deviceId(): string;
+    close(): void;
+    on(event: string, callback: EventHandler): void;
+    onAllEvents(callback: CDPEventHandler): void;
+    off(event: string, callback: EventHandler): void;
+    once(event: string, callback: EventHandler): void;
+    protected rawSend(message: RequireMessageType): Promise<ResponseMessageType>;
+    sendCustomizedMessage(method: string, params?: Object, sessionId?: number, type?: string): Promise<string>;
+    sendRawMessage(message: RequireMessageType): Promise<ResponseMessageType>;
+    sendMessage(message: any): void;
+    sendClientMessage(method: string, params?: Object): Promise<string>;
+}

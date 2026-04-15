@@ -1,0 +1,160 @@
+import { _ as _async_to_generator } from "@swc/helpers/_/_async_to_generator";
+import { _ as _instanceof } from "@swc/helpers/_/_instanceof";
+import { _ as _object_spread } from "@swc/helpers/_/_object_spread";
+import { _ as _ts_generator } from "@swc/helpers/_/_ts_generator";
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
+import { merge } from "@modern-js/runtime-utils/merge";
+import { createRequestContext, reporterCtx } from "@modern-js/runtime-utils/node";
+import { StaticRouterProvider, createStaticRouter } from "@modern-js/runtime-utils/node/router";
+import { createStaticHandler } from "@modern-js/runtime-utils/remix-router";
+import { createRoutesFromElements } from "@modern-js/runtime-utils/router";
+import { time } from "@modern-js/runtime-utils/time";
+import { LOADER_REPORTER_NAME } from "@modern-js/utils/universal/constants";
+import { useContext } from "react";
+import { JSX_SHELL_STREAM_END_MARK } from "../../common";
+import { RuntimeReactContext } from "../../core";
+import { getGlobalLayoutApp, getGlobalRoutes } from "../../core/context";
+import DeferredDataScripts from "./DeferredDataScripts.node";
+import { beforeCreateRoutes as beforeCreateRoutesHook, modifyRoutes as modifyRoutesHook } from "./hooks";
+import { renderRoutes, urlJoin } from "./utils";
+function createRemixReuqest(request) {
+  var method = "GET";
+  var headers = request.headers;
+  var controller = new AbortController();
+  return new Request(request.url, {
+    method,
+    headers,
+    signal: controller.signal
+  });
+}
+var routerPlugin = function() {
+  var userConfig = arguments.length > 0 && arguments[0] !== void 0 ? arguments[0] : {};
+  return {
+    name: "@modern-js/plugin-router",
+    registerHook: {
+      modifyRoutes: modifyRoutesHook,
+      beforeCreateRoutes: beforeCreateRoutesHook
+    },
+    setup: function(api) {
+      var finalRouteConfig = {};
+      return {
+        beforeRender: function beforeRender(context, interrupt) {
+          return _async_to_generator(function() {
+            var _context_ssrContext, _context_ssrContext_onTiming, _context_ssrContext1, pluginConfig, _merge, _merge_basename, basename, routesConfig, createRoutes, _context_ssrContext2, request, ssrMode, nonce, _context_ssrContext_loaderFailureMode, loaderFailureMode, baseUrl, _basename, reporter, requestContext, runner, routes, query, remixRequest, end, routerContext, cost, errors, router;
+            return _ts_generator(this, function(_state) {
+              switch (_state.label) {
+                case 0:
+                  pluginConfig = api.useRuntimeConfigContext();
+                  _merge = merge(pluginConfig.router || {}, userConfig), _merge_basename = _merge.basename, basename = _merge_basename === void 0 ? "" : _merge_basename, routesConfig = _merge.routesConfig, createRoutes = _merge.createRoutes;
+                  finalRouteConfig = _object_spread({
+                    routes: getGlobalRoutes(),
+                    globalApp: getGlobalLayoutApp()
+                  }, routesConfig);
+                  if (!finalRouteConfig.routes && !createRoutes) {
+                    return [
+                      2
+                    ];
+                  }
+                  _context_ssrContext2 = context.ssrContext, request = _context_ssrContext2.request, ssrMode = _context_ssrContext2.mode, nonce = _context_ssrContext2.nonce, _context_ssrContext_loaderFailureMode = _context_ssrContext2.loaderFailureMode, loaderFailureMode = _context_ssrContext_loaderFailureMode === void 0 ? "errorBoundary" : _context_ssrContext_loaderFailureMode;
+                  baseUrl = request.baseUrl;
+                  _basename = baseUrl === "/" ? urlJoin(baseUrl, basename) : baseUrl;
+                  reporter = context.ssrContext.reporter;
+                  requestContext = createRequestContext((_context_ssrContext = context.ssrContext) === null || _context_ssrContext === void 0 ? void 0 : _context_ssrContext.loaderContext);
+                  requestContext.set(reporterCtx, reporter);
+                  runner = api.useHookRunners();
+                  return [
+                    4,
+                    runner.beforeCreateRoutes(context)
+                  ];
+                case 1:
+                  _state.sent();
+                  routes = createRoutes ? createRoutes() : createRoutesFromElements(renderRoutes({
+                    routesConfig: finalRouteConfig,
+                    ssrMode,
+                    props: {
+                      nonce
+                    },
+                    reporter
+                  }));
+                  routes = runner.modifyRoutes(routes);
+                  query = createStaticHandler(routes, {
+                    basename: _basename
+                  }).query;
+                  remixRequest = createRemixReuqest(context.ssrContext.request.raw);
+                  end = time();
+                  return [
+                    4,
+                    query(remixRequest, {
+                      requestContext
+                    })
+                  ];
+                case 2:
+                  routerContext = _state.sent();
+                  cost = end();
+                  (_context_ssrContext1 = context.ssrContext) === null || _context_ssrContext1 === void 0 ? void 0 : (_context_ssrContext_onTiming = _context_ssrContext1.onTiming) === null || _context_ssrContext_onTiming === void 0 ? void 0 : _context_ssrContext_onTiming.call(_context_ssrContext1, LOADER_REPORTER_NAME, cost);
+                  if (_instanceof(routerContext, Response)) {
+                    return [
+                      2,
+                      interrupt(routerContext)
+                    ];
+                  }
+                  if (routerContext.statusCode >= 500 && routerContext.statusCode < 600 && // TODO: if loaderFailureMode is not 'errroBoundary', error log will not be printed.
+                  loaderFailureMode === "clientRender") {
+                    routerContext.statusCode = 200;
+                    errors = Object.values(routerContext.errors);
+                    throw errors[0];
+                  }
+                  router = createStaticRouter(routes, routerContext);
+                  context.routerContext = routerContext;
+                  context.remixRouter = router;
+                  context.routes = routes;
+                  return [
+                    2
+                  ];
+              }
+            });
+          })();
+        },
+        wrapRoot: function(App) {
+          if (!finalRouteConfig) {
+            return App;
+          }
+          var getRouteApp = function() {
+            return function() {
+              var context = useContext(RuntimeReactContext);
+              var remixRouter = context.remixRouter, routerContext = context.routerContext, ssrContext = context.ssrContext;
+              var nonce = ssrContext.nonce, mode = ssrContext.mode, useJsonScript = ssrContext.useJsonScript;
+              var routerWrapper = /* @__PURE__ */ _jsxs(_Fragment, {
+                children: [
+                  /* @__PURE__ */ _jsx(StaticRouterProvider, {
+                    router: remixRouter,
+                    context: routerContext,
+                    hydrate: false
+                  }),
+                  mode === "stream" && // ROUTER_DATA will inject in `packages/runtime/plugin-runtime/src/core/server/string/ssrData.ts` in string ssr
+                  // So we can inject it only when streaming ssr
+                  /* @__PURE__ */ _jsx(DeferredDataScripts, {
+                    nonce,
+                    context: routerContext,
+                    useJsonScript
+                  }),
+                  mode === "stream" && JSX_SHELL_STREAM_END_MARK
+                ]
+              });
+              return App ? /* @__PURE__ */ _jsx(App, {
+                children: routerWrapper
+              }) : routerWrapper;
+            };
+          };
+          return getRouteApp();
+        }
+      };
+    }
+  };
+};
+var modifyRoutes = function() {
+};
+export {
+  modifyRoutes,
+  routerPlugin
+};

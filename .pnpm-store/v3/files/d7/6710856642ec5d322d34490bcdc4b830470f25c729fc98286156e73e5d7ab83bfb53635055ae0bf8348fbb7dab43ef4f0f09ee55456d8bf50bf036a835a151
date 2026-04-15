@@ -1,0 +1,91 @@
+"use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+class Parser {
+    constructor(stream) {
+        this.stream = stream;
+        this.ended = false;
+    }
+    end() {
+        return Promise.resolve(true);
+    }
+    readAscii(howMany) {
+        return this.readBytes(howMany).then((chunk) => {
+            return chunk.toString("ascii");
+        });
+    }
+    readLength() {
+        return this.readBytes(4).then((chunk) => {
+            return chunk.readUInt32BE();
+        });
+    }
+    readBytes(howMany) {
+        let tryRead;
+        let errorListener;
+        let endListener;
+        let timeoutListener;
+        return new Promise((resolve, reject) => {
+            tryRead = () => {
+                if (howMany) {
+                    const chunk = this.stream.read(howMany);
+                    if (chunk) {
+                        howMany -= chunk.length;
+                        if (howMany === 0) {
+                            return resolve(chunk);
+                        }
+                    }
+                    if (this.ended) {
+                        reject(new Error("Premature end of stream"));
+                    }
+                }
+                else {
+                    resolve(Buffer.alloc(0));
+                }
+            };
+            endListener = () => {
+                this.ended = true;
+                reject(new Error("Premature end of stream"));
+            };
+            timeoutListener = () => {
+                this.stream.end();
+                reject(new Error("Socket timeout reached."));
+            };
+            errorListener = (error) => {
+                this.stream.end();
+                reject(error);
+            };
+            this.stream.on("readable", tryRead);
+            this.stream.on("error", errorListener);
+            this.stream.on("end", endListener);
+            this.stream.on("timeout", timeoutListener);
+            tryRead();
+        }).finally(() => {
+            this.stream.removeListener("readable", tryRead);
+            this.stream.removeListener("error", errorListener);
+            this.stream.removeListener("end", endListener);
+            this.stream.removeListener("timeout", timeoutListener);
+        });
+    }
+    readValue() {
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            try {
+                const length = yield this.readLength();
+                const result = yield this.readBytes(length);
+                resolve(result);
+            }
+            catch (err) {
+                reject("7");
+            }
+        }));
+    }
+}
+exports.default = Parser;
+//# sourceMappingURL=parser.js.map

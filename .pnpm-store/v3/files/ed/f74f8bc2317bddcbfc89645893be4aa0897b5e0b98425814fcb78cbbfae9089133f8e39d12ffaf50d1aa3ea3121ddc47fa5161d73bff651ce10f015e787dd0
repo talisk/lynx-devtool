@@ -1,0 +1,72 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var apply_exports = {};
+__export(apply_exports, {
+  applyPlugins: () => applyPlugins
+});
+module.exports = __toCommonJS(apply_exports);
+var import_server_core = require("@modern-js/server-core");
+var import_node = require("@modern-js/server-core/node");
+var import_utils = require("@modern-js/utils");
+function getLogger() {
+  if (process.env.DEBUG || process.env.NODE_ENV === "production") {
+    return (0, import_utils.createLogger)({
+      level: process.env.MODERN_SERVER_LOG_LEVEL || "verbose"
+    });
+  } else {
+    return (0, import_utils.createLogger)();
+  }
+}
+async function applyPlugins(serverBase, options, nodeServer) {
+  const { pwd, appContext } = options;
+  const loadCachePwd = (0, import_utils.isProd)() ? pwd : appContext.appDirectory || pwd;
+  const cacheConfig = await (0, import_node.loadCacheConfig)(loadCachePwd);
+  serverBase.notFound((c) => {
+    const logger = c.get("logger");
+    (0, import_server_core.onError)(import_server_core.ErrorDigest.ENOTF, "404 not found", logger, c.req.raw);
+    return c.html((0, import_server_core.createErrorHtml)(404), 404);
+  });
+  serverBase.onError((err, c) => {
+    const logger = c.get("logger");
+    (0, import_server_core.onError)(import_server_core.ErrorDigest.EINTER, err, logger, c.req.raw);
+    return c.html((0, import_server_core.createErrorHtml)(500), 500);
+  });
+  const plugins = [
+    ...nodeServer ? [
+      (0, import_node.injectNodeSeverPlugin)({
+        nodeServer
+      })
+    ] : [],
+    ...(0, import_server_core.createDefaultPlugins)({
+      cacheConfig,
+      staticGenerate: options.staticGenerate,
+      logger: getLogger()
+    }),
+    ...options.plugins || [],
+    (0, import_node.injectResourcePlugin)(),
+    (0, import_node.serverStaticPlugin)(),
+    (0, import_server_core.faviconPlugin)(),
+    (0, import_server_core.renderPlugin)()
+  ];
+  serverBase.addPlugins(plugins);
+}
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  applyPlugins
+});

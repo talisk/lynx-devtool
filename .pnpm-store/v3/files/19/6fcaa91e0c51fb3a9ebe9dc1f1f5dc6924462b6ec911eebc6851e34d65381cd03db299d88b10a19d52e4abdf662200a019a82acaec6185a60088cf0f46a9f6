@@ -1,0 +1,54 @@
+import type { CommonAPI, PluginOptions, ToRunners, ToThreads } from './types';
+/** Setup function of async plugin. */
+export type AsyncSetup<Hooks, API = Record<string, never>> = (api: API & CommonAPI<Hooks>) => Partial<ToThreads<Hooks>> | Promise<Partial<ToThreads<Hooks>> | void> | void;
+declare const ASYNC_PLUGIN_SYMBOL = "ASYNC_PLUGIN_SYMBOL";
+export type AsyncPlugin<Hooks, API> = {
+    ASYNC_PLUGIN_SYMBOL: typeof ASYNC_PLUGIN_SYMBOL;
+} & Required<PluginOptions<Hooks, AsyncSetup<Hooks, API>>>;
+export type AsyncManager<Hooks, API> = {
+    /**
+     * Create a sync plugin.
+     * @param setup the setup function.
+     * @param options optional plugin options.
+     */
+    createPlugin: (setup?: AsyncSetup<Hooks, API>, options?: PluginOptions<Hooks, AsyncSetup<Hooks, API>>) => AsyncPlugin<Hooks, API>;
+    /**
+     * Determine if a value is a async plugin.
+     * @param input
+     */
+    isPlugin: (input: unknown) => input is AsyncPlugin<Hooks, API>;
+    /**
+     * Register new plugins to current manager.
+     * @param plugins one or more plugin.
+     */
+    usePlugin: (...plugins: Array<AsyncPlugin<Hooks, API> | PluginOptions<Hooks, AsyncSetup<Hooks, API>> | (() => PluginOptions<Hooks, AsyncSetup<Hooks, API>>)>) => AsyncManager<Hooks, API>;
+    /**
+     * Init manager, it will call the setup function of all registered plugins.
+     */
+    init: () => Promise<ToRunners<Hooks>>;
+    /**
+     * Run callback function.
+     * @param callback
+     */
+    run: <O>(cb: () => O) => O;
+    /**
+     * Register new hooks.
+     * @param newHooks
+     */
+    registerHook: (newHooks: Partial<Hooks>) => void;
+    /**
+     * Return a cloned manager.
+     * @param overrideAPI override the default plugin API.
+     */
+    clone: (overrideAPI?: Partial<API & CommonAPI<Hooks>>) => AsyncManager<Hooks, API>;
+    /**
+     * Clear all registered plugins.
+     */
+    clear: () => void;
+    /**
+     * Get all runner functions of the hooks.
+     */
+    useRunner: () => ToRunners<Hooks>;
+};
+export declare const createAsyncManager: <Hooks extends Record<string, any>, API extends Record<string, any> = Record<string, never>>(hooks?: Partial<Hooks> | undefined, api?: API | undefined) => AsyncManager<Hooks, API>;
+export {};

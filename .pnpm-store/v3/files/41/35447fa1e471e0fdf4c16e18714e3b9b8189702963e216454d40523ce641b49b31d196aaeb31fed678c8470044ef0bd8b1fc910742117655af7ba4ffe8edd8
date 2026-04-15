@@ -1,0 +1,152 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var netlify_exports = {};
+__export(netlify_exports, {
+  createNetlifyPreset: () => createNetlifyPreset
+});
+module.exports = __toCommonJS(netlify_exports);
+var import_node_path = __toESM(require("node:path"));
+var import_utils = require("@modern-js/utils");
+var import_routes = require("../../../utils/routes");
+var import_dependencies = require("../dependencies");
+var import_utils2 = require("../utils");
+async function cleanDistDirectory(dir) {
+  try {
+    const items = await import_utils.fs.readdir(dir);
+    for (const item of items) {
+      const fullPath = import_node_path.default.join(dir, item);
+      if (item !== "static" && item !== "_redirects" && item !== "html") {
+        await import_utils.fs.remove(fullPath);
+      }
+    }
+  } catch (error) {
+    console.error("Error cleaning directory:", error);
+  }
+}
+const createNetlifyPreset = (appContext, modernConfig, needModernServer) => {
+  const { appDirectory, distDirectory, entrypoints, serverPlugins, moduleType } = appContext;
+  const isEsmProject = moduleType === "module";
+  const plugins = serverPlugins.map((plugin) => [
+    plugin.name,
+    plugin.options
+  ]);
+  const netlifyOutput = import_node_path.default.join(appDirectory, ".netlify");
+  const funcsDirectory = import_node_path.default.join(netlifyOutput, "functions");
+  const entryFilePath = import_node_path.default.join(funcsDirectory, "index.js");
+  const handlerFilePath = import_node_path.default.join(funcsDirectory, "netlify-handler.cjs");
+  return {
+    async prepare() {
+      await import_utils.fs.remove(netlifyOutput);
+    },
+    async writeOutput() {
+      const routes = [];
+      const { source: { mainEntryName } } = modernConfig;
+      if (!needModernServer) {
+        entrypoints.forEach((entry) => {
+          const isMain = (0, import_routes.isMainEntry)(entry.entryName, mainEntryName);
+          routes.push({
+            src: `/${isMain ? "" : `${entry.entryName}/`}*`,
+            dest: `/html/${entry.entryName}/index.html`,
+            status: 200
+          });
+        });
+      } else {
+        routes.push({
+          src: "/*",
+          dest: `/.netlify/functions/index`,
+          status: 200
+        });
+      }
+      const redirectContent = routes.map((route) => {
+        return `${route.src} ${route.dest} ${route.status}`;
+      }).join("\n");
+      if (needModernServer) {
+        await import_utils.fs.ensureDir(funcsDirectory);
+        await import_utils.fs.copy(distDirectory, funcsDirectory, {
+          filter: (src) => {
+            const distStaticDirectory = import_node_path.default.join(distDirectory, `static`);
+            return !src.includes(distStaticDirectory);
+          }
+        });
+      }
+      const redirectFilePath = import_node_path.default.join(distDirectory, "_redirects");
+      await import_utils.fs.writeFile(redirectFilePath, redirectContent);
+    },
+    async genEntry() {
+      var _modernConfig_bff;
+      if (!needModernServer) {
+        return;
+      }
+      const serverConfig = {
+        bff: {
+          prefix: modernConfig === null || modernConfig === void 0 ? void 0 : (_modernConfig_bff = modernConfig.bff) === null || _modernConfig_bff === void 0 ? void 0 : _modernConfig_bff.prefix
+        },
+        output: {
+          distPath: {
+            root: "."
+          }
+        }
+      };
+      const pluginImportCode = (0, import_utils2.genPluginImportsCode)(plugins || []);
+      const dynamicProdOptions = {
+        config: serverConfig,
+        serverConfigFile: import_utils.DEFAULT_SERVER_CONFIG
+      };
+      const pluginsCode = (0, import_utils2.getPluginsCode)(plugins);
+      let handlerCode = (await import_utils.fs.readFile(import_node_path.default.join(__dirname, "./netlify-handler.js"))).toString();
+      const serverAppContext = (0, import_utils2.serverAppContenxtTemplate)(appContext);
+      handlerCode = handlerCode.replace("p_genPluginImportsCode", pluginImportCode).replace("p_ROUTE_SPEC_FILE", `"${import_utils.ROUTE_SPEC_FILE}"`).replace("p_dynamicProdOptions", JSON.stringify(dynamicProdOptions)).replace("p_plugins", pluginsCode).replace("p_sharedDirectory", serverAppContext.sharedDirectory).replace("p_apiDirectory", serverAppContext.apiDirectory).replace("p_lambdaDirectory", serverAppContext.lambdaDirectory);
+      await import_utils.fs.writeFile(handlerFilePath, handlerCode);
+      if (isEsmProject) {
+        await import_utils.fs.copy(import_node_path.default.join(__dirname, "./netlify-entry.mjs"), entryFilePath);
+      } else {
+        await import_utils.fs.copy(import_node_path.default.join(__dirname, "./netlify-entry.js"), entryFilePath);
+      }
+    },
+    async end() {
+      if (process.env.NODE_ENV !== "development") {
+        await cleanDistDirectory(distDirectory);
+      }
+      if (!needModernServer) {
+        return;
+      }
+      await (0, import_dependencies.handleDependencies)({
+        appDir: appDirectory,
+        serverRootDir: funcsDirectory,
+        includeEntries: [
+          require.resolve("@modern-js/prod-server")
+        ]
+      });
+    }
+  };
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createNetlifyPreset
+});

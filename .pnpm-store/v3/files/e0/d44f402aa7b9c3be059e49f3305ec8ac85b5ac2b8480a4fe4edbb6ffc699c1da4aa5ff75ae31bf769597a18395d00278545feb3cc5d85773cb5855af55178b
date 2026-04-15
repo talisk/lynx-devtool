@@ -1,0 +1,122 @@
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const events_1 = require("events");
+const Net = __importStar(require("net"));
+const parser_1 = __importDefault(require("./parser"));
+const DriverReportService_1 = require("../../report/interface/DriverReportService");
+const HandShakeBannerSize = 12;
+const HandShakeConnectKeySize = 32;
+class Connection extends events_1.EventEmitter {
+    constructor(options) {
+        super();
+        this.options = options || { port: 0 };
+        this.handshakeOK = false;
+    }
+    connect(connectKey = "") {
+        this.socket = Net.connect(this.options);
+        this.socket.setNoDelay(true);
+        this.parser = new parser_1.default(this.socket);
+        this.socket.on("connect", () => this.emit("connect"));
+        this.socket.on("end", () => this.emit("end"));
+        this.socket.on("drain", () => this.emit("drain"));
+        this.socket.on("timeout", () => this.emit("timeout"));
+        this.socket.on("close", (hadError) => this.emit("close", hadError));
+        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c;
+            try {
+                const length = yield this.parser.readLength();
+                if (length < HandShakeBannerSize + HandShakeConnectKeySize) {
+                    (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("hdc_connect_error", null, {
+                        msg: "connect failed for HandShake Length Error",
+                    });
+                    reject(new Error("HandShake Length Error"));
+                }
+                const data = yield this.parser.readBytes(length);
+                const banner = data
+                    .subarray(0, HandShakeBannerSize - 1)
+                    .toString("ascii");
+                if (banner.localeCompare("OHOS HDC")) {
+                    (_b = (0, DriverReportService_1.getDriverReportService)()) === null || _b === void 0 ? void 0 : _b.report("hdc_connect_error", null, {
+                        msg: "connect failed for HandShake Banner Error",
+                    });
+                    reject(new Error("HandShake Banner Error"));
+                }
+                const chnnelId = data.readUInt32BE(HandShakeBannerSize - 1);
+                const response = Buffer.alloc(48);
+                response.writeInt32BE(HandShakeBannerSize + HandShakeConnectKeySize);
+                response.write(banner, 4, "ascii");
+                if (connectKey && connectKey.length <= HandShakeConnectKeySize) {
+                    response.write(connectKey, 4 + HandShakeBannerSize, "ascii");
+                }
+                this.write(response, (error) => {
+                    var _a;
+                    if (error) {
+                        console.log("error:", error.message);
+                        (_a = (0, DriverReportService_1.getDriverReportService)()) === null || _a === void 0 ? void 0 : _a.report("hdc_connect_error", null, {
+                            msg: "connect failed for write response error",
+                        });
+                        reject(error);
+                    }
+                    else {
+                        this.handshakeOK = true;
+                        resolve(this);
+                    }
+                });
+            }
+            catch (err) {
+                (_c = (0, DriverReportService_1.getDriverReportService)()) === null || _c === void 0 ? void 0 : _c.report("hdc_connect_error", null, {
+                    msg: "connect failed for catch other error",
+                });
+                reject(err);
+            }
+        }));
+    }
+    write(data, callback) {
+        this.socket.write(data, callback);
+        return this;
+    }
+    kill() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (this.socket) {
+                this.socket.destroy();
+            }
+        });
+    }
+}
+exports.default = Connection;
+//# sourceMappingURL=connection.js.map

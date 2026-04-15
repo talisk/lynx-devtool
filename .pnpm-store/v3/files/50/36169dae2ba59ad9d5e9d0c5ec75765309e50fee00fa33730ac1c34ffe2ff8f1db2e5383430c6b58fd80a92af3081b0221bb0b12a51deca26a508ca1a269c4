@@ -1,0 +1,43 @@
+function createAsyncHook() {
+  const callbacks = [];
+  const tap = (cb) => {
+    callbacks.push(cb);
+  };
+  const call = async (...params) => {
+    for (const callback of callbacks) {
+      const result = await callback(...params);
+      if (result !== void 0) {
+        params[0] = result;
+      }
+    }
+    return params[0] || [];
+  };
+  return {
+    tap,
+    call
+  };
+}
+function createCollectAsyncHook() {
+  const callbacks = [];
+  const tap = (cb) => {
+    callbacks.push(cb);
+  };
+  const call = async (...params) => {
+    const results = [];
+    for (const callback of callbacks) {
+      const result = await callback(params);
+      if (result !== void 0) {
+        results.push(result);
+      }
+    }
+    return results;
+  };
+  return {
+    tap,
+    call
+  };
+}
+export {
+  createAsyncHook,
+  createCollectAsyncHook
+};

@@ -1,0 +1,143 @@
+"use strict";
+var __create = Object.create;
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+  // If the importer is in node compatibility mode or this is not an ESM
+  // file that has been converted to a CommonJS file using a Babel-
+  // compatible transform (i.e. "__esModule" has not been set), then set
+  // "default" to the CommonJS "module.exports" for node compatibility.
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  mod
+));
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var resolve_exports = {};
+__export(resolve_exports, {
+  createCssResolver: () => createCssResolver,
+  createJsResolver: () => createJsResolver,
+  cssExtensions: () => cssExtensions
+});
+module.exports = __toCommonJS(resolve_exports);
+var import_fs = __toESM(require("fs"));
+var import_enhanced_resolve = require("enhanced-resolve");
+var import_tsconfig_paths_webpack_plugin = __toESM(require("tsconfig-paths-webpack-plugin"));
+const cssExtensions = [
+  ".less",
+  ".css",
+  ".sass",
+  ".scss",
+  ".js"
+];
+function createEnhancedResolve(options) {
+  const plugins = [];
+  const { tsConfig } = options;
+  const tsConfigFilePath = tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.configFile;
+  const references = tsConfig === null || tsConfig === void 0 ? void 0 : tsConfig.references;
+  if (import_fs.default.existsSync(tsConfigFilePath)) {
+    plugins.push(new import_tsconfig_paths_webpack_plugin.default({
+      configFile: tsConfigFilePath,
+      references
+    }));
+  }
+  const resolveOptions = {
+    aliasFields: options.platform === "browser" ? [
+      "browser"
+    ] : [],
+    FileSystem: new import_enhanced_resolve.CachedInputFileSystem(import_fs.default, 4e3),
+    mainFields: options.mainFields,
+    mainFiles: [
+      "index"
+    ],
+    extensions: options.extensions,
+    preferRelative: options.preferRelative,
+    addMatchAll: false,
+    plugins,
+    alias: options.alias
+  };
+  const resolveSync = (dir, id) => import_enhanced_resolve.create.sync({
+    ...resolveOptions,
+    conditionNames: [
+      options.platform,
+      "require",
+      "module"
+    ]
+  })(dir, id);
+  const esmResolveSync = (dir, id) => import_enhanced_resolve.create.sync({
+    ...resolveOptions,
+    conditionNames: [
+      options.platform,
+      "import",
+      "module"
+    ]
+  })(dir, id);
+  return {
+    resolveSync,
+    esmResolveSync
+  };
+}
+const createJsResolver = (options) => {
+  const resolveCache = /* @__PURE__ */ new Map();
+  const { resolveSync, esmResolveSync } = createEnhancedResolve(options);
+  const resolver = (id, dir, kind) => {
+    const cacheKey = id + dir + (kind || "");
+    const cacheResult = resolveCache.get(cacheKey);
+    if (cacheResult) {
+      return cacheResult;
+    }
+    let result;
+    if (kind === "import-statement" || kind === "dynamic-import") {
+      result = esmResolveSync(dir, id);
+    } else {
+      result = resolveSync(dir, id);
+    }
+    if (result) {
+      resolveCache.set(cacheKey, result);
+    }
+    return result;
+  };
+  return resolver;
+};
+const createCssResolver = (options) => {
+  const resolveCache = /* @__PURE__ */ new Map();
+  const { resolveSync } = createEnhancedResolve(options);
+  const resolver = (id, dir, kind) => {
+    const cacheKey = id + dir + (kind || "");
+    const cacheResult = resolveCache.get(cacheKey);
+    if (cacheResult) {
+      return cacheResult;
+    }
+    let result;
+    try {
+      result = resolveSync(dir, id);
+    } catch (err) {
+      result = resolveSync(dir, id.replace(/^~/, ""));
+    }
+    if (!result) {
+      throw new Error(`can not resolve ${id} from ${dir}`);
+    }
+    resolveCache.set(cacheKey, result);
+    return result;
+  };
+  return resolver;
+};
+// Annotate the CommonJS export names for ESM import in node:
+0 && (module.exports = {
+  createCssResolver,
+  createJsResolver,
+  cssExtensions
+});

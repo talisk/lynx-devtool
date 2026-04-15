@@ -1,0 +1,8 @@
+import { generateBuilder } from "../generator";
+async function createRspackBuilderForModern(options) {
+  const builder = await generateBuilder(options, "rspack");
+  return builder;
+}
+export {
+  createRspackBuilderForModern
+};

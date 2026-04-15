@@ -1,0 +1,21 @@
+import type { AppToolsContext } from '../../types/new';
+export type ServerAppContext = {
+    sharedDirectory: string;
+    apiDirectory: string;
+    lambdaDirectory: string;
+    metaName: string;
+};
+export declare const serverAppContenxtTemplate: (appContext: AppToolsContext<'shared'>) => {
+    sharedDirectory: string;
+    apiDirectory: string;
+    lambdaDirectory: string;
+    metaName: string;
+};
+export type PluginItem = [string, Record<string, any> | undefined];
+export declare const genPluginImportsCode: (plugins: PluginItem[]) => string;
+export declare const getPluginsCode: (plugins: PluginItem[]) => string;
+export declare const getProjectUsage: (appDirectory: string, distDirectory: string) => {
+    useSSR: boolean;
+    useAPI: boolean;
+    useWebServer: boolean;
+};

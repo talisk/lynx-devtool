@@ -1,0 +1,27 @@
+import { SocketEvents } from "./message.model";
+const availableEvents = Object.values(SocketEvents);
+export function encodeSocketMessage(message) {
+    return JSON.stringify(message);
+}
+export function decodeSocketMessage(data, event) {
+    try {
+        const message = JSON.parse(typeof data === "string" ? data : data.toString());
+        if (!("event" in message))
+            return undefined;
+        if (!("data" in message))
+            message.data = undefined;
+        if (event == null)
+            return message;
+        return isTypedSocketMessage(message, event) ? message : undefined;
+    }
+    catch (_a) {
+        return undefined;
+    }
+}
+export function isTypedSocketMessage(message, event) {
+    return (message === null || message === void 0 ? void 0 : message.event) === event;
+}
+export function isUnknownMessage(message) {
+    return message == null || !availableEvents.includes(message.event);
+}
+//# sourceMappingURL=message.js.map

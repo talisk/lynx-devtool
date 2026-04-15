@@ -1,0 +1,16 @@
+import type { ServerRoute, UnstableMiddleware } from '@modern-js/types';
+import type { ServerNodeEnv } from '../../adapters/node/hono';
+import type { ServerBase } from '../../serverBase';
+import type { Middleware, ServerEnv, ServerHookRunner } from '../../types';
+export declare class CustomServer {
+    private runner;
+    private serverMiddlewarePromise;
+    private serverBase;
+    constructor(runner: ServerHookRunner, serverBase: ServerBase, pwd: string);
+    getHookMiddleware(entryName: string, routes: ServerRoute[]): Middleware<ServerEnv>;
+    getServerMiddleware(renderMiddlewares?: Middleware<ServerNodeEnv & ServerEnv>[]): Promise<Middleware<ServerNodeEnv & ServerEnv> | Array<Middleware<ServerNodeEnv & ServerEnv>> | undefined>;
+}
+export declare function getServerMidFromUnstableMid(serverMiddleware: UnstableMiddleware[]): Array<Middleware<ServerNodeEnv & ServerEnv>>;
+export declare function injectRoute(route: {
+    entryName: string;
+}): Middleware<ServerEnv>;

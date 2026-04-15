@@ -1,0 +1,62 @@
+"use strict";
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+var __copyProps = (to, from, except, desc) => {
+  if (from && typeof from === "object" || typeof from === "function") {
+    for (let key of __getOwnPropNames(from))
+      if (!__hasOwnProp.call(to, key) && key !== except)
+        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+  }
+  return to;
+};
+var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
+var deploy_exports = {};
+__export(deploy_exports, {
+  default: () => deploy_default
+});
+module.exports = __toCommonJS(deploy_exports);
+var import_std_env = require("std-env");
+var import_netlify = require("./platforms/netlify");
+var import_node = require("./platforms/node");
+var import_vercel = require("./platforms/vercel");
+var import_utils = require("./utils");
+const deployPresets = {
+  node: import_node.createNodePreset,
+  vercel: import_vercel.createVercelPreset,
+  netlify: import_netlify.createNetlifyPreset
+};
+async function getDeployPreset(appContext, modernConfig, deployTarget) {
+  const { appDirectory, distDirectory } = appContext;
+  const { useSSR, useAPI, useWebServer } = (0, import_utils.getProjectUsage)(appDirectory, distDirectory);
+  const needModernServer = useSSR || useAPI || useWebServer;
+  const createPreset = deployPresets[deployTarget];
+  if (!createPreset) {
+    throw new Error(`Unknown deploy target: '${deployTarget}'. MODERNJS_DEPLOY should be 'node', 'vercel', or 'netlify'.`);
+  }
+  return createPreset(appContext, modernConfig, needModernServer);
+}
+var deploy_default = () => ({
+  name: "@modern-js/plugin-deploy",
+  setup: (api) => {
+    const deployTarget = process.env.MODERNJS_DEPLOY || import_std_env.provider || "node";
+    api.deploy(async () => {
+      const appContext = api.getAppContext();
+      const { metaName } = appContext;
+      if (metaName !== "modern-js" && !process.env.MODERNJS_DEPLOY) {
+        return;
+      }
+      const modernConfig = api.getNormalizedConfig();
+      const deployPreset = await getDeployPreset(appContext, modernConfig, deployTarget);
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.prepare) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.prepare());
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.writeOutput) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.writeOutput());
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.genEntry) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.genEntry());
+      (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.end) && await (deployPreset === null || deployPreset === void 0 ? void 0 : deployPreset.end());
+    });
+  }
+});

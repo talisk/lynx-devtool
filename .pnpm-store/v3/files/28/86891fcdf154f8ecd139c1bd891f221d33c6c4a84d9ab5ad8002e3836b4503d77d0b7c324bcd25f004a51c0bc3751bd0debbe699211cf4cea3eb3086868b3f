@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const command_1 = __importDefault(require("../../command"));
+class RemoveForwardCommand extends command_1.default {
+    execute(local, remote) {
+        const command = `fport rm ${local} ${remote}`;
+        const data = Buffer.from(command, "ascii");
+        this.send(data);
+        return this.connection.parser.readValue().then(this._parseResult);
+    }
+    _parseResult(value) {
+        const message = value.toString("ascii");
+        if (message.includes("Remove forward ruler success")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+}
+exports.default = RemoveForwardCommand;
+//# sourceMappingURL=removeforward.js.map

@@ -1,0 +1,48 @@
+export declare let LOG_LEVEL: {
+    readonly silent: -1;
+    readonly error: 0;
+    readonly warn: 1;
+    readonly info: 2;
+    readonly log: 2;
+    readonly verbose: 3;
+};
+export declare let LOG_TYPES: {
+    error: {
+        label: string;
+        level: "error";
+        color: import("./color").ColorFn;
+    };
+    warn: {
+        label: string;
+        level: "warn";
+        color: import("./color").ColorFn;
+    };
+    info: {
+        label: string;
+        level: "info";
+        color: import("./color").ColorFn;
+    };
+    start: {
+        label: string;
+        level: "info";
+        color: import("./color").ColorFn;
+    };
+    ready: {
+        label: string;
+        level: "info";
+        color: import("./color").ColorFn;
+    };
+    success: {
+        label: string;
+        level: "info";
+        color: import("./color").ColorFn;
+    };
+    log: {
+        level: "info";
+    };
+    debug: {
+        label: string;
+        level: "verbose";
+        color: import("./color").ColorFn;
+    };
+};

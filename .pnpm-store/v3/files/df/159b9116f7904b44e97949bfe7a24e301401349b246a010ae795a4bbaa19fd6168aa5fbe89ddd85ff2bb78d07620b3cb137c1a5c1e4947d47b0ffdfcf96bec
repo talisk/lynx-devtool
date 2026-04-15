@@ -1,0 +1,5 @@
+import type { RsbuildPlugin, RsbuildProviderHelpers } from '@rsbuild/core';
+/**
+ * Handling differences between Webpack and Rspack
+ */
+export declare const pluginAdaptor: (helpers: RsbuildProviderHelpers) => RsbuildPlugin;

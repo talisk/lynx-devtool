@@ -1,0 +1,86 @@
+{
+  "name": "@modern-js-reduck/store",
+  "version": "1.1.13",
+  "files": [
+    "dist"
+  ],
+  "jsnext:source": "./src/index.ts",
+  "types": "./dist/types/index.d.ts",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "jsnext:modern": "./dist/js/modern/index.js",
+  "description": "The meta-framework suite designed from scratch for frontend-focused modern web development.",
+  "homepage": "https://modernjs.dev",
+  "bugs": "https://github.com/modern-js-dev/reduck/issues",
+  "license": "MIT",
+  "keywords": [
+    "react",
+    "framework",
+    "modern",
+    "modern.js",
+    "state",
+    "reduck",
+    "store",
+    "redux"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "default": "./dist/esm/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/types/index.d.ts",
+      "require": "./dist/cjs/types/index.js",
+      "default": "./dist/esm/types/index.js"
+    },
+    "./utils": {
+      "types": "./dist/types/utils/index.d.ts",
+      "require": "./dist/cjs/utils/index.js",
+      "default": "./dist/esm/utils/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/types/index.d.ts"
+      ],
+      "types": [
+        "./dist/types/types/index.d.ts"
+      ],
+      "utils": [
+        "./dist/types/utils/index.d.ts"
+      ]
+    }
+  },
+  "tsd": {
+    "directory": "./src/__tsd__"
+  },
+  "dependencies": {
+    "@swc/helpers": "0.5.1",
+    "redux": "^4.1.1"
+  },
+  "devDependencies": {
+    "@modern-js/module-tools": "2.21.1",
+    "@modern-js/plugin-testing": "2.21.1",
+    "@modern-js/runtime": "2.21.1",
+    "@types/jest": "^27.5.1",
+    "@types/node": "^14",
+    "tsd": "latest",
+    "typescript": "latest",
+    "@modern-js-reduck/scripts": "0.0.0"
+  },
+  "modernSettings": {},
+  "sideEffects": false,
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  },
+  "repository": "modern-js-dev/reduck",
+  "scripts": {
+    "new": "modern new",
+    "build": "modern build",
+    "test": "modern test",
+    "test-type": "tsd"
+  }
+}
